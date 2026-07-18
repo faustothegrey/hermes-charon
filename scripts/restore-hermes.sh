@@ -17,6 +17,7 @@ cp -a config/config.yaml "$HERMES_HOME/config.yaml" 2>/dev/null || true
 [ -d plugins ] && rsync -a plugins/ "$HERMES_HOME/plugins/"
 [ -d memories ] && rsync -a memories/ "$HERMES_HOME/memories/"
 [ -d hooks ] && rsync -a hooks/ "$HERMES_HOME/hooks/"
+[ -d scripts/hermes ] && mkdir -p "$HERMES_HOME/scripts" && rsync -a scripts/hermes/ "$HERMES_HOME/scripts/"
 
 # Restore Obsidian vault
 if [ -d obsidian-vault ]; then

@@ -180,6 +180,7 @@ This repository backs up the relevant configuration for the Hermes Agent install
 - `obsidian-vault/`, a copy of the local Obsidian vault
 - `inventory/` command outputs useful during restore/debugging
 - `scripts/backup-hermes.sh`, `scripts/generate-backup.py`, and `scripts/restore-hermes.sh`
+- `scripts/hermes/` user scripts (netboard, overlay, queue, messaggi)
 - `secrets/*.enc`, encrypted secret/state bundle
 
 ## What is not committed in plaintext
@@ -279,6 +280,7 @@ The script restores:
 - `~/.hermes/plugins/`
 - `~/.hermes/memories/`
 - `~/.hermes/hooks/`
+- `~/.hermes/scripts/` (da `scripts/hermes/` nel repo)
 - encrypted secrets/state, if the private key works
 
 ## 4. Restore Obsidian vault
@@ -359,6 +361,8 @@ def main() -> None:
     copy_tree(HERMES_HOME / "plugins", REPO_DIR / "plugins", exclude=("*.pyc", "__pycache__"))
     copy_tree(HERMES_HOME / "memories", REPO_DIR / "memories", exclude=("*.lock", "*.tmp", "*.db-shm", "*.db-wal"))
     copy_tree(HERMES_HOME / "hooks", REPO_DIR / "hooks", exclude=("*.log", "*.tmp"))
+    # Hermes user scripts (netboard, overlay, queue, ecc.)
+    copy_tree(HERMES_HOME / "scripts", REPO_DIR / "scripts" / "hermes", exclude=("__pycache__", "*.pyc", "*.pyo"))
 
     # Obsidian vault
     obsidian_excludes = (

@@ -1,0 +1,13 @@
+$ hermes profile list
+exit=0
+
+STDOUT:
+
+ Profile          Model                        Gateway      Alias        Distribution
+ ───────────────    ───────────────────────────    ───────────    ───────────    ────────────────────
+ ◆default         deepseek/deepseek-v4-flash   running      —            —
+
+
+
+STDERR:
+

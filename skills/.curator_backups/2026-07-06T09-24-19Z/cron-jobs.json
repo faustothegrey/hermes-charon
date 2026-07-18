@@ -1,0 +1,93 @@
+{
+  "jobs": [
+    {
+      "id": "d5a456f87332",
+      "name": "Peer Network Monitor (orchestratore)",
+      "prompt": "Esegui il monitoraggio dei peer di rete usando il comando: python3 ~/.hermes/scripts/peer-monitor.py\n\nRiporta all'utente il risultato in italiano, evidenziando eventuali cambiamenti di stato (peer passati da ONLINE a OFFLINE o viceversa) e la temperatura del sistema. Se tutti i peer sono nello stesso stato del tick precedente, d\u00ec \"Tutto stabile\" con un breve riassunto. Lo stato viene gi\u00e0 salvato automaticamente in ~/.hermes/peer-network/STATUS.md dallo script.",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "provider_snapshot": "nous",
+      "model_snapshot": "deepseek/deepseek-v4-flash",
+      "base_url": null,
+      "script": "peer-monitor.py",
+      "no_agent": false,
+      "context_from": null,
+      "schedule": {
+        "kind": "interval",
+        "minutes": 60,
+        "display": "every 60m"
+      },
+      "schedule_display": "every 60m",
+      "repeat": {
+        "times": null,
+        "completed": 156
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-06-29T18:49:12.333315+02:00",
+      "next_run_at": "2026-07-06T11:50:16.220870+02:00",
+      "last_run_at": "2026-07-06T10:50:16.220870+02:00",
+      "last_status": "ok",
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "local",
+      "origin": {
+        "platform": "telegram",
+        "chat_id": "8508115936",
+        "chat_name": "Fausto Lelli",
+        "thread_id": null,
+        "user_id": "8508115936"
+      },
+      "enabled_toolsets": null,
+      "workdir": null,
+      "fire_claim": null
+    },
+    {
+      "id": "2ac6eca0e9fa",
+      "name": "guardiano-peer70 watchdog",
+      "prompt": "Esegui ~/.hermes/scripts/guardiano-peer70.sh watchdog. Logga l'output ma niente delivery \u2014 \u00e8 un cron silenzioso di service.",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "provider_snapshot": "nous",
+      "model_snapshot": "deepseek/deepseek-v4-flash",
+      "base_url": null,
+      "script": null,
+      "no_agent": false,
+      "context_from": null,
+      "schedule": {
+        "kind": "interval",
+        "minutes": 1,
+        "display": "every 1m"
+      },
+      "schedule_display": "every 1m",
+      "repeat": {
+        "times": null,
+        "completed": 3154
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-07-01T21:42:50.810346+02:00",
+      "next_run_at": "2026-07-06T11:23:43.418523+02:00",
+      "last_run_at": "2026-07-06T11:22:43.418523+02:00",
+      "last_status": "ok",
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "local",
+      "origin": null,
+      "enabled_toolsets": [
+        "terminal"
+      ],
+      "workdir": null,
+      "fire_claim": null
+    }
+  ],
+  "updated_at": "2026-07-06T11:22:43.419625+02:00"
+}

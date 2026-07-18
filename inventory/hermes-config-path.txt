@@ -1,0 +1,9 @@
+$ hermes config path
+exit=0
+
+STDOUT:
+/home/fausto/.hermes/config.yaml
+
+
+STDERR:
+

@@ -1,0 +1,22 @@
+{
+  "protocol": "api",
+  "api_endpoint": "/v1/chat/completions",
+  "model": "hermes-agent",
+  "peers": {
+    "peer70": {
+      "host": "192.168.178.70",
+      "port": 8642,
+      "api_key": "<replace>"
+    },
+    "peer84": {
+      "host": "192.168.178.84",
+      "port": 8642,
+      "api_key": "<replace>"
+    },
+    "peer128": {
+      "host": "Faustos-MacBook-Pro-Home-3.fritz.box",
+      "port": 8642,
+      "api_key": "<replace>"
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "registry_version": "1.0",
+  "updated_at": "2026-07-16T11:32:57Z",
+  "peers": {
+    "peer70": {
+      "last_seen": "2026-07-16T11:24:17Z",
+      "host": "192.168.178.70",
+      "skills": ["hmp-talkshow", "tts-cast", "hermes-hmp"],
+      "skill_count": 3,
+      "plugins": ["hmp"]
+    },
+    "peer105": {
+      "last_seen": "2026-07-16T11:32:57Z",
+      "host": "192.168.178.105",
+      "skills": ["travel-advice", "hmp-peer-messaging", "..."],
+      "skill_count": 86,
+      "plugins": ["hmp"]
+    },
+    "peer106": {
+      "last_seen": "2026-07-16T11:27:26Z",
+      "host": "192.168.178.106",
+      "skills": ["travel-talkshow-advice", "..."],
+      "skill_count": 87,
+      "plugins": ["hmp"]
+    }
+  }
+}

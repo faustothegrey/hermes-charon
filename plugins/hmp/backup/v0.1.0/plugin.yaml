@@ -1,0 +1,38 @@
+name: hmp
+label: HMP
+kind: platform
+version: 0.1.0
+description: >
+  Hermes Message Protocol gateway adapter. Runs an HMP HTTP listener inside
+  the Hermes gateway process and dispatches inbound peer messages through the
+  normal BasePlatformAdapter.handle_message() path.
+author: local
+optional_env:
+  - name: HMP_HOST
+    description: "Bind host for the HMP listener (default: 127.0.0.1 for staging)"
+    prompt: "HMP bind host"
+    password: false
+  - name: HMP_PORT
+    description: "Bind port for the HMP listener (default: 18643 for staging; use 8643 after migration)"
+    prompt: "HMP bind port"
+    password: false
+  - name: HMP_NODE_ID
+    description: "Local HMP node/peer id"
+    prompt: "HMP node id"
+    password: false
+  - name: HMP_SHARED_SECRET
+    description: "Optional bearer/shared secret for inbound HMP requests"
+    prompt: "HMP shared secret"
+    password: true
+  - name: HMP_ALLOWED_PEERS
+    description: "Comma-separated allowed peer ids; empty with HMP_ALLOW_ALL_PEERS=true allows all"
+    prompt: "Allowed HMP peers"
+    password: false
+  - name: HMP_ALLOW_ALL_PEERS
+    description: "Allow any peer id (true/false; staging default can be true on localhost)"
+    prompt: "Allow all HMP peers?"
+    password: false
+  - name: HMP_DB_PATH
+    description: "SQLite status store path"
+    prompt: "HMP DB path"
+    password: false

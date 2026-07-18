@@ -1,0 +1,112 @@
+$ hermes status --all
+exit=0
+
+STDOUT:
+
+┌─────────────────────────────────────────────────────────┐
+│                 ⚕ Hermes Agent Status                  │
+└─────────────────────────────────────────────────────────┘
+
+◆ Environment
+  Project:      /home/fausto/.hermes/hermes-agent
+  Python:       3.11.15
+  .env file:    ✓ exists
+  Model:        deepseek/deepseek-v4-flash
+  Provider:     Nous Portal
+
+◆ API Keys
+  OpenRouter    ✗ 
+  OpenAI        ✗ 
+  Google / Gemini  ✗ 
+  DeepSeek      ✗ 
+  xAI / Grok    ✗ 
+  NVIDIA NIM    ✗ 
+  Z.AI / GLM    ✗ 
+  Kimi          ✗ 
+  StepFun Step Plan  ✗ 
+  MiniMax       ✗ 
+  MiniMax-CN    ✗ 
+  Firecrawl     ✗ 
+  Tavily        ✗ 
+  Browser Use   ✗ 
+  Browserbase   ✗ 
+  FAL           ✗ 
+  ElevenLabs    ✗ 
+  GitHub        ✗ 
+  Anthropic     ✗ 
+
+◆ Auth Providers
+  Nous Portal   ✓ logged in
+    Portal URL: https://portal.nousresearch.com
+    Inference:  https://inference-api.nousresearch.com/v1
+    Access exp: 2026-07-18 14:13:43 CEST
+    Key exp: "<REDACTED>"
+    Refresh:    yes
+  OpenAI Codex  ✗ not logged in (run: hermes model)
+    Auth file:  /home/fausto/.hermes/auth.json
+    Error:      No Codex credentials stored. Run `hermes auth` to authenticate.
+  Qwen OAuth    ✗ not logged in (run: qwen auth qwen-oauth)
+    Auth file:  /home/fausto/.qwen/oauth_creds.json
+    Error:      Qwen CLI credentials not found. Run 'qwen auth qwen-oauth' first.
+  MiniMax OAuth  ✗ not logged in (run: hermes auth add minimax-oauth)
+  xAI OAuth     ✗ not logged in (run: hermes auth add xai-oauth)
+    Auth file:  /home/fausto/.hermes/auth.json
+    Error:      No xAI OAuth credentials stored. Select xAI Grok OAuth (SuperGrok / Premium+) in `hermes model`.
+
+◆ Nous Tool Gateway
+  Nous Portal   ✓ managed tools available
+  Web tools       ✓ active via Nous subscription
+  Image generation ✓ active via Nous subscription
+  Video generation ✓ not configured
+  OpenAI TTS      ✓ active via Nous subscription
+  Speech-to-text  ✓ active via Nous subscription
+  Browser automation ✓ active via Nous subscription
+  Modal execution ✓ active via local
+
+◆ API-Key Providers
+  Z.AI / GLM       ✗ not configured (run: hermes model)
+  Kimi / Moonshot  ✗ not configured (run: hermes model)
+  StepFun Step Plan ✗ not configured (run: hermes model)
+  MiniMax          ✗ not configured (run: hermes model)
+  MiniMax (China)  ✗ not configured (run: hermes model)
+
+◆ Terminal Backend
+  Backend:      local
+  Sudo:         ✗ disabled
+
+◆ Messaging Platforms
+  Telegram      ✓ configured
+  Discord       ✗ not configured
+  WhatsApp      ✗ not configured
+  Signal        ✗ not configured
+  Slack         ✗ not configured
+  Email         ✗ not configured
+  SMS           ✗ not configured
+  DingTalk      ✗ not configured
+  Feishu        ✗ not configured
+  WeCom         ✗ not configured
+  WeCom Callback  ✗ not configured
+  Weixin        ✗ not configured
+  BlueBubbles   ✗ not configured
+  QQBot         ✗ not configured
+  Yuanbao       ✗ not configured
+
+◆ Gateway Service
+  Status:       ✓ running
+  Manager:      systemd (user)
+  PID(s):       729
+
+◆ Scheduled Jobs
+  Jobs:         17 active, 17 total
+
+◆ Sessions
+  Active:       14 session(s)
+
+────────────────────────────────────────────────────────────
+  Run 'hermes doctor' for detailed diagnostics
+  Run 'hermes setup' to configure
+
+
+
+STDERR:
+

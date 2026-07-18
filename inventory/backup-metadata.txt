@@ -1,0 +1,4 @@
+Created: 2026-07-18T11:16:18.692598+00:00
+Source: /home/fausto/.hermes
+Obsidian vault: /home/fausto/Documents/Obsidian Vault
+Repo: /home/fausto/Backups/hermes-config

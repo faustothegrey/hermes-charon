@@ -1,0 +1,115 @@
+{
+  "updated_at": "2026-07-18T13:12:38.051047",
+  "platforms": {
+    "telegram": [
+      {
+        "id": "8508115936",
+        "name": "Fausto Lelli",
+        "type": "dm",
+        "thread_id": null
+      }
+    ],
+    "discord": [],
+    "whatsapp": [],
+    "whatsapp_cloud": [],
+    "slack": [],
+    "signal": [],
+    "mattermost": [],
+    "matrix": [],
+    "homeassistant": [],
+    "email": [],
+    "sms": [],
+    "dingtalk": [],
+    "msgraph_webhook": [],
+    "feishu": [],
+    "wecom": [],
+    "wecom_callback": [],
+    "weixin": [],
+    "bluebubbles": [],
+    "qqbot": [],
+    "yuanbao": [],
+    "relay": [],
+    "hmp": [
+      {
+        "id": "peer106",
+        "name": "peer106",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "peer106_probe",
+        "name": "peer106_probe",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "peer105",
+        "name": "peer105",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "peer84",
+        "name": "peer84",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "peer70",
+        "name": "peer70",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "peer128",
+        "name": "peer128",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "trixie",
+        "name": "trixie",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "trixie_test",
+        "name": "trixie_test",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "watchdog",
+        "name": "watchdog",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "test_producer",
+        "name": "test_producer",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "test",
+        "name": "test",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "peer58",
+        "name": "peer58",
+        "type": "dm",
+        "thread_id": null
+      }
+    ],
+    "google_chat": [],
+    "irc": [],
+    "line": [],
+    "ntfy": [],
+    "photon": [],
+    "raft": [],
+    "simplex": [],
+    "teams": []
+  }
+}

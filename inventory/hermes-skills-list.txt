@@ -1,0 +1,97 @@
+$ hermes skills list
+exit=0
+
+STDOUT:
+                                Installed Skills                                
+┏━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┓
+┃ Name                    ┃ Category             ┃ Source  ┃ Trust   ┃ Status  ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━┩
+│ computer-use            │                      │ builtin │ builtin │ enabled │
+│ dogfood                 │                      │ builtin │ builtin │ enabled │
+│ yuanbao                 │                      │ builtin │ builtin │ enabled │
+│ claude-code             │ autonomous-ai-agents │ builtin │ builtin │ enabled │
+│ codex                   │ autonomous-ai-agents │ builtin │ builtin │ enabled │
+│ hermes-agent            │ autonomous-ai-agents │ builtin │ builtin │ enabled │
+│ multi-agent-mesh        │ autonomous-ai-agents │ local   │ local   │ enabled │
+│ opencode                │ autonomous-ai-agents │ builtin │ builtin │ enabled │
+│ architecture-diagram    │ creative             │ builtin │ builtin │ enabled │
+│ ascii-art               │ creative             │ builtin │ builtin │ enabled │
+│ ascii-video             │ creative             │ builtin │ builtin │ enabled │
+│ baoyu-infographic       │ creative             │ builtin │ builtin │ enabled │
+│ claude-design           │ creative             │ builtin │ builtin │ enabled │
+│ comfyui                 │ creative             │ builtin │ builtin │ enabled │
+│ design-md               │ creative             │ builtin │ builtin │ enabled │
+│ excalidraw              │ creative             │ builtin │ builtin │ enabled │
+│ humanizer               │ creative             │ builtin │ builtin │ enabled │
+│ manim-video             │ creative             │ builtin │ builtin │ enabled │
+│ p5js                    │ creative             │ builtin │ builtin │ enabled │
+│ popular-web-designs     │ creative             │ builtin │ builtin │ enabled │
+│ pretext                 │ creative             │ builtin │ builtin │ enabled │
+│ sketch                  │ creative             │ builtin │ builtin │ enabled │
+│ songwriting-and-ai-mus… │ creative             │ builtin │ builtin │ enabled │
+│ touchdesigner-mcp       │ creative             │ builtin │ builtin │ enabled │
+│ jupyter-live-kernel     │ data-science         │ builtin │ builtin │ enabled │
+│ himalaya                │ email                │ builtin │ builtin │ enabled │
+│ codebase-inspection     │ github               │ builtin │ builtin │ enabled │
+│ github-auth             │ github               │ builtin │ builtin │ enabled │
+│ github-code-review      │ github               │ builtin │ builtin │ enabled │
+│ github-issues           │ github               │ builtin │ builtin │ enabled │
+│ github-pr-workflow      │ github               │ builtin │ builtin │ enabled │
+│ github-repo-management  │ github               │ builtin │ builtin │ enabled │
+│ daily-exchange          │ hermes               │ local   │ local   │ enabled │
+│ hermes-memory-manageme… │ hermes               │ local   │ local   │ enabled │
+│ hmp-talkshow            │ hermes               │ local   │ local   │ enabled │
+│ gif-search              │ media                │ builtin │ builtin │ enabled │
+│ heartmula               │ media                │ builtin │ builtin │ enabled │
+│ songsee                 │ media                │ builtin │ builtin │ enabled │
+│ youtube-content         │ media                │ builtin │ builtin │ enabled │
+│ audiocraft-audio-gener… │ mlops                │ builtin │ builtin │ enabled │
+│ evaluating-llms-harness │ mlops                │ builtin │ builtin │ enabled │
+│ huggingface-hub         │ mlops                │ builtin │ builtin │ enabled │
+│ llama-cpp               │ mlops                │ builtin │ builtin │ enabled │
+│ segment-anything-model  │ mlops                │ builtin │ builtin │ enabled │
+│ serving-llms-vllm       │ mlops                │ builtin │ builtin │ enabled │
+│ weights-and-biases      │ mlops                │ builtin │ builtin │ enabled │
+│ obsidian                │ note-taking          │ builtin │ builtin │ enabled │
+│ airtable                │ productivity         │ builtin │ builtin │ enabled │
+│ google-workspace        │ productivity         │ builtin │ builtin │ enabled │
+│ maps                    │ productivity         │ builtin │ builtin │ enabled │
+│ nano-pdf                │ productivity         │ builtin │ builtin │ enabled │
+│ network-orchestrator    │ productivity         │ local   │ local   │ enabled │
+│ notion                  │ productivity         │ builtin │ builtin │ enabled │
+│ ocr-and-documents       │ productivity         │ builtin │ builtin │ enabled │
+│ petdex                  │ productivity         │ builtin │ builtin │ enabled │
+│ powerpoint              │ productivity         │ builtin │ builtin │ enabled │
+│ teams-meeting-pipeline  │ productivity         │ builtin │ builtin │ enabled │
+│ arxiv                   │ research             │ builtin │ builtin │ enabled │
+│ blogwatcher             │ research             │ builtin │ builtin │ enabled │
+│ llm-wiki                │ research             │ builtin │ builtin │ enabled │
+│ polymarket              │ research             │ builtin │ builtin │ enabled │
+│ research-paper-writing  │ research             │ builtin │ builtin │ enabled │
+│ openhue                 │ smart-home           │ builtin │ builtin │ enabled │
+│ xurl                    │ social-media         │ builtin │ builtin │ enabled │
+│ hermes-agent-skill-aut… │ software-development │ builtin │ builtin │ enabled │
+│ hermes-daily-exchange   │ software-development │ local   │ local   │ enabled │
+│ hermes-hmp              │ software-development │ local   │ local   │ enabled │
+│ node-inspect-debugger   │ software-development │ builtin │ builtin │ enabled │
+│ plan                    │ software-development │ builtin │ builtin │ enabled │
+│ python-debugpy          │ software-development │ builtin │ builtin │ enabled │
+│ requesting-code-review  │ software-development │ builtin │ builtin │ enabled │
+│ simplify-code           │ software-development │ builtin │ builtin │ enabled │
+│ spike                   │ software-development │ builtin │ builtin │ enabled │
+│ systematic-debugging    │ software-development │ builtin │ builtin │ enabled │
+│ test-driven-development │ software-development │ builtin │ builtin │ enabled │
+│ tts-cast                │ software-development │ local   │ local   │ enabled │
+│ cron-operations         │ sysadmin             │ local   │ local   │ enabled │
+│ fritzbox                │ sysadmin             │ local   │ local   │ enabled │
+│ hermes-backup           │ sysadmin             │ local   │ local   │ enabled │
+│ lan-peer-monitor        │ sysadmin             │ local   │ local   │ enabled │
+│ peer-automation         │ sysadmin             │ local   │ local   │ enabled │
+│ raspberry-pi            │ sysadmin             │ local   │ local   │ enabled │
+└─────────────────────────┴──────────────────────┴─────────┴─────────┴─────────┘
+0 hub-installed, 68 builtin, 14 local — 82 enabled, 0 disabled
+
+
+
+STDERR:
+

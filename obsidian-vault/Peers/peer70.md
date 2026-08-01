@@ -4,6 +4,8 @@ host: 192.168.178.70
 model: Raspberry Pi 4 Model B Rev 1.1
 os: Linux (5.15.61-v8+) aarch64
 role: Orchestratore, Registry, Coordinatore Exchange
+hostname: Charon
+mDNS: charon.local
 plugin_version: 0.1.2
 ---
 

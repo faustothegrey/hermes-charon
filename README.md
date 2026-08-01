@@ -13,6 +13,7 @@ This repository backs up the relevant configuration for the Hermes Agent install
 - `obsidian-vault/`, a copy of the local Obsidian vault
 - `inventory/` command outputs useful during restore/debugging
 - `scripts/backup-hermes.sh`, `scripts/generate-backup.py`, and `scripts/restore-hermes.sh`
+- `scripts/hermes/` user scripts (netboard, overlay, queue, messaggi)
 - `secrets/*.enc`, encrypted secret/state bundle
 
 ## What is not committed in plaintext

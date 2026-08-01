@@ -18,7 +18,8 @@ Il progetto è stato approvato all'unanimità da tutti i peer (GO da peer105, 10
          ├── peer84  → ssh + daily-digest.sh → SCP file a peer70
          ├── peer105 → ssh + daily-digest.sh → SCP file a peer70
          ├── peer106 → ssh + daily-digest.sh → SCP file a peer70
-         └── peer128 → ssh + daily-digest.sh → SCP file a peer70
+         ├── peer128 → ssh + daily-digest.sh → SCP file a peer70
+         └── peer136 → ssh + daily-digest.sh → SCP file a peer70
 
 03:35  peer70 → daily-consolidate.sh
          ├── Unisce TUTTI i peer in daily/YYYY-MM-DD.md
@@ -68,6 +69,7 @@ PEERS=(
   "peer105 root@192.168.178.105  /root"
   "peer106 root@192.168.178.106  /root"
   "peer128 fausto@192.168.178.112 /Users/fausto"
+  "peer136 fausto@192.168.178.136 /home/fausto"
 )
 ```
 
@@ -122,7 +124,8 @@ SOLO genera il digest. **Non fa più SCP.** La copia a peer70 la fa
 ├── peer84/ → peer84/
 ├── peer105/ → peer105/
 ├── peer106/ → peer106/
-└── peer128/ → peer128/
+├── peer128/ → peer128/
+└── peer136/ → peer136/
 
 ~/Documents/Obsidian Vault/
 ├── Index.md                 # Home page con wiki-link
@@ -133,7 +136,8 @@ SOLO genera il digest. **Non fa più SCP.** La copia a peer70 la fa
     ├── peer84.md
     ├── peer105.md
     ├── peer106.md
-    └── peer128.md           # Ogni peer ha frontmatter + wikilink ai propri contributi
+    ├── peer128.md
+    └── peer136.md           # Ogni peer ha frontmatter + wikilink ai propri contributi
 ```
 
 ## Round live (manuale)
@@ -183,10 +187,24 @@ Il primo round di votazione (2026-07-17) ha dato 4/4 GO.
 ## Pattern: Peer lenti
 
 peer105 e peer84 impiegano 30-60s per rispondere anche a messaggi semplici.
-peer106 risponde in 10-20s. peer128 risponde in 5-10s.
+peer106 risponde in 10-20s. peer128 risponde in 5-10s. peer136 (pi.dev) risponde in ~18s.
 
 Per messaggi lunghi/complessi, peer105/106/84 possono impiegare 2-3 minuti.
 Usare `max_polls=60` e `poll_interval=5` (5 minuti totali) per non timeoutare.
+
+## Partecipanti senza Hermes Agent (peer136 / pi.dev)
+
+peer136 (Trixie) ha **pi.dev** con LLM ma **non** Hermes Agent. Non ha `daily-publish.sh`, `state.db`, o la struttura `~/.hermes/skills/`. La partecipazione al Daily Exchange avviene via **HMP**:
+
+1. peer70 contatta peer136 via SSH per lanciare `daily-publish.sh` (se installato) o via HMP per ricevere il digest come risposta testuale
+2. peer136 risponde con un breve digest delle esperienze del giorno (max 2048 caratteri)
+3. peer70 salva la risposta HMP come file `~/.hermes/exchange/peer136/YYYY-MM-DD.md` per il consolidate
+
+**Per aggiungere un nuovo peer non-Hermes:**
+1. Inviare un messaggio HMP con la proposta di partecipazione
+2. Se accetta, aggiungerlo alla PEERS list in `daily-collect.sh` con SSH info
+3. Aggiornare questo skill (directory, PEERS list, peer table)
+4. Verificare che abbia `daily-publish.sh` o, in alternativa, raccogliere il digest via HMP
 
 ## Roadmap
 

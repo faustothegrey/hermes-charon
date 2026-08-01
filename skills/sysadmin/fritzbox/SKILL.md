@@ -89,13 +89,59 @@ fc.call_action(\"WANIPConn1\", \"AddPortMapping\", ...)
 
 Error 606 is **not a library bug** — it's a FritzBox security restriction. On the FritzBox 7490 with Fritz!OS 07.62, delete works but add returns 606 regardless of credentials.
 
-### Solving Error 606
+### Port 2222 Bug (FritzBox 7490)
 
-**Option A: Enable UPnP writes in the web UI**
+On the FritzBox 7490 (Fritz!OS 07.62), `AddPortMapping` with `NewExternalPort=2222` is **silently interpreted as 22** by the router. The rule is created with external port 22 instead of 2222, regardless of whether the value is passed as int (2222) or string ("2222"). Other ports like 4433, 8080, and 51413 work correctly.
+
+**Workaround:** Use a different external port (e.g., 4433) and configure the internal service to listen on that port instead.
+
+### Correct upnpc Delete Syntax
+
+```bash
+# ❌ WRONG — returns 0 but does NOT delete the rule
+upnpc -d 22 TCP
+
+# ✅ CORRECT — must include empty remote host parameter
+upnpc -d 22 TCP ""
+```
+
+Without the trailing `""` (empty remote host), miniupnpc 2.2.1 returns `UPNP_DeletePortMapping() returned : 0` but the rule remains. Adding `""` makes the actual delete call with a proper empty RemoteHost argument.
+
+### Local Firewall Requirement
+
+Even when the FritzBox forwards ports correctly, the **target machine's local firewall** may block the traffic. On this RPi (peer70), `iptables` has `INPUT policy DROP` and only accepts traffic from `192.168.178.0/24`. Traffic arriving via port forwarding has a WAN source IP and gets dropped.
+
+```bash
+# Allow port forwarding traffic on specific ports
+sudo iptables -A INPUT -p tcp --dport 2222 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 4433 -j ACCEPT
+
+# Make persistent (Debian/RPi)
+sudo apt-get install iptables-persistent
+sudo netfilter-persistent save
+```
+
+Check the firewall status first:
+```bash
+sudo iptables -L INPUT -n -v
+# Look for policy DROP and per-port ACCEPT rules
+```
+
+### Port 2222 Bug (FritzBox 7490)
+
+On the FritzBox 7490 (Fritz!OS 07.62), `AddPortMapping` with `NewExternalPort=2222` is **silently interpreted as 22** by the router. The rule is created with external port 22 instead of 2222, regardless of whether the value is passed as int (2222) or string ("2222"). Other ports like 4433, 8080, and 51413 work correctly.
+
+**Workaround:** Use a different external port (e.g., 4433) and configure the internal service to listen on that port instead.
+
+### Correct upnpc Delete Syntax
+
+**Option A: Enable UPnP writes in the web UI** (confirmed working on Fritz!OS 07.62/7490)
 1. Open `http://fritz.box`
 2. **System → Network → Network Settings**
 3. Under "Access via UPnP", check **"Allow changes to settings via UPnP"**
 4. Apply. Now `upnpc -a` and TR-064 `AddPortMapping` should work.
+
+**Note from peer70 (2026-07-18):** On this particular FritzBox, AddPortMapping worked even without UPnP writes explicitly enabled via the web UI. The `fritzbox-portmgr.py` script successfully added and removed port forwarding rules using only `FRITZ_USER=fausto` (no password set in env). The delete operation also worked. This may be Fritz!OS version specific or an existing session allowed writes.
 
 **Option B: Web Form API (data.lua)**
 ```python

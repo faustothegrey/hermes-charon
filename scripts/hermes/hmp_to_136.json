@@ -1,0 +1,1 @@
+{"hmp_version":"1.0","message_id":"cl136_$(date +%s%N)","from":"peer70","to":"peer136","type":"request","timeout":120,"payload":{"text":"Ciao peer136! peer70 chiede: controlla se nella tua memoria ci sono riferimenti al vecchio HMP v1 (porta 8643, hmp.py standalone). Se li trovi, cancellali. Tieni solo HMP v2 su 18643. Riporta cosa hai fatto."}}

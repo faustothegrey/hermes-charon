@@ -7,167 +7,263 @@ STDOUT:
 │                         Scheduled Jobs                                  │
 └─────────────────────────────────────────────────────────────────────────┘
 
-  d5a456f87332 [active]
-    Name:      Peer Network Health Monitor
-    Schedule:  every 60m
-    Repeat:    ∞
-    Next run:  2026-07-18T13:46:19.691104+02:00
-    Deliver:   local
-    Script:    peer-health.py
-    Last run:  2026-07-18T12:46:19.691104+02:00  ok
-
-  2ac6eca0e9fa [active]
-    Name:      guardiano-peer70 watchdog
-    Schedule:  every 1m
-    Repeat:    ∞
-    Next run:  2026-07-18T13:17:10.462789+02:00
-    Deliver:   local
-    Last run:  2026-07-18T13:16:10.462789+02:00  ok
-
   6496387a3863 [active]
     Name:      backup-monitor
     Schedule:  every 30m
     Repeat:    ∞
-    Next run:  2026-07-18T13:17:34.818245+02:00
+    Next run:  2026-08-01T16:49:07.936503+02:00
     Deliver:   local
     Script:    backup_monitor.py
-    Last run:  2026-07-18T12:47:34.818245+02:00  error: RuntimeError: Connection error.
-
-  a92f69092c39 [active]
-    Name:      peer105 heartbeat
-    Schedule:  every 60m
-    Repeat:    ∞
-    Next run:  2026-07-18T13:41:33.707656+02:00
-    Deliver:   local
-    Script:    peer105-heartbeat.py
-    Mode:      no-agent (script stdout delivered directly)
-    Last run:  2026-07-18T12:41:33.707656+02:00  ok
-
-  13fb62c23bc5 [active]
-    Name:      peer106 heartbeat
-    Schedule:  every 60m
-    Repeat:    ∞
-    Next run:  2026-07-18T13:41:33.572890+02:00
-    Deliver:   local
-    Script:    peer106-heartbeat.py
-    Mode:      no-agent (script stdout delivered directly)
-    Last run:  2026-07-18T12:41:33.572890+02:00  ok
-
-  49a77a64784c [active]
-    Name:      peer128 keepalive
-    Schedule:  every 2m
-    Repeat:    ∞
-    Next run:  2026-07-18T13:16:43.046976+02:00
-    Deliver:   local
-    Script:    peer128-keepalive.py
-    Mode:      no-agent (script stdout delivered directly)
-    Last run:  2026-07-18T13:14:43.046976+02:00  error: Script not found: /home/fausto/.hermes/scripts/peer128-keepalive.py
+    Last run:  2026-08-01T16:19:07.936503+02:00  ok
 
   01602cb5c3ba [active]
     Name:      Peer105+106 Research Queue
     Schedule:  0 0,7,10,20,22 * * *
     Repeat:    ∞
-    Next run:  2026-07-18T20:00:00+02:00
+    Next run:  2026-08-01T20:00:00+02:00
     Deliver:   local
     Script:    research_queue.py
-    Last run:  2026-07-18T11:43:46.770310+02:00  ok
+    Last run:  2026-08-01T10:01:19.964442+02:00  ok
 
   c3a2cbbdf963 [active]
     Name:      Quest Advancement (round-robin)
     Schedule:  0 */4 * * *
     Repeat:    ∞
-    Next run:  2026-07-18T16:00:00+02:00
+    Next run:  2026-08-01T20:00:00+02:00
     Deliver:   local
     Script:    quest_advance.py
-    Last run:  2026-07-18T12:13:27.685760+02:00  ok
+    Last run:  2026-08-01T16:05:03.938644+02:00  ok
 
   c3d45d4e8163 [active]
     Name:      Weekly Peer Exchange (Friday)
     Schedule:  0 10 * * 5
     Repeat:    ∞
-    Next run:  2026-07-24T10:00:00+02:00
+    Next run:  2026-08-07T10:00:00+02:00
     Deliver:   local
-    Last run:  2026-07-17T10:13:54.854404+02:00  ok
-
-  b4f0dc468b92 [active]
-    Name:      Load Monitor
-    Schedule:  every 5m
-    Repeat:    ∞
-    Next run:  2026-07-18T13:18:43.108556+02:00
-    Deliver:   local
-    Script:    load-monitor.sh
-    Mode:      no-agent (script stdout delivered directly)
-    Last run:  2026-07-18T13:13:43.108556+02:00  ok
+    Last run:  2026-07-31T10:10:10.734000+02:00  ok
 
   cebd0d8bd258 [active]
     Name:      daily-exchange-consolidate
     Schedule:  35 3 * * *
     Repeat:    ∞
-    Next run:  2026-07-19T03:35:00+02:00
+    Next run:  2026-08-02T03:35:00+02:00
     Deliver:   local
     Script:    daily-consolidate.sh
     Mode:      no-agent (script stdout delivered directly)
-    Last run:  2026-07-18T11:42:17.603701+02:00  ok
+    Last run:  2026-08-01T03:35:17.511377+02:00  ok
 
   34c92c320db0 [active]
     Name:      daily-exchange-collect
     Schedule:  30 3 * * *
     Repeat:    ∞
-    Next run:  2026-07-19T03:30:00+02:00
+    Next run:  2026-08-02T03:30:00+02:00
     Deliver:   local
     Script:    daily-collect.sh
     Mode:      no-agent (script stdout delivered directly)
-    Last run:  2026-07-18T12:01:51.897837+02:00  ok
+    Last run:  2026-08-01T03:30:30.826107+02:00  ok
 
   77d545825817 [active]
     Name:      lan-monitor
     Schedule:  every 10m
     Repeat:    ∞
-    Next run:  2026-07-18T13:18:59.204590+02:00
+    Next run:  2026-08-01T16:36:10.944704+02:00
     Deliver:   local
     Script:    lan-monitor.py
     Mode:      no-agent (script stdout delivered directly)
-    Last run:  2026-07-18T13:08:59.204590+02:00  ok
+    Last run:  2026-08-01T16:26:10.944704+02:00  ok
 
   c475e20ca37b [active]
     Name:      peer70-watchdog
     Schedule:  every 5m
     Repeat:    ∞
-    Next run:  2026-07-18T13:20:46.277763+02:00
+    Next run:  2026-08-01T16:31:58.373959+02:00
     Deliver:   local
     Script:    peer70-watchdog.sh
     Mode:      no-agent (script stdout delivered directly)
-    Last run:  2026-07-18T13:15:46.277763+02:00  ok
+    Last run:  2026-08-01T16:26:58.373959+02:00  ok
 
   55f2a9fc4e49 [active]
     Name:      peer-health-watch
     Schedule:  every 5m
     Repeat:    ∞
-    Next run:  2026-07-18T13:20:45.453920+02:00
+    Next run:  2026-08-01T16:29:05.007343+02:00
     Deliver:   local
     Script:    peer-health-watch.py
     Mode:      no-agent (script stdout delivered directly)
-    Last run:  2026-07-18T13:15:45.453920+02:00  ok
+    Last run:  2026-08-01T16:24:05.007343+02:00  ok
 
   8157a25acbd2 [active]
     Name:      HMP Watchdog — alert messaggi bloccati
     Schedule:  every 3m
     Repeat:    ∞
-    Next run:  2026-07-18T13:18:44.331035+02:00
+    Next run:  2026-08-01T16:31:07.756206+02:00
     Deliver:   local
     Script:    hmp-watchdog.sh
     Mode:      no-agent (script stdout delivered directly)
-    Last run:  2026-07-18T13:15:44.331035+02:00  ok
+    Last run:  2026-08-01T16:28:07.756206+02:00  ok
 
-  4c7463714184 [active]
-    Name:      HMP Healthcheck orario
+  5847db0f5cb7 [active]
+    Name:      Nightly Hermes configuration backup (peer70)
+    Schedule:  0 23 * * *
+    Repeat:    ∞
+    Next run:  2026-08-01T23:00:00+02:00
+    Deliver:   local
+    Script:    hermes-config-backup-nightly.sh
+    Mode:      no-agent (script stdout delivered directly)
+    Last run:  2026-07-31T23:02:27.727713+02:00  error: Script timed out after 120s: /home/fausto/.hermes/scripts/hermes-config-backup-nightly.sh
+
+  3ac4bbef740c [active]
+    Name:      HMP ping round (cluster health)
+    Schedule:  every 10m
+    Repeat:    ∞
+    Next run:  2026-08-01T16:29:18.570469+02:00
+    Deliver:   local
+    Script:    hmp-ping-round.py
+    Mode:      no-agent (script stdout delivered directly)
+    Last run:  2026-08-01T16:19:18.570469+02:00  error: Script exited with code 1
+stdout:
+[2026-08-01T14:18:53.945222+00:00] HMP ping round — 6 peers
+  → peer84 (192.168.178.84:18643)... ❌  curl exit 7
+  → peer105 (192.168.178.105:18643)... ❌  curl exit 7
+  → peer106 (192.168.178.106:18643)... ✅ 55.9ms
+  → peer128 (192.168.178.112:18643)... ❌  curl exit 7
+  → peer58 (192.168.178.58:18643)... ✅ 61.8ms
+✅ HMP ping round completato: 3/6 peers raggiungibili
+
+  3051b1b94cc6 [active]
+    Name:      peer-queue-delivery
+    Schedule:  every 2m
+    Repeat:    ∞
+    Next run:  2026-08-01T16:28:55.808172+02:00
+    Deliver:   local
+    Script:    peer_queue.py deliver
+    Mode:      no-agent (script stdout delivered directly)
+    Last run:  2026-08-01T16:26:55.808172+02:00  error: Script not found: /home/fausto/.hermes/scripts/peer_queue.py deliver
+
+  9eb430f89411 [active]
+    Name:      dsi-error-watchdog
+    Schedule:  every 5m
+    Repeat:    ∞
+    Next run:  2026-08-01T16:31:56.271143+02:00
+    Deliver:   local
+    Script:    dsi_watchdog.py
+    Mode:      no-agent (script stdout delivered directly)
+    Last run:  2026-08-01T16:26:56.271143+02:00  ok
+
+  bcfea356d6f0 [active]
+    Name:      HMP healthcheck orario
     Schedule:  0 * * * *
     Repeat:    ∞
-    Next run:  2026-07-18T14:00:00+02:00
+    Next run:  2026-08-01T17:00:00+02:00
     Deliver:   origin
     Script:    hmp-healthcheck-ping.py
     Mode:      no-agent (script stdout delivered directly)
-    Last run:  2026-07-18T13:00:47.167133+02:00  ok
+    Last run:  2026-08-01T16:01:04.218551+02:00  ok
+
+  c45571f5ae1c [active]
+    Name:      syswatch
+    Schedule:  every 5m
+    Repeat:    ∞
+    Next run:  2026-08-01T16:33:07.399696+02:00
+    Deliver:   local
+    Script:    syswatch.py
+    Mode:      no-agent (script stdout delivered directly)
+    Last run:  2026-08-01T16:28:07.399696+02:00  ok
+
+  8a42c49df41d [active]
+    Name:      syswatch-alert
+    Schedule:  every 60m
+    Repeat:    ∞
+    Next run:  2026-08-01T16:40:42.494738+02:00
+    Deliver:   origin
+    Script:    syswatch-alert.py
+    Mode:      no-agent (script stdout delivered directly)
+    Last run:  2026-08-01T15:40:42.494738+02:00  error: Script exited with code 1
+stderr:
+Traceback (most recent call last):
+  File "/home/fausto/.hermes/scripts/syswatch-alert.py", line 27, in <module>
+    active_alerts = [a for a in recent if now - _parse_ts(a.get("timestamp","")) < 3600]
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fausto/.hermes/scripts/syswatch-alert.py", line 27, in <listcomp>
+    active_alerts = [a for a in recent if now - _parse_ts(a.get("timestamp","")) < 3600]
+                                                ^^^^^^^^^
+NameError: name '_parse_ts' is not defined
+
+  7877ede4fb15 [active]
+    Name:      reuse-analyzer-periodic
+    Schedule:  every 30m
+    Repeat:    ∞
+    Next run:  2026-08-01T16:49:54.000347+02:00
+    Deliver:   local
+    Script:    skills/hermes/capability-reuse/scripts/batch-reuse-analyzer.py
+    Mode:      no-agent (script stdout delivered directly)
+    Last run:  2026-08-01T16:19:54.000347+02:00  error: Script not found: /home/fausto/.hermes/scripts/skills/hermes/capability-reuse/scripts/batch-reuse-analyzer.py
+
+  eb6cf4376805 [active]
+    Name:      reuse-aggregate
+    Schedule:  every 30m
+    Repeat:    ∞
+    Next run:  2026-08-01T16:51:54.851768+02:00
+    Deliver:   local
+    Script:    quick-aggregate.py
+    Mode:      no-agent (script stdout delivered directly)
+    Last run:  2026-08-01T16:21:54.851768+02:00  ok
+
+  15d7c9b26db5 [active]
+    Name:      batch-reuse-analyzer
+    Schedule:  every 30m
+    Repeat:    ∞
+    Next run:  2026-08-01T16:39:52.247083+02:00
+    Deliver:   local
+    Script:    batch-reuse-analyzer.py
+    Mode:      no-agent (script stdout delivered directly)
+    Last run:  2026-08-01T16:09:52.247083+02:00  ok
+
+  8dda550a0b46 [active]
+    Name:      fix-capreuse-all
+    Schedule:  every 5m
+    Repeat:    ∞
+    Next run:  2026-08-01T16:30:55.904217+02:00
+    Deliver:   local
+    Script:    fix-capreuse-all.py
+    Mode:      no-agent (script stdout delivered directly)
+    Last run:  2026-08-01T16:25:55.904217+02:00  ok
+
+  d558e1479489 [active]
+    Name:      deploy-capreuse-v240-peer70
+    Schedule:  every 5m
+    Repeat:    ∞
+    Next run:  2026-08-01T16:29:55.792781+02:00
+    Deliver:   local
+    Script:    deploy-capreuse-v240-peer70.py
+    Mode:      no-agent (script stdout delivered directly)
+    Last run:  2026-08-01T16:24:55.792781+02:00  ok
+
+  20ed1557cd17 [active]
+    Name:      Esegui: kill -9 $(ps aux | grep 'hermes_cli.main g
+    Schedule:  once at 2026-07-30 18:00
+    Repeat:    0/1
+    Next run:  None
+    Deliver:   local
+
+  7e40c2d97199 [active]
+    Name:      session-watchdog-70pct
+    Schedule:  every 30m
+    Repeat:    ∞
+    Next run:  2026-08-01T16:46:53.921120+02:00
+    Deliver:   origin
+    Script:    session_watchdog.py
+    Mode:      no-agent (script stdout delivered directly)
+    Last run:  2026-08-01T16:16:53.921120+02:00  ok
+
+  1813aa7164e5 [active]
+    Name:      undervoltage-watchdog
+    Schedule:  every 15m
+    Repeat:    ∞
+    Next run:  2026-08-01T16:38:51.007729+02:00
+    Deliver:   origin
+    Script:    undervoltage_watchdog.py
+    Mode:      no-agent (script stdout delivered directly)
 
 
 

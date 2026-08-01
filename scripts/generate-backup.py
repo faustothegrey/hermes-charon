@@ -434,7 +434,7 @@ def main() -> None:
     # Secrets manifest (lists what SHOULD be encrypted, doesn't store plaintext)
     secrets = REPO_DIR / "secrets"
     secrets.mkdir(parents=True, exist_ok=True)
-    secret_candidates = [".env", "auth.json", "google_token.json", "google_client_secret.json", "gateway_state.json", "pairing", "state.db"]
+    secret_candidates = [".env", "auth.json", "google_token.json", "google_client_secret.json", "gateway_state.json", "pairing"]
     manifest = []
     for rel in secret_candidates:
         src = HERMES_HOME / rel

@@ -1,0 +1,13 @@
+{
+  "home": "/root",
+  "python": "3.13.5",
+  "platform": "Linux-6.18.34+rpt-rpi-v8-aarch64-with-glibc2.41",
+  "skill_exists": true,
+  "plugin_exists": true,
+  "registry_exists": true,
+  "skill_version": "2.1.0",
+  "plugin_version": "2.1.0",
+  "skill_sha256_tree": "aec40dda17599635384db53ce0641047691b5c7789b8c54576bec0de84a61a38",
+  "plugin_sha256_tree": "ee7f5cb4c4af166edfc5ae69b85f57038932d200e99f51807de84dab63932606",
+  "registry_sha256_tree": "2c759444692c696b7151c91878f581f5e6223087e3666c232f70d7460e65a1fa"
+}

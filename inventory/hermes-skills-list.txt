@@ -38,8 +38,10 @@ STDOUT:
 │ github-issues           │ github               │ builtin │ builtin │ enabled │
 │ github-pr-workflow      │ github               │ builtin │ builtin │ enabled │
 │ github-repo-management  │ github               │ builtin │ builtin │ enabled │
+│ capability-reuse        │ hermes               │ local   │ local   │ enabled │
 │ daily-exchange          │ hermes               │ local   │ local   │ enabled │
 │ hermes-memory-manageme… │ hermes               │ local   │ local   │ enabled │
+│ hermes-session-lifecyc… │ hermes               │ local   │ local   │ enabled │
 │ hmp-talkshow            │ hermes               │ local   │ local   │ enabled │
 │ gif-search              │ media                │ builtin │ builtin │ enabled │
 │ heartmula               │ media                │ builtin │ builtin │ enabled │
@@ -88,8 +90,9 @@ STDOUT:
 │ lan-peer-monitor        │ sysadmin             │ local   │ local   │ enabled │
 │ peer-automation         │ sysadmin             │ local   │ local   │ enabled │
 │ raspberry-pi            │ sysadmin             │ local   │ local   │ enabled │
+│ wireguard-vpn           │ sysadmin             │ local   │ local   │ enabled │
 └─────────────────────────┴──────────────────────┴─────────┴─────────┴─────────┘
-0 hub-installed, 68 builtin, 14 local — 82 enabled, 0 disabled
+0 hub-installed, 68 builtin, 17 local — 85 enabled, 0 disabled
 
 
 

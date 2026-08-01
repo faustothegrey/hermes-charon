@@ -1,9 +1,21 @@
-Trixie nickname = peer106 (ARMv8 Fedora 30, web research). HMP v0.1.3, IP .106, HMP :18643, systemd --user.
+Obsidian vault: /home/fausto/Documents/Obsidian Vault/. Progetti/Hermes/ per note tecniche.
 §
-peer58 = 192.168.178.58, HMP :18643, hmp v0.1.3. Si è registrato online in sessione corrente.
+Esecuzione immediata — non descrivere. Ripetizione 2x = esegui. HMP > API > SSH.
 §
-peer58 (192.168.178.58) — nuovo nodo HMP, plugin v0.1.3 su porta 18643. Contattato via HMP il 17/07/2026. Ha ricevuto cluster info e salvato in memoria.
+Fausto: netta separazione tooling vs gate. peer106 implementatore Capability Reuse v1.6. Live-shadow authorized (no Phase 1B). peer136 escluso.
 §
-Raspberry Pi display DSI (800×480) — schermo nero dopo aver impostato display_lcd_rotate=2 in /boot/config.txt. Causa: incompatibilità col driver vc4-kms-v3d (KMS). Soluzione: commentare display_lcd_rotate=2 nel config.txt e riavviare. Per rotazione alternativa funzionante con KMS, usare video=DSI-1:800x480@60,rotate=180 in /boot/cmdline.txt.
+Fausto: harness-first, stable-operation-first, soft mode. "E poi?"=azione. "Basta X"=stop. peer136 escluso. peer105 offline. peer84 solo dopo 17:00. Phase 0 tooling 7/7 ok. Live-shadow authorized.
 §
-Holographic memory provider attivo: SQLite locale, zero costi, trust scoring, fact_store tool disponibile. USER.md consolidato a 945/1,375 chars (68%).
+Fausto: minimal tool calls, risposte concise, OK diretto se registry invariato, usa contesto già disponibile. Registry HMP: ~/.hermes/registry/registry.json. Sync: "registry sync?" → JSON compatto se cambiato, OK se no; niente patch heartbeat artificiali (i peer aggiornano last_seen da soli). Gateway = systemd user hermes-gateway.service.
+§
+HMP :18643 delivery between peer70 and peers often gets stuck delivering. Dual-plane :18644 reliable. Use dual-plane per messaggi importanti. peer105 offline fino a nuovo avviso. peer84 cooling 11-17 (calore fisico).
+§
+Skill v2.4.6, live-shadow attivo
+§
+Gateway restart peer70: solo cron one-shot deliver=local (kill -9 e SSH esterno bloccati dal safety scanner). Peer remoti: SSH kill -9 OK. Dopo restart riavviare dual-plane :18644.
+§
+Session-size: compressione auto 50% OK (auxiliary rimosso→auto=nous). Watchdog 70% attivo: cron session-watchdog-70pct, script ~/.hermes/scripts/session_watchdog.py (last_prompt_tokens da sessions.json, deepseek-v4-flash=1M). session_reset.notify è post, no pre-warning nativo. Skill: hermes-session-lifecycle.
+§
+Email Fausto: fausto.lelli@gmail.com via Virgilio smtp.virgilio.it:465, himalaya ~/.local/bin/himalaya (fuori PATH), pass ~/.config/himalaya/virgilio.pass.
+§
+SSH peer: root/ccll4372=peer106/138; fausto/ccll4372=peer84/58 (root su peer58 fallisce).

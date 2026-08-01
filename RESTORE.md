@@ -67,6 +67,7 @@ The script restores:
 - `~/.hermes/plugins/`
 - `~/.hermes/memories/`
 - `~/.hermes/hooks/`
+- `~/.hermes/scripts/` (da `scripts/hermes/` nel repo)
 - encrypted secrets/state, if the private key works
 
 ## 4. Restore Obsidian vault

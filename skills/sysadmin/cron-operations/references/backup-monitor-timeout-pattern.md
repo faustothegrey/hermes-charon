@@ -245,9 +245,27 @@ unreachable" states have the same cause.
 | **All peers → "No route to host"** | **Routing failure on the monitoring host.** The RPi lost its default gateway or the LAN interface went down. | Check `ip route` for default gateway, `ip link` for interface state, `/sys/class/net/<iface>/carrier` for physical link. |
 | **All peers → "Connection refused"** | **Common service regression.** All peers' Hermes API servers stopped, or a firewall rule was applied fleet-wide. | Check if API server deployment changed. Check firewall rules on the RPi. |
 
-#### Real-World Example (2026-07-17)
+#### Fast-Fail vs. Slow-Fail: What "No route to host" vs. "timed out" Tells You
 
-This session's data:
+| Error type | Failure mode | Timing | Meaning |
+|---|---|---|---|
+| **"No route to host"** (Errno 113) | Fast-fail | Immediate — ICMP unreachable from the network stack | The host is at a routing layer the monitoring host cannot reach. No TCP connection attempt is made. |
+| **"timed out"** | Slow-fail | After N seconds (urllib timeout) | The host IS reachable at the network level (no ICMP rejection), but the TCP connection to port 8642 never completed within the timeout window. |
+
+**Diagnostic implication in sequential scripts:** The error type a peer
+receives depends on where it sits in the query order and how much
+timeout budget remains for later peers. This matters for interpreting
+mixed errors in the same run.
+
+| Mixed-error pattern | Likely cause | Action |
+|---|---|---|
+| **1× "No route to host" (first peer), rest "timed out"** | **Sequential timeout cascade.** The first peer fails fast (ICMP-level), leaving a full timeout budget for the remaining peers. Each subsequent peer gets the full per-peer timeout (e.g., 10s) but the *cumulative* sequential time pushes later peers toward the script's total wall timeout. The "timed out" errors on later peers could be genuine (the monitoring host had full connectivity to them during their window) OR the cumulative time consumed by earlier peers left insufficient budget for later ones. | Check whether any later peer has a genuinely different error (e.g., "No route to host" on the 4th peer after all others timed out — that IS a genuine per-peer failure since the script didn't run out of time to get an ICMP response). If all later peers are "timed out" and the script has enough total budget, check each peer individually. |
+| **"No route to host" on a later peer (not the first)** | **Genuine per-peer routing failure.** The script had budget left (it was still making connection attempts) and this peer returned ICMP unreachable. Unlike "timed out" (which could be budget depletion), a fast ICMP failure mid-sequence is a real signal. | Escalate this peer — its network stack is rejecting packets. |
+| **"timed out" on first peer, "No route to host" on rest** | **Contradictory pattern** — unlikely in sequential scripts. "timed out" requires a reachable network stack (no ICMP rejection). If the first peer was reachable at the network level but timed out (slow), the rest should also be reachable at the network level. "No route to host" on subsequent peers suggests a script-level anomaly (e.g., file descriptor exhaustion, socket pool corruption after the first timeout). | Suspect a script bug or resource leak, not peer-level issues. |
+
+#### Real-World Examples
+
+**2026-07-17 (all 4 = "timed out"):**
 ```
 peer128 — "timed out"
 peer84  — "timed out"
@@ -256,15 +274,16 @@ peer106 — "timed out"
 ```
 
 **Diagnosis: Monitoring-host-side problem** — all 4 peers return the exact
-same error. This is NOT four independent machines all failing simultaneously.
-It is the monitoring host (RPi) failing to reach any of them, likely due to:
+same error type ("timed out"). This is NOT four independent machines all
+failing simultaneously. It is the monitoring host (RPi) failing to reach
+any of them, likely due to:
 - urllib timing out at the script level (backup_monitor.py's `urlopen(timeout=10)`
   hit the network timeout on all 4 sequential calls)
 - The RPi's network interface flapping or gateway unreachable
 - The RPi running out of file descriptors or memory, causing all socket
   connections to hang
 
-**Contrast with the prior run (2026-07-11):**
+**2026-07-11 (mixed errors, only some peers down):**
 ```
 peer128 — "timed out"
 peer84  — "[Errno 113] No route to host"
@@ -273,7 +292,41 @@ peer106 — "never-ran" (reachable)
 ```
 Mixed errors → genuine per-peer failures. peer105 and peer106 were
 actually reachable. peer84 had a routing regression. peer128 timed out
-from a different subnet.
+from a different subnet. The "No route to host" on peer84 (queried second)
+confirms this was NOT a timeout cascade — the script had budget left for
+peer105 and peer106, and they succeeded.
+
+**2026-07-21 (1× "No route to host" first, then all "timed out"):**
+```
+peer128 — "[Errno 113] No route to host"  (queried FIRST — fast fail)
+peer84  — "timed out"                     (queried SECOND — slow fail)
+peer105 — "timed out"                     (queried THIRD — slow fail)
+peer106 — "timed out"                     (queried FOURTH — slow fail)
+```
+
+**Diagnosis: Sequential cascade from first-peer fast-fail.** peer128 (Mac,
+192.168.178.112) returned ICMP unreachable immediately, consuming ~0s of
+the script's budget. peer84, 105, and 106 each consumed the full 10s
+timeout sequentially (3 × 10s = 30s). The script ran within the 120s
+pre-run window, so this is NOT a timeout of the script itself — these are
+genuine connection timeouts to peers 84, 105, and 106.
+
+**Contrast with the 2026-07-17 example:** In July 17, ALL 4 were "timed
+out" — the monitoring host couldn't reach ANY peer (network-level failure).
+In this run, peer128 failed at the ICMP routing layer while the other 3
+peers failed at the TCP connection layer. This combination suggests:
+- peer128 has a routing issue specific to its host (dead NIC, disconnected
+  cable, different subnet/VLAN)
+- peers 84, 105, 106 are reachable at the network level but their port
+  8642 Hermes API isn't responding within 10s (service may be down,
+  overloaded, or hanging)
+- The monitoring host's own network IS working (it's successfully reaching
+  some peers' network stacks for the TCP timeout to fire vs. ICMP rejection)
+
+**Takeaway:** When the error types differ, the monitoring host's network is
+functioning — investigate per-peer service status, not the monitoring host's
+connectivity. When all errors are identical "timed out", focus on the
+monitoring host.
 
 **When the error pattern is identical across ALL peers, escalate the
 investigation to the monitoring host, not the individual peers.**
@@ -550,6 +603,11 @@ systemic failure.
 
 #### What to Report — Chronic vs. Acute
 
+See also `references/subnet-cluster-failure-pattern.md` for the
+**cluster-level** case (2+ peers on the same subnet go down together
+while the rest of the fleet is unaffected). Not all multi-peer failures
+are fleet-wide.
+
 | Previous state | Current state | Classification | Report tone |
 |---|---|---|---|
 | 0/4 ok | 0/4 ok | **Chronic** — same as before | "All peers remain unreachable (no change since YYYY-MM-DD HH:MM)" |
@@ -640,16 +698,18 @@ current time simultaneously. If two cron job definitions (different `id`s,
 same schedule) both write to `~/.hermes/backup_status.json`, they race.
 The same applies when one cron job spawns multiple sibling subagents.
 
-#### Beyond backup_status.json: Temp Files and Runner Scripts
+#### Beyond backup_status.json: Any Shared `~/.hermes/` Path Is a Race Zone
 
 The sibling conflict is not limited to the status file. Multiple cron
-agents may also race on:
+agents may also race on any shared path under `~/.hermes/` or `/tmp/`:
 
-| File | Conflict scenario | Impact |
-|------|------------------|--------|
-| `/tmp/cron_backup_data.json` | Multiple agents writing pre-run data to the same temp path | One agent's data overwrites another's before either can pipe it |
-| Scripts like `_run_monitor_now.py` | Multiple agents creating/modifying the same runner script | One agent's modifications clobber another's — silent data corruption |
-| Any file in `/tmp/` or `~/.hermes/scripts/` | Shared temp files or regenerated helper scripts | Non-deterministic outcomes |
+| File | Conflict scenario | Impact | Real-world example |
+|------|------------------|--------|--------------------|
+| `~/.hermes/_backup_input.json` (temp input) | Parent writes pre-run data for pipe; sibling subagent overwrites during the same time slice | JSON input is clobbered — agent reads stale or empty data instead of fresh pre-run output |
+| `/tmp/cron_backup_data.json` | Multiple agents writing pre-run data to the same temp path | One agent's data overwrites another's before either can process it | 2026-07-20: sibling conflict warning on `_backup_input.json` — agent A's write was overwritten by sibling B before agent A could pipe it to backup_monitor.py |
+| `~/.hermes/scripts/_run_monitor_now.py` (runner scripts) | Multiple agents creating/modifying the same helper script | One agent's modifications clobber another's — silent data corruption |
+| `~/.hermes/backup_status.json` (primary output) | Multiple cron jobs or subagents writing the same status file on the same schedule | Last-write-wins; data represents only one run's POV |
+| `~/.hermes/peer-network/backup_status.json` (dashboard input) | Parent and sibling subagent both try to persist at the same time | Same last-write-wins race | 2026-07-20: sibling warning on `backup_status.json` — parent wrote, then sibling subagent's `write_file` also hit the same path before the parent could verify |
 
 **Rules for shared temp files:**
 - **Use unique names per job** — include the cron job ID or a UUID in

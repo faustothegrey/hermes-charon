@@ -185,3 +185,4 @@ curl -s http://192.168.178.XXX:18643/hmp/poll/${MSGID}
 | peer106 | 192.168.178.106 | Fedora30 | Fedora | root | Hermes plugin | Test bed |
 | peer128 | 192.168.178.112 | MacBook | macOS | fausto | Hermes plugin | .112 NON .128 |
 | **trixie** | **192.168.178.136** | **Trixie** | **Debian 13** | **fausto** | **Pi Agent ⭐** | **RPi 3B+, lightweight** |
+| **peer138** | **192.168.178.138** | **peer138** | **RPi** | **root** | **Hermes Agent** | **Nuovo, HMP da configurare** |

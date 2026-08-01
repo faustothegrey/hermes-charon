@@ -1,154 +1,238 @@
 ---
 name: daily-exchange
-description: "Daily Exchange — sistema di condivisione conoscenza tra peer Hermes. Ogni notte i peer generano un digest delle loro scoperte, peer70 consolida, e il risultato finisce nel vault Obsidian."
+description: "Daily Exchange — sistema di condivisione conoscenza tra peer Hermes. Ogni notte peer70 (Charon) richiede i digest via HMP, i peer rispondono, peer70 consolida e salva in Obsidian. v2.0.0"
 type: custom
-version: 1.1.0
+version: 2.0.0
+triggers:
+  - daily exchange
+  - scambio conoscenza
+  - digest giornaliero
+  - peer58
+  - sidecar
+  - trixie
+  - peer136
+  - HMP collect
+tags:
+  - daily-exchange
+  - HMP
+  - peer-to-peer
+  - knowledge-sharing
 ---
 
-# Daily Exchange
+# Daily Exchange — v2.0.0 (HMP)
 
-Sistema di scambio conoscenza giornaliero tra i peer della rete Hermes. Ogni notte i peer generano un digest delle loro sessioni, peer70 li raccoglie, consolida, e copia il risultato nel vault Obsidian.
+Sistema di scambio conoscenza giornaliero tra i peer della rete Hermes.
+Ogni notte peer70 (Charon) invia una richiesta HMP "Daily Exchange?" a tutti i peer,
+ognuno risponde col proprio digest, Charon consolida e salva nel vault Obsidian.
 
-## Architettura
+**Migrato da SSH+SCP a HMP send/poll il 2026-07-18.**
+
+## Architettura (HMP)
 
 ```
-03:30  daily-collect.sh  ──→ SSH in ogni peer → daily-digest.sh → genera file
-                         ──→ SCP da peer a peer70 → exchange/<peer>/YYYY-MM-DD.md
+03:30  Charon → HMP send a TUTTI i peer: "Daily Exchange?"
+         ├── Sidecar (peer58)  → risposta HMP con digest
+         ├── peer84            → risposta HMP con digest
+         ├── peer105           → risposta HMP con digest
+         ├── peer106           → risposta HMP con digest
+         └── peer128           → risposta HMP con digest
 
-03:35  daily-consolidate.sh ──→ Unisce tutti i digest → exchange/daily/YYYY-MM-DD.md
-                            ──→ Copia in vault Obsidian (se presente)
+03:35  Charon → consolida tutte le risposte
+         ├── Unisce i digest in daily/YYYY-MM-DD.md
+         └── Copia in Obsidian Vault Exchange/
 ```
 
-## Flusso
+**Niente più SSH, niente SCP, niente chiavi da gestire.** Tutto via HMP.
 
-| Ora | Script | Cosa fa |
-|-----|--------|---------|
-| 03:30 | `daily-collect.sh` | Su peer70: SSH in ogni peer, genera digest, SCP a peer70 |
-| 03:35 | `daily-consolidate.sh` | Su peer70: unisce tutti, copia in vault Obsidian |
+**Niente cron job no_agent.** Il collect si fa con execute_code() o script Python
+che usa HMP send/poll, non più bash script con SSH.
+
+## Peer partecipanti (rete attuale)
+
+| Peer | ID | IP | Tipo | Partecipa | Note |
+|------|-----|-----|------|-----------|------|
+| **Charon** | peer70 | 192.168.178.70 | Hermes Agent | ✅ Coordinatore | Consolida e scrive in Obsidian |
+| **Sidecar** | peer58 | 192.168.178.58 | Hermes Agent | ✅ Digest | Ruolo leggero, solo invio digest |
+| peer84 | peer84 | 192.168.178.84 | Hermes Agent | ✅ Digest | Cooling 11-17, 02-03 |
+| peer105 | peer105 | 192.168.178.105 | Hermes Agent | ✅ Digest | Lento (30-60s) |
+| peer106 | peer106 | 192.168.178.106 | Hermes Agent | ✅ Digest | |
+| peer128 | peer128 | 192.168.178.112 | Hermes Agent | ✅ Digest | Raggiungibile via curl (non da execute_code) |
+| **trixie** | peer136 | 192.168.178.136 | Pi Agent ⭐ | ✅ Digest strutturato | pi.dev v0.80.10, metriche sistema |
+
+### trixie (peer136) — Pi Agent, metriche sistema (v0.80.10)
+
+trixie è un **lightweight Pi Agent** (Python stdlib, pi.dev v0.80.10).
+Non ha un LLM — risponde con **dati strutturati**: metriche sistema (CPU, RAM, disco, temperatura, uptime).
+
+**Formato digest**: risponde al prompt "Daily Exchange?" con:
+```
+peer: trixie
+uptime: Xd Xh Xm
+cpu: XX°C, load X.XX
+ram: X.X/XX GB used
+disk: X.X/XX GB used
+notes: eventuali osservazioni scriptate
+```
+
+Incluso nella rosa di polling standard (5-10s, timeout 30s).
+
+### Sidecar (peer58) — Ruolo
+
+Sidecar è il **fallback** di Charon. Partecipa al Daily Exchange in
+modalità leggera: invia solo il suo digest, non fa consolidamento.
+Vedi `software-development/hermes-hmp` per il pattern Sidecar completo.
+
+## Formato digest
+
+```markdown
+peer: <id>
+sessioni: cosa fatto oggi
+scoperte: novità imparate
+problemi: bug/intoppi risolti
+```
+
+5-10 righe max. I peer confermati hanno aderito a questo formato.
+
+## Limite messaggi HMP e Chunking
+
+**Limite**: 2048 caratteri per messaggio HMP (imposto dal plugin v0.1.3).
+Se un digest supera questo limite, si usa il **protocollo di chunking**:
+
+```
+Messaggio 1: "digest_id: <uuid> | chunk: 1/3 | <prima parte>"
+Messaggio 2: "digest_id: <uuid> | chunk: 2/3 | <seconda parte>"
+Messaggio 3: "digest_id: <uuid> | chunk: 3/3 | <ultima parte>"
+```
+
+Charon riceve, riassembla per `digest_id`, ordina per `chunk: N/TOT`.
+
+## Flusso operativo
+
+### 1. Collect (03:30)
+
+Charon esegue (da execute_code o script Python):
+
+```python
+# Per ogni peer nella lista:
+#   - HMP send: "Daily Exchange?"
+#   - Poll per risposta (timeout 120s per peer)
+#   - Salva risposta in ~/.hermes/exchange/<peer>/YYYY-MM-DD.md
+```
+
+Peer da contattare (con polling differenziato per latenza):
+
+| Peer | Tempo atteso | Timeout |
+|------|-------------|---------|
+| peer128 | 5-10s | 60s |
+| peer106 | 10-20s | 120s |
+| peer58 | 10-30s | 120s |
+| peer105 | 30-60s | 180s |
+| peer84 | 30-60s | 180s |
+
+poll_interval=5 secondi, max_polls adeguato al timeout.
+
+### 2. Consolidate (03:35)
+
+Charon unisce i file in `~/.hermes/exchange/daily/YYYY-MM-DD.md`:
+
+```markdown
+# Daily Exchange — YYYY-MM-DD
+
+## peer70 (Charon)
+- sessioni: ...
+- scoperte: ...
+- problemi: ...
+
+## Sidecar (peer58)
+...
+```
+
+### 3. Obsidian vault
+
+Copia in `~/Documents/Obsidian Vault/Exchange/YYYY-MM-DD.md`.
+
+## peer84 — Cooling schedule
+
+peer84 è SPENTO in queste fasce:
+- **11:00 → 17:00** (6h pomeriggio)
+- **02:00 → 03:00** (1h notte)
+
+L'exchange alle **03:30** cade 30 minuti dopo l'accensione delle 03:00.
+È il momento ideale per contattarlo.
+
+Se l'exchange è a un'ora che cade in cooling (es. 14:00), **saltare peer84**.
 
 ## Script
 
 | Script | Path | Cosa fa |
 |--------|------|---------|
-| `daily-digest.sh` | `~/.hermes/scripts/` | Genera digest locale (sessioni, skill, plugin version) |
-| `daily-publish.sh` | `~/.hermes/scripts/` | Wrapper: genera digest (usato dal collect, no SCP) |
-| `daily-collect.sh` | `~/.hermes/scripts/` | Su peer70: SSH in tutti i peer, genera + SCP |
-| `daily-consolidate.sh` | `~/.hermes/scripts/` | Su peer70: unisce tutti i digest, copia in vault |
+| `daily-hmp-collect.sh` o `.py` | `~/.hermes/scripts/` | Invia richiesta HMP a tutti, raccoglie risposte, salva file |
+| `daily-consolidate.sh` | `~/.hermes/scripts/` | Unisce i digest, copia in vault |
 
-## peer84 — cooling schedule
+**Nota**: Gli script vecchi (`daily-collect.sh`, `daily-publish.sh`, `daily-digest.sh`)
+usavano SSH+SCP e sono deprecati dalla migration HMP v2.0.0.
 
-peer84 è SPENTO in queste fasce orarie:
-- **11:00 → 17:00** (6h pomeriggio)
-- **02:00 → 03:00** (1h notte)
+## Peer lenti — Pattern di polling
 
-Accensione alle **03:00**. Il collect parte alle **03:30** — 30 minuti di margine per far partire il gateway.
+peer105 e peer84 impiegano 30-60s anche per messaggi semplici.
+peer106 risponde in 10-20s. peer128 in 5-10s. peer58 in 10-30s.
 
-## Peer partecipanti
-
-| Peer | SSH User | Remote home |
-|------|----------|-------------|
-| peer84 | fausto@192.168.178.84 | /home/fausto |
-| peer105 | root@192.168.178.105 | /root |
-| peer106 | root@192.168.178.106 | /root |
-| peer128 | fausto@192.168.178.112 | /Users/fausto |
-
-## ⚠️ Cron Job Tirith Security Blocker
-
-I cron job `daily-exchange-collect` e `daily-exchange-consolidate` DEVONO essere configurati come `no_agent: true` in `~/.hermes/cron/jobs.json`. Senza questa impostazione, il Tirith security scanner blocca TUTTI i comandi terminal nelle sessioni cron con `tirith:unknown` — anche `pwd && echo test`.
-
-**Impostazione corretta in jobs.json:**
-
-```json
-{
-  "id": "34c92c320db0",
-  "name": "daily-exchange-collect",
-  "script": "daily-collect.sh",
-  "no_agent": true,
-  ...
-}
-```
-
-**Cosa significa `no_agent: true`:**
-- Lo script viene eseguito direttamente via subprocess dal cron scheduler
-- Nessun agente LLM, nessun controllo di sicurezza — bypassa completamente Tirith
-- L'output dello script viene consegnato direttamente
-- Lo stesso pattern usato da `peer70-watchdog`, `Load Monitor`, heartbeat scripts
-
-**Perché non possiamo usare `no_agent: false`:**
-Il gateway Hermes imposta `HERMES_EXEC_ASK=1` a startup (`gateway/run.py:1638`). Questo env var viene ereditato dal cron scheduler. In `approval.py:1613`, la presenza di `HERMES_EXEC_ASK` fa sì che il codice bypassi il percorso cron-mode e cada nel percorso Tirith + gateway-approval — che non può funzionare in cron senza utente.
-
-**Il file `cron_config_override.yaml` non funziona:** Contiene le impostazioni corrette (`approvals.cron_mode: allow`, `security.tirith_enabled: false`) ma non viene mai caricato da `load_config()`. Ogni tentativo di usarlo come workaround è fallito (documentato in sessioni del 14-17 Luglio 2026).
-
-**Riferimento:** Vedi `sysadmin/cron-operations` skill per la documentazione completa del Tirith blocker e delle workaround.
-
-## Cron job (configurazione attuale)
-
-| Nome | Job ID | Schedule | Tipo | Script |
-|------|--------|----------|------|--------|
-| `daily-exchange-collect` | `34c92c320db0` | `30 3 * * *` | `no_agent: true` | `daily-collect.sh` |
-| `daily-exchange-consolidate` | `cebd0d8bd258` | `35 3 * * *` | `no_agent: true` | `daily-consolidate.sh` |
-
-## Vault Obsidian
-
-Path: `~/Documents/Obsidian Vault/`
-
-Dopo il consolidate, il file viene copiato in `Exchange/YYYY-MM-DD.md`.
-
-**Nota su peer70:** Il vault Obsidian non è presente su peer70 (directory non trovata). La copia automatica termina silenziosamente senza errore, ma non produce output. Per avere il consolidato nel vault, o il vault deve essere montato su peer70, o il consolidate deve essere eseguito dal peer che ha il vault.
-
-## Peer health al momento della raccolta (2026-07-18)
-
-| Peer | Stato | Note |
-|------|-------|------|
-| peer70 | ✅ Online | Digest generato localmente |
-| peer105 | ✅ Online (HMP :18643) | Raggiungibile via HMP, ma SSH/SCP richiede terminal |
-| peer106 | ✅ Online (HMP :18643) | Raggiungibile via HMP, ma SSH/SCP richiede terminal |
-| peer84 | ❌ Unreachable (cooling window) | 11:00-17:00 + 02:00-03:00 |
-| peer128 | ❌ Offline | Non raggiungibile dal 6 luglio 2026 |
-
-## HMP Brainstorm
-
-Script in `~/.hermes/scripts/hmp-brainstorm.py` — giro strutturato di brainstorming tra i peer via HMP.
+Usare polling con timeout adeguato:
 
 ```python
-# Uso da execute_code()
-exec(open('/home/fausto/.hermes/scripts/hmp-brainstorm.py').read())
-result = brainstorm("Tema", "Domanda?", max_rounds=3)
+import json, urllib.request, time
+
+def poll_until_done(ip, msgid, timeout=120, interval=5):
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        time.sleep(interval)
+        with urllib.request.urlopen(
+            f"http://{ip}:18643/hmp/poll/{msgid}", timeout=5
+        ) as r:
+            poll = json.loads(r.read())
+        status = poll.get("status")
+        if status == "completed":
+            return poll.get("response_text", "")
+        elif status in ("failed", "timed_out"):
+            return f"ERROR: {status}"
+    return "TIMEOUT"
 ```
 
-Meccanismo:
-1. Invia domanda a tutti i peer
-2. Raccoglie risposte
-3. Sintesi + votazione GO/NO GO
-4. Max 3 round
-5. Report finale con consenso o no
+## Peer non raggiungibili da execute_code()
 
-## Formato digest
+**peer128** (192.168.178.112) non è raggiungibile dal sandbox Python di
+`execute_code()` — "No route to host". Usare **curl diretto** da terminal:
 
-```markdown
----
-peer: peer106
-date: 2026-07-17
-plugin_version: 0.1.2
-type: daily
----
+```bash
+MSGID="dex_128_$(date +%s%N)"
+curl -s -X POST http://192.168.178.112:18643/hmp/send \
+  -H "Content-Type: application/json" \
+  -d '{"hmp_version":"1.0","message_id":"'"$MSGID"'","from":"peer70","to":"peer128","type":"request","timeout":120,"payload":{"text":"Daily Exchange?"}}'
 
-## Sessioni di oggi
-
-  - 18:11 | peer-feedback-round
-  - 07:02 | Clean HMP Plugin Test
-
-## Plugin HMP
-
-Versione plugin: 0.1.2. Nessuna skill modificata.
+# Poll
+for i in $(seq 1 20); do
+  sleep 3
+  resp=$(curl -s http://192.168.178.112:18643/hmp/poll/${MSGID})
+  status=$(echo "$resp" | python3 -c "import sys,json; print(json.load(sys.stdin).get('status',''))")
+  [ "$status" = "completed" ] && echo "$resp" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('response_text',''))" && break
+  [ "$status" = "failed" ] && echo "FAIL" && break
+done
 ```
 
-## Pitfall: SSH + SCP da root a fausto
+## Cron job
 
-Quando `daily-collect.sh` su peer70 SSH in peer105/106 come root e poi SCP il file, il target su peer70 è `fausto@192.168.178.70:...`. La chiave pubblica di root su peer105/106 deve essere in `~fausto/.ssh/authorized_keys` su peer70.
+I cron job vanno aggiornati da `no_agent: true` (vecchio SSH) a job con
+`enabled_toolsets: ["terminal"]` (per eseguire lo script Python di collect).
 
-**Soluzione:** lo SCP parte da peer70 verso il peer (pull), non dal peer verso peer70 (push) — così la chiave è quella di fausto@peer70 che ha accesso ovunque.
+| Nome | Schedule | Tipo |
+|------|----------|------|
+| `daily-exchange-hmp-collect` | `30 3 * * *` | Agent job (script Python con HMP) |
+| `daily-exchange-consolidate` | `35 3 * * *` | `no_agent: true` (solo merge file) |
 
-## Pitfall: Plugin HMP version drift
+## Storico versioni
 
-Il plugin HMP (0.1.2 → 0.1.3) può avere versioni diverse su peer diversi. Il digest registra la versione locale di ogni peer. Se un peer è rimasto a 0.1.2 mentre peer70 è a 0.1.3, non è un errore — il plugin è retrocompatibile. È utile però per tracciare quali peer hanno ricevuto l'aggiornamento.
+| Versione | Data | Protocollo | Note |
+|----------|------|------------|------|
+| v1.0.0 | 2026-07-17 | SSH+SCP | Prima implementazione, script bash |
+| v1.1.0 | 2026-07-18 | SSH+SCP | peer84 cooling, Tirith workaround |
+| **v2.0.0** | **2026-07-18** | **HMP send/poll** | Migrazione completa, Sidecar + trixie |

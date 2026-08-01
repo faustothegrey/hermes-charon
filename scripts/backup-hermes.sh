@@ -25,7 +25,7 @@ if [ -f "$SSH_PUBLIC_KEY" ] && command -v openssl >/dev/null 2>&1 && command -v 
   tmpdir="$(mktemp -d)"
   trap 'rm -rf "$tmpdir"' EXIT
   mkdir -p "$tmpdir/hermes-secrets"
-  for item in .env auth.json google_token.json google_client_secret.json gateway_state.json pairing state.db; do
+  for item in .env auth.json google_token.json google_client_secret.json gateway_state.json pairing; do
     if [ -e "$HERMES_HOME/$item" ]; then
       cp -a "$HERMES_HOME/$item" "$tmpdir/hermes-secrets/"
     fi

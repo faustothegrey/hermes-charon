@@ -1,0 +1,11 @@
+{
+  "generated_at": "2026-08-01T09:37:22Z",
+  "command": "python3 -m compileall -q plugin scripts tests && python3 -m unittest discover -s tests -v",
+  "passed": 69,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "total": 69,
+  "status": "PASS",
+  "log": "evidence/unit-test-report-v2.4.6.log"
+}

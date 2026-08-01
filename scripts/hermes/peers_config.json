@@ -1,0 +1,30 @@
+{
+  "peer128": {
+    "host": "192.168.178.112",
+    "port": 8642,
+    "api_key": "05d08de2c480511c1b6c775d5bbfac7063157b9bfccc07791da017f621975263",
+    "job_id": "b763d78565da",
+    "label": "peer128 (Mac)"
+  },
+  "peer84": {
+    "host": "192.168.178.84",
+    "port": 8642,
+    "api_key": "6j-h7Q5pR70Y2OXPVwtn-Mlv5DZItxu8d_tbwUYPD5uo5rf6G5E5aqQKdraydn2a",
+    "job_id": "46e2b1f4aea4",
+    "label": "peer84 (N56VV)"
+  },
+  "peer105": {
+    "host": "192.168.178.105",
+    "port": 8642,
+    "api_key": "29b06e40a65d7d9e1c4bdbd6dbab81f7585287336e612fa742e62222d95b8775",
+    "job_id": "86a2c4f0b1d3",
+    "label": "peer105 (RPi 3B, YouTube)"
+  },
+  "peer106": {
+    "host": "192.168.178.106",
+    "port": 8642,
+    "api_key": "0bbf626ae898168c042a0d69ea06d272dcb2dd6963e002454e402972f87ab186",
+    "job_id": "a9f7e2d14c08",
+    "label": "peer106 (ARMv8, research)"
+  }
+}

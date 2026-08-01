@@ -1,0 +1,13 @@
+{
+  "home": "/root",
+  "python": "3.7.7",
+  "platform": "Linux-5.6.13-100.fc30.aarch64-aarch64-with-fedora-30-Thirty",
+  "skill_exists": true,
+  "plugin_exists": true,
+  "registry_exists": true,
+  "skill_version": "2.1.0",
+  "plugin_version": "2.1.0",
+  "skill_sha256_tree": "bf8b98908438a7cad49a0a5311a49ab9aac27a1d88ba0a251bd9df2d57cfede6",
+  "plugin_sha256_tree": "ee7f5cb4c4af166edfc5ae69b85f57038932d200e99f51807de84dab63932606",
+  "registry_sha256_tree": "1ee38fd37d2ec0a7ba0b827bb2ee80be0ad08a537e22ee5c43eac33eb404e531"
+}

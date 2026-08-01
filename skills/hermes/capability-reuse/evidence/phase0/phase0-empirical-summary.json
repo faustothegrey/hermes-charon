@@ -1,0 +1,93 @@
+{
+  "generated_at": "2026-07-27T14:29:28.371639Z",
+  "source_db": "/root/.hermes/state.db",
+  "total_execute_code_tool_calls": 301,
+  "sessions_with_execute_code": 23,
+  "days": {
+    "2026-07-12": 28,
+    "2026-07-13": 44,
+    "2026-07-14": 25,
+    "2026-07-15": 42,
+    "2026-07-16": 52,
+    "2026-07-17": 12,
+    "2026-07-18": 4,
+    "2026-07-19": 3,
+    "2026-07-21": 2,
+    "2026-07-22": 5,
+    "2026-07-23": 3,
+    "2026-07-24": 2,
+    "2026-07-25": 1,
+    "2026-07-26": 9,
+    "2026-07-27": 69
+  },
+  "by_operation": {
+    "json_aggregation": 157,
+    "file_patch": 59,
+    "unknown_other": 47,
+    "hmp_healthcheck": 24,
+    "hmp_send": 6,
+    "test_validation": 6,
+    "ssh_scp_deploy": 1,
+    "registry_sync": 1
+  },
+  "recurring_clusters_ge5": [
+    {
+      "operation": "json_aggregation",
+      "count": 157,
+      "meets_ge5": true
+    },
+    {
+      "operation": "file_patch",
+      "count": 59,
+      "meets_ge5": true
+    },
+    {
+      "operation": "hmp_healthcheck",
+      "count": 24,
+      "meets_ge5": true
+    },
+    {
+      "operation": "hmp_send",
+      "count": 6,
+      "meets_ge5": true
+    },
+    {
+      "operation": "test_validation",
+      "count": 6,
+      "meets_ge5": true
+    }
+  ],
+  "top10_coverage": 1.0,
+  "dataset_b_pairs": 150,
+  "dataset_c_pairs": 120,
+  "dataset_c_historical_or_burnin": 48,
+  "holdout": {
+    "size": 60,
+    "tp": 30,
+    "fp": 0,
+    "tn": 30,
+    "fn": 0,
+    "top1_precision": 1.0,
+    "recall": 1.0,
+    "read_only_mutating_false_matches": 0
+  },
+  "gate_thresholds": {
+    "episodes_min": 200,
+    "clusters_min": 3,
+    "cluster_occurrences_min": 5,
+    "top10_coverage_min": 0.4,
+    "dataset_b_pairs_min": 100,
+    "dataset_c_pairs_min": 100,
+    "top1_precision_min": 0.7,
+    "effect_false_matches_max": 0
+  },
+  "pass": {
+    "C1": true,
+    "C2": true,
+    "C3": true,
+    "C4": true,
+    "C5": true,
+    "C6": true,
+    "C7": true
+  }
+}

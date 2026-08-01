@@ -133,12 +133,109 @@ The technique: write directly to `/dev/fb0` via Pillow (Python), bypassing SDL/X
 
 **⚠ Critical optimization**: The naive pixel-loop conversion (RGB888→RGB565) eats ~95% CPU on RPi4. The reference now documents **numpy vectorized conversion** and **parallel ping via ThreadPoolExecutor** — combined result: load drops from ~1.6 to ~0.75 on an RPi 4. See `references/framebuffer-dashboard.md` for the three key optimizations.
 
-### NetBoard with FritzBox Stats and Backup Status
+### NetBoard Error Watchdog (journal monitoring)
+
+Quando netboard gira come systemd service con `Restart=always`, eventuali eccezioni nel loop vengono loggate su stderr → journal. Per essere avvisati quando capita un errore, un watchdog periodico controlla il journal e notifica sul display:
+
+**Script: `~/.hermes/scripts/netboard_watchdog.py`**
+
+```python
+# Ogni 5 min (cron no_agent=true):
+# 1. journalctl -u netboard.service --since "10 min ago" --no-pager
+# 2. Filtra righe con ERRORE / Traceback / Error
+# 3. Se trovati: netboard-msg "⚠️ N errore(i) netboard" --priority 80 --duration 15
+# 4. Salva in ~/.hermes/netboard_errors.log con timestamp
+# 5. Se nessun errore: silenzioso (nessuna notifica)
+```
+
+### Peer-Queue: Coda messaggi HMP con delivery differito
+
+Sistema per inviare messaggi a peer HMP che vengono recapitati solo quando il peer è online. Se il peer è offline, il messaggio rimane in coda e viene consegnato automaticamente quando torna.
+
+**Comandi:**
+```bash
+peer-msg send peer84 "Testo"                    # accoda (priorità 5 default)
+peer-msg send peer84,peer105 "Ciao" --priority 80 # a più peer
+peer-msg list                                    # mostra coda completa
+peer-msg list peer84                             # filtra per peer
+peer-msg status                                  # chi è online/offline via HMP /health
+peer-msg deliver                                 # consegna forzata immediata
+peer-msg clean                                   # elimina consegnati >24h
+```
+
+**Architettura:**
+- **Coda persistente**: JSON in `~/.hermes/peer_queue.json` con lock file
+- **Health check**: `GET http://<ip>:18643/health` — se risponde con `{"status":"ok"}`, il peer è online
+- **Delivery HMP**: `POST http://<ip>:18643/hmp/send` con payload JSON standard
+- **Notifica display**: quando un messaggio viene recapitato, si mostra sul display NetBoard (priorità 60, 10s)
+- **Retry**: fino a 10 tentativi con ritardo minimo di 120s tra tentativi
+
+**Cron delivery** (ogni 2 min, `no_agent=true`):
+```yaml
+schedule: "every 2m"
+script: "peer_queue.py deliver"
+no_agent: true
+deliver: local
+```
+
+**Peer registry** (in `~/.hermes/scripts/peer_queue.py`):
+```python
+PEER_IP = {
+    "peer70":  "192.168.178.70",
+    "peer84":  "192.168.178.84",
+    "peer105": "192.168.178.105",
+    "peer106": "192.168.178.106",
+    "peer128": "192.168.178.112",
+    "peer58":  "192.168.178.58",
+    "peer136": "192.168.178.136",
+}
+```
+
+**Script:** `~/.hermes/scripts/peer_queue.py` (core) + `~/.hermes/scripts/peer-msg` (bash wrapper → `/usr/local/bin/peer-msg`)
+
+### DSI Error Watchdog
+
+**Script: `~/.hermes/scripts/dsi_watchdog.py`** — ogni 5 min controlla dmesg per errori del bridge DSI (tc358762 timeout). Se rileva errori:
+- Mostra avviso sul display NetBoard (priorità 90)
+- Logga stato in `~/.hermes/dsi_watchdog_state.json`
+- Se non notificato nelle ultime 12h: output per Telegram
+
+```yaml
+schedule: "every 5m"
+script: "dsi_watchdog.py"
+no_agent: true
+deliver: local
+```
+
+Vedi skill `raspberry-pi` → "DSI Bridge Crash" per la diagnostica completa e il tool `dsi-recover`.
+
+**Cron job:**
+```
+schedule: "every 5m"
+script: "netboard_watchdog.py"
+no_agent: true
+deliver: local
+```
+
+**Output su display quando ci sono errori:**
+```
+⚠️ 3 errore(i) netboard
+Vedi: journalctl -u netboard.service --since 1h
+```
+
+Il watchdog è un `no_agent=true` con `deliver=local` — a consumo zero di token LLM. Se non ci sono errori, non produce output sul display né log.
+
+### NetBoard with FritzBox Stats, Backup Status, and System Load
 
 The NetBoard dashboard (peer70's physical display + web UI at `:8191`) has been enhanced with:
 - **FritzBox network status** — separate thread polls FritzBox every 60s for DSL speeds, WAN IP, device count. Python module `fritzbox_data.get_status()` handles auth + data.lua query. Cached 10 min on web endpoint.
-- **Backup status monitoring** — cron job `backup-monitor` queries peers via Hermes chat completions API every 30 min, asking about their nightly backup job status. Results saved to `~/.hermes/peer-network/backup_status.json`. Both framebuffer and web UIs display the status with icons (✅/❌/⭕) and last-run timestamps. See `references/backup-monitor.md` for the full script and config structure.
-- **Data sharing pattern**: cron job writes JSON → `backup_data.py` reads JSON → framebuffer and web dashboards consume it. Same pattern used for peer status (`peer-monitor.py` → `status.json`).
+- **Backup status monitoring** — cron job `backup-monitor` queries peers via Hermes chat completions API every 30 min, asking about their nightly backup job status. Results saved to `~/.hermes/peer-network/backup_status.json`. Both framebuffer and web UIs display the status with icons (✅/❌/⭕) and last-run timestamps. See `references/backup-monitor.md` for the full script and configuration structure.
+- **System load monitoring** — `load_data.py` module reads CPU load (`/proc/loadavg`), RAM (`/proc/meminfo`), disk usage (`statvfs`), and CPU temperature (`vcgencmd` or sysfs thermal zone). Cached 10s. Displayed as a status row on the framebuffer dashboard:
+  ```
+  🟢CPU 1.0  🟢RAM 26%  🟢DISK 25%  🟡62.8°C
+  ```
+  Color-coded thresholds: green (CPU<1.0, RAM<50%, disk<70%, temp<60°C), yellow (CPU<2.0, RAM<80%, disk<90%, temp<75°C), red (above). Module follows the same pattern as `backup_data.py` and `fritzbox_data.py`.
+- **Data sharing pattern**: cron job writes JSON → `backup_data.py` reads JSON → framebuffer and web dashboards consume it. Same pattern used for peer status (`peer-monitor.py` → `status.json`) and HMP health (`hmp-ping-round.py` → `hmp_health_status.json` → `hmp_health_data.py`).
 
 Both systemd services (`netboard.service`, `netboard-web.service`) are enabled at boot.
 
@@ -188,6 +285,88 @@ python3 ~/.hermes/scripts/peer-health-watch.py
 ```
 
 Stato persistito in `~/.hermes/peer-network/peer_health.json`.
+
+## Nuovo: hmp-ping-round.py (HMP health check, staggered)
+
+Check HMP più ricco di peer-health-watch — usa l'endpoint `/hmp/health` del
+plugin HMP che restituisce `node_id`, `gateway_adapter` e altri metadati, non
+solo un semplice health check HTTP.
+
+**Differenze da peer-health-watch:**
+- Usa `/hmp/health` (più ricco) invece di `/health` (semplice)
+- **Staggered**: un peer alla volta con pausa di 3 secondi, non tutti in parallelo
+- Write JSON strutturato accessibile ai dashboard via `hmp_health_data.py`
+- Frequenza: ogni 10 minuti (invece di 5 min)
+
+Script: `~/.hermes/scripts/hmp-ping-round.py` — `no_agent=true`.
+
+```bash
+python3 ~/.hermes/scripts/hmp-ping-round.py
+```
+
+Output: `~/.hermes/peer-network/hmp_health_status.json` con struttura:
+
+```json
+{
+  "updated_at": 1784373903.48,
+  "updated_at_iso": "2026-07-18T11:24:44+00:00",
+  "all_reachable": true,
+  "peers": [
+    {"name": "peer70", "ip": "127.0.0.1", "hmp": {"reachable": true, "ms": 0, "self": true}},
+    {"name": "peer105", "ip": "192.168.178.105", "hmp": {"reachable": true, "ms": 61.2}},
+    {"name": "peer84", "ip": "192.168.178.84", "hmp": {"reachable": false, "error": "curl exit 7"}}
+  ]
+}
+```
+
+Cron job:
+
+```bash
+cronjob action=create \
+  name="HMP ping round (cluster health)" \
+  schedule="every 10m" \
+  script="hmp-ping-round.py" \
+  deliver=local \
+  no_agent=true
+```
+
+### Helper module: `hmp_health_data.py`
+
+Modulo Python per leggere il JSON dai dashboard (netboard, web UI).
+Segue lo stesso pattern di `backup_data.py` e `fritzbox_data.py`.
+
+```python
+import hmp_health_data
+
+status = hmp_health_data.get_status()           # dict or None
+line = hmp_health_data.hmp_status_for("peer105", status)  # "HMP● 61ms" or "HMP✗"
+```
+
+Posizionato in `~/.hermes/scripts/hmp_health_data.py`.
+
+### NetBoard display: HMP per-peer su framebuffer
+
+Il dashboard NetBoard su framebuffer (`netboard.py`) mostra lo stato HMP
+per ogni peer in una riga dedicata sotto il ping ICMP:
+
+```
+● 🍏 peer128           192.168.178.112
+   ping 1.8ms
+   HMP● 70ms               ← nuova riga HMP
+   MacBook
+```
+
+- **HMP● tempo**: verde, peer HMP raggiungibile
+- **HMP◒ tempo**: giallo, HMP raggiungibile ma lento (>200ms)
+- **HMP✗**: rosso, peer HMP non raggiungibile
+
+Il timestamp dell'ultimo giro HMP è visibile nella barra inferiore:
+```
+HMP 13:24  •  agg. 8s  • orbit 30s  • ss 5m
+```
+
+I dashboard web (netboard-web.py, port 8191) possono leggere lo stesso
+JSON per visualizzare lo stato HMP in formato simile.
 
 ## Nuovo: lan-monitor.py (dispositivi LAN da FritzBox)
 

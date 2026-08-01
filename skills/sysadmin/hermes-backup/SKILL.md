@@ -51,6 +51,7 @@ schedule: 0 23 * * * (Hermes native cron, no_agent: true)
 | **plugins/** | Installed plugins (e.g. HMP) | — |
 | **memories/** | Persistent memories | — |
 | **hooks/** | Hook scripts | — |
+| **scripts/hermes/** | User scripts (netboard, overlay, queue, messaggi cron) | — |
 | **profiles/** | Hermes profiles | Without .env, auth.json, state.db*, bin/, sessions/ |
 | **inventory/** | `hermes config check`, `hermes tools list`, etc. | Fresh snapshot every run |
 
@@ -116,6 +117,18 @@ git remote add origin git@github.com:<user>/hermes-config-peer70.git
 # Run first backup manually: bash scripts/backup-hermes.sh
 # Then set up cron
 ```
+
+## Cross-platform validation
+
+| Platform | Status | Notes |
+|----------|--------|-------|
+| **macOS** (peer128) | ✅ Production | `hermes-config-mac.git` — daily cron since 2026-07 |
+| **Linux/arm64** (peer70, Raspberry Pi) | ✅ Production | `faustothegrey/hermes-charon.git` — daily cron since 2026-07-18 |
+
+The pattern is identical across platforms. Only platform-specific adjustments:
+- On macOS, Obsidian vault may need Full Disk Access (FDA) for cron
+- On Linux, `openssl` and `ssh-keygen` are preinstalled
+- Both use same script set (generate-backup.py + backup-hermes.sh)
 
 ## See also
 

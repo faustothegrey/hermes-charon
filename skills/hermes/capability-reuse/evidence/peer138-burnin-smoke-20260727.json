@@ -1,0 +1,169 @@
+{
+  "errors": [],
+  "event_audit": {
+    "correlation_errors": [],
+    "counts": {
+      "bypass_event": 2,
+      "capability_invocation_event": 7,
+      "execute_code_started_event": 12,
+      "fallback_authorization_event": 2,
+      "intervention_event": 5,
+      "outcome_event": 5,
+      "protocol_state_transition": 20,
+      "retrieval_event": 5
+    },
+    "event_count": 58
+  },
+  "fallback": {
+    "error": "timeout",
+    "fallback_allowed": true,
+    "invoke_success": false,
+    "state": "fallback_consumed",
+    "structured_bypass_allowed": true,
+    "token_issued": true
+  },
+  "negative": [
+    {
+      "capability_id": null,
+      "decision": false,
+      "prompt": "send a message to peer138",
+      "session_id": "peer138-burnin-1785160482-neg-01"
+    },
+    {
+      "capability_id": null,
+      "decision": false,
+      "prompt": "deploy plugin to peer138",
+      "session_id": "peer138-burnin-1785160482-neg-02"
+    },
+    {
+      "capability_id": null,
+      "decision": false,
+      "prompt": "restart HMP on peer138",
+      "session_id": "peer138-burnin-1785160482-neg-03"
+    },
+    {
+      "capability_id": null,
+      "decision": false,
+      "prompt": "ssh to peer138 and run uptime",
+      "session_id": "peer138-burnin-1785160482-neg-04"
+    },
+    {
+      "capability_id": null,
+      "decision": false,
+      "prompt": "copy registry to peer138",
+      "session_id": "peer138-burnin-1785160482-neg-05"
+    }
+  ],
+  "positive": [
+    {
+      "decision": true,
+      "episode_id": "peer138-burnin-1785160482-pos-01-ep",
+      "full_hook_blocked": true,
+      "injection_has_intervention_id": true,
+      "intervention_id": "int_7dd1f17e74e1416dbaeba65079b05499",
+      "invocation_id": "inv_d15cbce008034761",
+      "invoke_success": true,
+      "node_id": "peer138",
+      "peer_status": "ok",
+      "prompt": "check HMP health for peer138",
+      "retrieval_event_id": "593625706a2b4a46",
+      "score": 0.6873,
+      "session_id": "peer138-burnin-1785160482-pos-01",
+      "session_only_hook_blocked": true,
+      "state": "resolved_success",
+      "turn_id": "turn-01"
+    },
+    {
+      "decision": true,
+      "episode_id": "peer138-burnin-1785160482-pos-02-ep",
+      "full_hook_blocked": true,
+      "injection_has_intervention_id": true,
+      "intervention_id": "int_0b10da6fdeb94d2aa9a4c79f332cc77c",
+      "invocation_id": "inv_6a8d3380ef144f27",
+      "invoke_success": true,
+      "node_id": "peer138",
+      "peer_status": "ok",
+      "prompt": "ping HMP status for peer138",
+      "retrieval_event_id": "456cf7c6920b4fe9",
+      "score": 0.6627,
+      "session_id": "peer138-burnin-1785160482-pos-02",
+      "session_only_hook_blocked": true,
+      "state": "resolved_success",
+      "turn_id": "turn-02"
+    },
+    {
+      "decision": true,
+      "episode_id": "peer138-burnin-1785160482-pos-03-ep",
+      "full_hook_blocked": true,
+      "injection_has_intervention_id": true,
+      "intervention_id": "int_30d3fa2548c34501a49709e4f3d0a270",
+      "invocation_id": "inv_f5e33ef7a71a41ec",
+      "invoke_success": true,
+      "node_id": "peer138",
+      "peer_status": "ok",
+      "prompt": "show peer138 HMP gateway health",
+      "retrieval_event_id": "46df85c668824526",
+      "score": 0.6853,
+      "session_id": "peer138-burnin-1785160482-pos-03",
+      "session_only_hook_blocked": true,
+      "state": "resolved_success",
+      "turn_id": "turn-03"
+    },
+    {
+      "decision": true,
+      "episode_id": "peer138-burnin-1785160482-pos-04-ep",
+      "full_hook_blocked": true,
+      "injection_has_intervention_id": true,
+      "intervention_id": "int_5b9a1129d86b4590ae86c2c2d5dd8616",
+      "invocation_id": "inv_05da3f9080b043ad",
+      "invoke_success": true,
+      "node_id": "peer138",
+      "peer_status": "ok",
+      "prompt": "verify peer138 hmp health endpoint",
+      "retrieval_event_id": "ebb3513d7a8c41de",
+      "score": 0.7191,
+      "session_id": "peer138-burnin-1785160482-pos-04",
+      "session_only_hook_blocked": true,
+      "state": "resolved_success",
+      "turn_id": "turn-04"
+    },
+    {
+      "decision": true,
+      "episode_id": "peer138-burnin-1785160482-pos-05-ep",
+      "full_hook_blocked": true,
+      "injection_has_intervention_id": true,
+      "intervention_id": "int_590b264e4acb46d48d817077d38f9f02",
+      "invocation_id": "inv_7d9947be4e1b489f",
+      "invoke_success": true,
+      "node_id": "peer138",
+      "peer_status": "ok",
+      "prompt": "healthcheck peer138 via HMP",
+      "retrieval_event_id": "c8bf274c133c4b0c",
+      "score": 0.6776,
+      "session_id": "peer138-burnin-1785160482-pos-05",
+      "session_only_hook_blocked": true,
+      "state": "resolved_success",
+      "turn_id": "turn-05"
+    }
+  ],
+  "run_id": "peer138-burnin-1785160482",
+  "scope": {
+    "active_allowlist": [
+      "hmp-healthcheck"
+    ],
+    "available_capabilities": [
+      "hmp_client_installed"
+    ],
+    "peer": "peer138",
+    "permissions": [
+      "hmp.network.read"
+    ]
+  },
+  "unclean": {
+    "error": "malformed_response",
+    "final_state": "unclean_fallback_recorded",
+    "invoke_success": false,
+    "state_after_invoke": "failed_unclean_read_only",
+    "structured_continuation_allowed": true
+  }
+}

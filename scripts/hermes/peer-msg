@@ -1,0 +1,30 @@
+#!/bin/bash
+# peer-msg — Invia/gestisce messaggi per peer HMP
+# Usa:  peer-msg send peer84 "Ciao!" [--priority 5]
+#       peer-msg send peer84,peer105 "Ciao a tutti!"
+#       peer-msg list [peer84]
+#       peer-msg status
+#       peer-msg deliver
+#       peer-msg clean
+
+QUEUE_SCRIPT="$HOME/.hermes/scripts/peer_queue.py"
+
+if [ $# -eq 0 ]; then
+    echo "peer-msg — Coda messaggi per peer HMP"
+    echo ""
+    echo "Comandi:"
+    echo "  send <peer(s)> <testo>  Accoda messaggio (es. peer84 o peer84,peer105)"
+    echo "    [--priority N]        Priorità 1-100 (default 5)"
+    echo "  list [peer]             Mostra messaggi in coda"
+    echo "  status                  Stato online/offline dei peer"
+    echo "  deliver                 Tenta consegna immediata"
+    echo "  clean                   Pulisci messaggi vecchi (>24h)"
+    echo ""
+    echo "Esempi:"
+    echo "  peer-msg send peer84 \"Ciao! Aggiornamento completato\""
+    echo "  peer-msg send peer84,peer105 \"Manutenzione domani 22:00\" --priority 80"
+    echo "  peer-msg send peer84 \"Sei tornato online! 👋\" --priority 1"
+    exit 1
+fi
+
+exec python3 "$QUEUE_SCRIPT" "$@"

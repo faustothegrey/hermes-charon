@@ -1,0 +1,130 @@
+{
+  "version": "1.0.0",
+  "categories": [
+    {
+      "id": "healthcheck",
+      "match": [
+        "health",
+        "healthcheck",
+        "ping",
+        "status",
+        "alive"
+      ],
+      "risk": "low",
+      "constraints": [
+        "read_only"
+      ],
+      "blocked_actions": []
+    },
+    {
+      "id": "hmp_operation",
+      "match": [
+        "hmp",
+        "send",
+        "poll",
+        "message",
+        "peer"
+      ],
+      "risk": "low",
+      "constraints": [
+        "read_only"
+      ],
+      "blocked_actions": []
+    },
+    {
+      "id": "ssh_operation",
+      "match": [
+        "ssh",
+        "remote",
+        "shell"
+      ],
+      "risk": "medium",
+      "constraints": [
+        "require_confirmation"
+      ],
+      "blocked_actions": [
+        "destructive_command"
+      ]
+    },
+    {
+      "id": "data_parse",
+      "match": [
+        "json",
+        "parse",
+        "extract",
+        "transform",
+        "convert"
+      ],
+      "risk": "low",
+      "constraints": [
+        "read_only"
+      ],
+      "blocked_actions": []
+    },
+    {
+      "id": "file_operation",
+      "match": [
+        "file",
+        "read",
+        "write",
+        "save",
+        "load"
+      ],
+      "risk": "medium",
+      "constraints": [
+        "dry_run_first"
+      ],
+      "blocked_actions": [
+        "overwrite_critical"
+      ]
+    },
+    {
+      "id": "network_call",
+      "match": [
+        "curl",
+        "http",
+        "api",
+        "request",
+        "fetch"
+      ],
+      "risk": "low",
+      "constraints": [
+        "local_network_only"
+      ],
+      "blocked_actions": [
+        "external_call"
+      ]
+    },
+    {
+      "id": "destructive",
+      "match": [
+        "delete",
+        "drop",
+        "wipe",
+        "reset",
+        "shutdown",
+        "reboot"
+      ],
+      "risk": "high",
+      "constraints": [
+        "require_human_approval"
+      ],
+      "blocked_actions": [
+        "execute",
+        "deploy"
+      ]
+    }
+  ],
+  "effect_class_overrides": {
+    "hmp-send": {
+      "effect_class": "mutating",
+      "declared_effects": [
+        "network_write",
+        "remote_message_delivery"
+      ],
+      "idempotency": "unsafe",
+      "partial_effect_possible": true,
+      "fallback_policy": "block_escalate"
+    }
+  }
+}

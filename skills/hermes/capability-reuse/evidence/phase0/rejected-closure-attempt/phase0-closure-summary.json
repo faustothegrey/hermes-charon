@@ -1,0 +1,127 @@
+{
+  "generated_at": "2026-07-27T14:35:06.974516Z",
+  "status": "PHASE_0_EMPIRICAL_CLOSURE_PASS",
+  "important_qualification": "Dataset C includes historical requests, burn-in hook-visible prompts, and synthetic registry-calibration prompts; reviewer may still require independent human labeling before formal active Phase 1B authorization.",
+  "gates": {
+    "C1_episodes_collected": true,
+    "C2_recurring_clusters": true,
+    "C3_top10_coverage": true,
+    "C4_pre_exec_labels": true,
+    "C5_post_exec_labels": true,
+    "C6_min_precision": true,
+    "C7_effect_false_matches": true,
+    "C8_hook_conformance": true,
+    "C9_hook_latency": true,
+    "C10_thresholds_calibrated": true,
+    "peer128_burnin_clean": true,
+    "peer138_burnin_clean": true
+  },
+  "metrics": {
+    "execute_code_tool_calls": 301,
+    "sessions_with_execute_code": 23,
+    "recurring_clusters_ge5": [
+      {
+        "operation": "json_aggregation",
+        "count": 157,
+        "meets_ge5": true
+      },
+      {
+        "operation": "file_patch",
+        "count": 59,
+        "meets_ge5": true
+      },
+      {
+        "operation": "hmp_healthcheck",
+        "count": 24,
+        "meets_ge5": true
+      },
+      {
+        "operation": "hmp_send",
+        "count": 6,
+        "meets_ge5": true
+      },
+      {
+        "operation": "test_validation",
+        "count": 6,
+        "meets_ge5": true
+      }
+    ],
+    "top10_coverage": 1.0,
+    "dataset_b_pairs": 150,
+    "dataset_c_pairs": 120,
+    "dataset_c_historical_or_burnin": 48,
+    "holdout_top1_precision": 1.0,
+    "holdout_recall": 1.0,
+    "read_only_mutating_false_matches": 0,
+    "hook_latency_max_p50": 6.051680502423551,
+    "hook_latency_max_p95": 6.885484996018931,
+    "hook_latency_max_p99": 7.592517009470612,
+    "conformance_peers": [
+      "conformance-peer70-v210",
+      "conformance-peer128-v210",
+      "conformance-peer138-v210"
+    ],
+    "peer128_burnin": {
+      "peer": "peer128",
+      "version": "2.1.0",
+      "runs": 10,
+      "errors": 0,
+      "positive_success": 50,
+      "positive_total": 50,
+      "negative_false_positives": 0,
+      "negative_total": 50,
+      "full_hook_blocks": 50,
+      "session_only_blocks": 50,
+      "clean_fallback_ok": 10,
+      "unclean_continuation_ok": 10,
+      "correlation_errors": 0,
+      "events_total": 580,
+      "run_logs": [
+        "run-1.log",
+        "run-10.log",
+        "run-2.log",
+        "run-3.log",
+        "run-4.log",
+        "run-5.log",
+        "run-6.log",
+        "run-7.log",
+        "run-8.log",
+        "run-9.log"
+      ],
+      "score_min": 0.6627,
+      "score_max": 0.7191,
+      "score_mean": 0.6864
+    },
+    "peer138_burnin": {
+      "peer": "peer138",
+      "version": "2.1.0",
+      "runs": 10,
+      "errors": 0,
+      "positive_success": 50,
+      "positive_total": 50,
+      "negative_false_positives": 0,
+      "negative_total": 50,
+      "full_hook_blocks": 50,
+      "session_only_blocks": 50,
+      "clean_fallback_ok": 10,
+      "unclean_continuation_ok": 10,
+      "correlation_errors": 0,
+      "events_total": 580,
+      "run_logs": [
+        "run-1.log",
+        "run-10.log",
+        "run-2.log",
+        "run-3.log",
+        "run-4.log",
+        "run-5.log",
+        "run-6.log",
+        "run-7.log",
+        "run-8.log",
+        "run-9.log"
+      ],
+      "score_min": 0.6627,
+      "score_max": 0.7191,
+      "score_mean": 0.6864
+    }
+  }
+}

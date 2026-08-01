@@ -113,6 +113,39 @@ Session-size watchdog = classic `no_agent=true` watchdog:
 Working implementation with the exact script, threshold math, and test
 recipe: `references/session-watchdog.md`.
 
+## Pruning old sessions (`hermes sessions prune`)
+
+When state.db grows huge (1GB+), prune sessions older than N days:
+
+```bash
+hermes sessions prune --older-than 7 --yes
+```
+
+**Pitfalls learned the hard way:**
+
+- **It is SLOW on big DBs.** A 1.2GB / 12K-session / 192K-message DB took ~18
+  minutes at 600MHz CPU (RPi). The default 300s foreground timeout KILLS it —
+  always run in background: `terminal(background=true, notify_on_complete=true)`.
+- **Progress is invisible for most of the run.** Deletes land in the WAL
+  (watch it grow to 500MB+) and the sessions/messages COUNT stays unchanged
+  until late in the run. Don't conclude "stuck" — check `state.db-wal` size
+  and the process %CPU instead of counting rows.
+- **`prune` does NOT shrink the file.** SQLite keeps freed pages; a 1.2GB DB
+  stays 1.2GB until you run `VACUUM`. After pruning always:
+  ```python
+  import sqlite3; con = sqlite3.connect("~/.hermes/state.db", timeout=60)
+  con.execute("VACUUM"); con.commit()
+  ```
+  (also background it — VACUUM on 1GB+ takes minutes). Real result: 1.18GB → 583MB.
+- **Active/protected sessions survive the prune** (in-use or locked ones
+  remain even if older than the cutoff) — that's expected, not a failure.
+- Query before pruning to preview impact:
+  ```python
+  SELECT COUNT(*), SUM(message_count) FROM sessions WHERE started_at < <cutoff_ts>
+  ```
+- Cron pattern: offer a monthly auto-prune cron (`no_agent=true`,
+  `deliver=local`) with the script wrapping prune + VACUUM.
+
 ## Pitfalls
 
 - **Cron `script` field is a bare filename**, not a path: it must exist

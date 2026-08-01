@@ -11,6 +11,11 @@ triggers:
   - DSI display
   - schermo nero
   - raspberry
+  - undervoltage
+  - get_throttled
+  - throttled
+  - weak psu
+  - alimentatore
 tags:
   - raspberry-pi
   - display
@@ -259,7 +264,22 @@ Il timestamp ISO8601 su stderr finisce nel journal di systemd (con `journalctl -
 
 Il kernel ignora il parametro `consoleblank=0` su Raspberry Pi con vc4-kms-v3d. Il parametro è presente in `/proc/cmdline` ma il modulo kernel mostra ancora 900. Non fare affidamento su questo per display DSI.
 
-### Riferimenti
+### Undervoltage (alimentatore sotto-dimensionato)
+
+Sintomo: `vcgencmd get_throttled` con bit 0/16 attivi + `measure_volts`
+basso (~0.85V invece di ~1.2V) + temp normale → NON è calore, è PSU/cavo.
+Il SoC throttla e la SD rischia corruzione a ogni picco di scrittura.
+
+Mitigazione da remoto (tutte soft/revertibili, persistite in rc.local):
+1. Governor `powersave` (600MHz fisso) → elimina i picchi di corrente
+2. Swap su **zram** invece del file su SD (zero usura SD)
+3. Dirty writeback aggressivo (1500/1000/10) → meno dati persi su crash
+4. Journal systemd limitato (100M/7gg) → systemd --user è spesso il top writer SD
+
+Ricetta completa, decode dei bit, watchdog cron e checklist di restore:
+`references/undervoltage-protection.md`.
+
+## Riferimenti
 
 - Vedi `references/drm-dpms-blanking.md` per la discussione completa sul blanking DPMS su vc4-kms-v3d.
 
@@ -341,6 +361,7 @@ cat /sys/class/drm/card1-DSI-1/modes
 |---|---|---|
 | `def fn() -> dict \| None:` | `def fn() -> Optional[dict]:` | Richiede `from typing import Optional` |
 | `def fn() -> str \| None:` | `def fn() -> Optional[str]:` | |
+| `def fn() -> int \| None:` | `def fn() -> Optional[int]:` | stessi sintomo/errore: `TypeError: unsupported operand type(s) for \|: 'type' and 'NoneType'` |
 | `match/case` (pattern matching) | `if/elif` chain | non usare |
 | `X \| Y` in isinstance | `isinstance(x, (X, Y))` | |
 
@@ -454,7 +475,78 @@ Prima di inviare un messaggio al display, controllare:
 - Se il testo è più lungo, prevedere il wrapping (il sistema lo gestisce automaticamente dalla versione con `_wrap_lines`)
 - Oppure accorciare il testo per farlo stare su 1-2 righe
 
-## DSI Bridge Crash (tc358762 timeout) — Conosciuto e non recuperabile senza reboot
+## Undervoltage detection & software mitigation (weak PSU)
+
+**Symptom**: SoC throttles, system feels slow, `dmesg` floods with
+`hwmon hwmon1: Undervoltage detected!`. Cause is a PSU/cable that can't
+deliver enough current — NOT temperature (check temp to confirm: if
+temp is sane, it's power).
+
+### Detection
+
+```bash
+vcgencmd get_throttled   # hex bitmask
+vcgencmd measure_volts   # core voltage — ~1.2V under load, ~0.85V idle is too low
+vcgencmd measure_temp    # confirm heat is NOT the cause
+dmesg | grep -i "undervoltage" | tail
+```
+
+`get_throttled` bit decoding (0x50005 = 0x1 + 0x4 + 0x10000 + 0x40000):
+
+| Bit | Meaning |
+|-----|---------|
+| 0 | Under-voltage **NOW** |
+| 1 | Arm frequency capped NOW |
+| 2 | Currently throttled NOW |
+| 3 | Soft temp limit NOW |
+| 16 | Under-voltage has occurred (latched) |
+| 17 | Freq capping has occurred (latched) |
+| 18 | Throttling has occurred (latched) |
+| 19 | Soft temp limit has occurred (latched) |
+
+**Pitfall**: the "occurred" bits (16-19) stay set until reboot — a
+`0x50005` long after the event does NOT mean under-voltage is happening
+now. The watchdog must check bit 0 (NOW) for live alerts; report the
+occurred bits as history.
+
+**Count events per 24h** from dmesg timestamps (boot + uptime offset) —
+this shows severity: 100+ events/day means the SoC throttles constantly.
+
+### Software mitigation when you CAN'T fix the PSU physically
+
+All reversible; run as root. Reduces current demand so the weak PSU
+stops sagging:
+
+```bash
+# 1. Governor powersave → fixed 600MHz, minimal current draw
+for c in /sys/devices/system/cpu/cpu[0-9]*/cpufreq/scaling_governor; do
+  echo powersave > "$c"
+done
+
+# 2. Swap OFF the SD card → zram in RAM (no SD wear, no corruption risk)
+modprobe zram && echo 512M > /sys/block/zram0/disksize
+mkswap /dev/zram0 && swapon /dev/zram0 && swapoff /var/swap
+
+# 3. Aggressive dirty writeback → smaller, more frequent flush (less data
+#    lost if a write is interrupted by a power sag)
+sysctl -w vm.dirty_writeback_centisecs=1500 vm.dirty_expire_centisecs=1000 vm.dirty_ratio=10
+```
+
+Persist all three in `/etc/rc.local` (before `exit 0`). Back up rc.local
+first. The gate is: hardware fix = official 5V/3A PSU + short thick USB
+cable (26 AWG or less); software mitigation is a stopgap, not a cure.
+
+### Undervoltage watchdog (Telegram alert)
+
+Same no_agent cron pattern as the DSI watchdog: script reads
+`get_throttled`, alerts only when bit 0 (NOW) is set, with a cooldown
+state file (max 1 alert / 60 min so a persistent sag doesn't spam).
+Include volts, temp, and 24h event count in the alert. Script must be
+Python 3.9-safe (`Optional[int]`, not `int | None` — see Python version
+constraints section). Restore the full-speed governor (`ondemand`) once
+the PSU is replaced.
+
+### DSI Bridge Crash (tc358762 timeout) — Conosciuto e non recuperabile senza reboot
 
 **Problema**: Il bridge DSI tc358762 (chip sul Raspberry Pi 7" display ufficiale) va in timeout dopo ore di funzionamento continuo. Il display diventa nero ma backlight rimane acceso e netboard.service è attivo.
 

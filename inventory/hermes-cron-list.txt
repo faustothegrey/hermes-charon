@@ -134,11 +134,11 @@ stdout:
     Name:      peer-queue-delivery
     Schedule:  every 2m
     Repeat:    ∞
-    Next run:  2026-08-01T16:46:11.190888+02:00
+    Next run:  2026-08-01T16:48:11.511366+02:00
     Deliver:   local
     Script:    peer_queue.py deliver
     Mode:      no-agent (script stdout delivered directly)
-    Last run:  2026-08-01T16:44:11.190888+02:00  error: Script not found: /home/fausto/.hermes/scripts/peer_queue.py deliver
+    Last run:  2026-08-01T16:46:11.511366+02:00  error: Script not found: /home/fausto/.hermes/scripts/peer_queue.py deliver
 
   9eb430f89411 [active]
     Name:      dsi-error-watchdog
@@ -223,11 +223,11 @@ NameError: name '_parse_ts' is not defined
     Name:      fix-capreuse-all
     Schedule:  every 5m
     Repeat:    ∞
-    Next run:  2026-08-01T16:46:11.075432+02:00
+    Next run:  2026-08-01T16:51:11.839478+02:00
     Deliver:   local
     Script:    fix-capreuse-all.py
     Mode:      no-agent (script stdout delivered directly)
-    Last run:  2026-08-01T16:41:11.075432+02:00  ok
+    Last run:  2026-08-01T16:46:11.839478+02:00  ok
 
   d558e1479489 [active]
     Name:      deploy-capreuse-v240-peer70

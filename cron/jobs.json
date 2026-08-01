@@ -458,7 +458,10 @@
       "origin": null,
       "enabled_toolsets": null,
       "workdir": null,
-      "fire_claim": null
+      "fire_claim": {
+        "at": "2026-08-01T16:46:49.013782+02:00",
+        "by": "Charon:1364253"
+      }
     },
     {
       "id": "3ac4bbef740c",
@@ -522,15 +525,15 @@
       "schedule_display": "every 2m",
       "repeat": {
         "times": null,
-        "completed": 9894
+        "completed": 9895
       },
       "enabled": true,
       "state": "scheduled",
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-07-18T18:30:48.467206+02:00",
-      "next_run_at": "2026-08-01T16:46:11.190888+02:00",
-      "last_run_at": "2026-08-01T16:44:11.190888+02:00",
+      "next_run_at": "2026-08-01T16:48:11.511366+02:00",
+      "last_run_at": "2026-08-01T16:46:11.511366+02:00",
       "last_status": "error",
       "last_error": "Script not found: /home/fausto/.hermes/scripts/peer_queue.py deliver",
       "last_delivery_error": null,
@@ -878,15 +881,15 @@
       "schedule_display": "every 5m",
       "repeat": {
         "times": null,
-        "completed": 842
+        "completed": 843
       },
       "enabled": true,
       "state": "scheduled",
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-07-29T16:09:18.693466+02:00",
-      "next_run_at": "2026-08-01T16:46:11.075432+02:00",
-      "last_run_at": "2026-08-01T16:41:11.075432+02:00",
+      "next_run_at": "2026-08-01T16:51:11.839478+02:00",
+      "last_run_at": "2026-08-01T16:46:11.839478+02:00",
       "last_status": "ok",
       "last_error": null,
       "last_delivery_error": null,
@@ -1086,5 +1089,5 @@
       "fire_claim": null
     }
   ],
-  "updated_at": "2026-08-01T16:45:11.621672+02:00"
+  "updated_at": "2026-08-01T16:46:49.016945+02:00"
 }

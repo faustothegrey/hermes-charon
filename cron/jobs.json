@@ -282,15 +282,15 @@
       "schedule_display": "every 10m",
       "repeat": {
         "times": null,
-        "completed": 1935
+        "completed": 1936
       },
       "enabled": true,
       "state": "scheduled",
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-07-17T09:34:19.596504+02:00",
-      "next_run_at": "2026-08-01T16:36:10.944704+02:00",
-      "last_run_at": "2026-08-01T16:26:10.944704+02:00",
+      "next_run_at": "2026-08-01T16:47:23.990919+02:00",
+      "last_run_at": "2026-08-01T16:37:23.990919+02:00",
       "last_status": "ok",
       "last_error": null,
       "last_delivery_error": null,
@@ -322,15 +322,15 @@
       "schedule_display": "every 5m",
       "repeat": {
         "times": null,
-        "completed": 3565
+        "completed": 3568
       },
       "enabled": true,
       "state": "scheduled",
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-07-17T09:40:06.032677+02:00",
-      "next_run_at": "2026-08-01T16:31:58.373959+02:00",
-      "last_run_at": "2026-08-01T16:26:58.373959+02:00",
+      "next_run_at": "2026-08-01T16:49:14.130121+02:00",
+      "last_run_at": "2026-08-01T16:44:14.130121+02:00",
       "last_status": "ok",
       "last_error": null,
       "last_delivery_error": null,
@@ -362,15 +362,15 @@
       "schedule_display": "every 5m",
       "repeat": {
         "times": null,
-        "completed": 3564
+        "completed": 3567
       },
       "enabled": true,
       "state": "scheduled",
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-07-17T09:42:49.347165+02:00",
-      "next_run_at": "2026-08-01T16:29:05.007343+02:00",
-      "last_run_at": "2026-08-01T16:24:05.007343+02:00",
+      "next_run_at": "2026-08-01T16:46:20.501652+02:00",
+      "last_run_at": "2026-08-01T16:41:20.501652+02:00",
       "last_status": "ok",
       "last_error": null,
       "last_delivery_error": null,
@@ -402,15 +402,15 @@
       "schedule_display": "every 3m",
       "repeat": {
         "times": null,
-        "completed": 5368
+        "completed": 5372
       },
       "enabled": true,
       "state": "scheduled",
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-07-17T12:25:33.406421+02:00",
-      "next_run_at": "2026-08-01T16:31:07.756206+02:00",
-      "last_run_at": "2026-08-01T16:28:07.756206+02:00",
+      "next_run_at": "2026-08-01T16:46:11.682702+02:00",
+      "last_run_at": "2026-08-01T16:43:11.682702+02:00",
       "last_status": "ok",
       "last_error": null,
       "last_delivery_error": null,
@@ -482,17 +482,17 @@
       "schedule_display": "every 10m",
       "repeat": {
         "times": null,
-        "completed": 1843
+        "completed": 1845
       },
       "enabled": true,
       "state": "scheduled",
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-07-18T13:25:16.152611+02:00",
-      "next_run_at": "2026-08-01T16:29:18.570469+02:00",
-      "last_run_at": "2026-08-01T16:19:18.570469+02:00",
+      "next_run_at": "2026-08-01T16:51:29.576076+02:00",
+      "last_run_at": "2026-08-01T16:41:29.576076+02:00",
       "last_status": "error",
-      "last_error": "Script exited with code 1\nstdout:\n[2026-08-01T14:18:53.945222+00:00] HMP ping round \u2014 6 peers\n  \u2192 peer84 (192.168.178.84:18643)... \u274c  curl exit 7\n  \u2192 peer105 (192.168.178.105:18643)... \u274c  curl exit 7\n  \u2192 peer106 (192.168.178.106:18643)... \u2705 55.9ms\n  \u2192 peer128 (192.168.178.112:18643)... \u274c  curl exit 7\n  \u2192 peer58 (192.168.178.58:18643)... \u2705 61.8ms\n\u2705 HMP ping round completato: 3/6 peers raggiungibili",
+      "last_error": "Script exited with code 1\nstdout:\n[2026-08-01T14:41:11.037996+00:00] HMP ping round \u2014 6 peers\n  \u2192 peer84 (192.168.178.84:18643)... \u274c  curl exit 7\n  \u2192 peer105 (192.168.178.105:18643)... \u274c  curl exit 7\n  \u2192 peer106 (192.168.178.106:18643)... \u2705 57.6ms\n  \u2192 peer128 (192.168.178.112:18643)... \u274c  curl exit 7\n  \u2192 peer58 (192.168.178.58:18643)... \u2705 63.9ms\n\u2705 HMP ping round completato: 3/6 peers raggiungibili",
       "last_delivery_error": null,
       "deliver": "local",
       "origin": null,
@@ -522,15 +522,15 @@
       "schedule_display": "every 2m",
       "repeat": {
         "times": null,
-        "completed": 9886
+        "completed": 9894
       },
       "enabled": true,
       "state": "scheduled",
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-07-18T18:30:48.467206+02:00",
-      "next_run_at": "2026-08-01T16:28:55.808172+02:00",
-      "last_run_at": "2026-08-01T16:26:55.808172+02:00",
+      "next_run_at": "2026-08-01T16:46:11.190888+02:00",
+      "last_run_at": "2026-08-01T16:44:11.190888+02:00",
       "last_status": "error",
       "last_error": "Script not found: /home/fausto/.hermes/scripts/peer_queue.py deliver",
       "last_delivery_error": null,
@@ -562,15 +562,15 @@
       "schedule_display": "every 5m",
       "repeat": {
         "times": null,
-        "completed": 3600
+        "completed": 3603
       },
       "enabled": true,
       "state": "scheduled",
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-07-18T23:02:36.838008+02:00",
-      "next_run_at": "2026-08-01T16:31:56.271143+02:00",
-      "last_run_at": "2026-08-01T16:26:56.271143+02:00",
+      "next_run_at": "2026-08-01T16:48:11.543728+02:00",
+      "last_run_at": "2026-08-01T16:43:11.543728+02:00",
       "last_status": "ok",
       "last_error": null,
       "last_delivery_error": null,
@@ -648,15 +648,15 @@
       "schedule_display": "every 5m",
       "repeat": {
         "times": null,
-        "completed": 1606
+        "completed": 1609
       },
       "enabled": true,
       "state": "scheduled",
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-07-26T22:01:25.369362+02:00",
-      "next_run_at": "2026-08-01T16:33:07.399696+02:00",
-      "last_run_at": "2026-08-01T16:28:07.399696+02:00",
+      "next_run_at": "2026-08-01T16:48:11.319649+02:00",
+      "last_run_at": "2026-08-01T16:43:11.319649+02:00",
       "last_status": "ok",
       "last_error": null,
       "last_delivery_error": null,
@@ -694,15 +694,15 @@
       "schedule_display": "every 60m",
       "repeat": {
         "times": null,
-        "completed": 137
+        "completed": 138
       },
       "enabled": true,
       "state": "scheduled",
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-07-26T22:02:03.637894+02:00",
-      "next_run_at": "2026-08-01T16:40:42.494738+02:00",
-      "last_run_at": "2026-08-01T15:40:42.494738+02:00",
+      "next_run_at": "2026-08-01T17:41:11.309224+02:00",
+      "last_run_at": "2026-08-01T16:41:11.309224+02:00",
       "last_status": "error",
       "last_error": "Script exited with code 1\nstderr:\nTraceback (most recent call last):\n  File \"/home/fausto/.hermes/scripts/syswatch-alert.py\", line 27, in <module>\n    active_alerts = [a for a in recent if now - _parse_ts(a.get(\"timestamp\",\"\")) < 3600]\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/fausto/.hermes/scripts/syswatch-alert.py\", line 27, in <listcomp>\n    active_alerts = [a for a in recent if now - _parse_ts(a.get(\"timestamp\",\"\")) < 3600]\n                                                ^^^^^^^^^\nNameError: name '_parse_ts' is not defined",
       "last_delivery_error": null,
@@ -832,15 +832,15 @@
       "schedule_display": "every 30m",
       "repeat": {
         "times": null,
-        "completed": 144
+        "completed": 145
       },
       "enabled": true,
       "state": "scheduled",
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-07-29T15:47:02.452735+02:00",
-      "next_run_at": "2026-08-01T16:39:52.247083+02:00",
-      "last_run_at": "2026-08-01T16:09:52.247083+02:00",
+      "next_run_at": "2026-08-01T17:10:10.941927+02:00",
+      "last_run_at": "2026-08-01T16:40:10.941927+02:00",
       "last_status": "ok",
       "last_error": null,
       "last_delivery_error": null,
@@ -878,15 +878,15 @@
       "schedule_display": "every 5m",
       "repeat": {
         "times": null,
-        "completed": 839
+        "completed": 842
       },
       "enabled": true,
       "state": "scheduled",
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-07-29T16:09:18.693466+02:00",
-      "next_run_at": "2026-08-01T16:30:55.904217+02:00",
-      "last_run_at": "2026-08-01T16:25:55.904217+02:00",
+      "next_run_at": "2026-08-01T16:46:11.075432+02:00",
+      "last_run_at": "2026-08-01T16:41:11.075432+02:00",
       "last_status": "ok",
       "last_error": null,
       "last_delivery_error": null,
@@ -924,15 +924,15 @@
       "schedule_display": "every 5m",
       "repeat": {
         "times": null,
-        "completed": 805
+        "completed": 809
       },
       "enabled": true,
       "state": "scheduled",
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-07-29T18:59:31.091202+02:00",
-      "next_run_at": "2026-08-01T16:29:55.792781+02:00",
-      "last_run_at": "2026-08-01T16:24:55.792781+02:00",
+      "next_run_at": "2026-08-01T16:50:11.620533+02:00",
+      "last_run_at": "2026-08-01T16:45:11.620533+02:00",
       "last_status": "ok",
       "last_error": null,
       "last_delivery_error": null,
@@ -1061,16 +1061,16 @@
       "schedule_display": "every 15m",
       "repeat": {
         "times": null,
-        "completed": 0
+        "completed": 1
       },
       "enabled": true,
       "state": "scheduled",
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-08-01T16:23:51.007484+02:00",
-      "next_run_at": "2026-08-01T16:38:51.007729+02:00",
-      "last_run_at": null,
-      "last_status": null,
+      "next_run_at": "2026-08-01T16:54:10.757774+02:00",
+      "last_run_at": "2026-08-01T16:39:10.757774+02:00",
+      "last_status": "ok",
       "last_error": null,
       "last_delivery_error": null,
       "deliver": "origin",
@@ -1082,8 +1082,9 @@
         "user_id": "8508115936"
       },
       "enabled_toolsets": null,
-      "workdir": null
+      "workdir": null,
+      "fire_claim": null
     }
   ],
-  "updated_at": "2026-08-01T16:28:07.757471+02:00"
+  "updated_at": "2026-08-01T16:45:11.621672+02:00"
 }

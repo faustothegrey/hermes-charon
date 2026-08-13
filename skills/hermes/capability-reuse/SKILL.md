@@ -1,7 +1,7 @@
 ---
 name: capability-reuse
 type: custom
-version: 2.4.6
+version: 2.4.17
 phase: "0+1"
 spec_version: "1.6"
 description: Capability Retrieval & Reuse Control Loop — v1.6; Phase 0 tooling/corpus complete; empirical labeling and independent validation pending
@@ -10,6 +10,7 @@ status: active
 dependencies:
   - hermes-hmp (HMP protocol)
 changelog:
+  - "2.4.6 — reviewer-queue release hardening: live hook metadata propagation, isolated acceptance HOME, strict formal holdout eligibility with rejection..."
   - "2.4.6 — reviewer-queue release hardening: live hook metadata propagation, isolated acceptance HOME, strict formal holdout eligibility with rejection reasons, authoritative retrieval event IDs, full multi-peer batch previews, candidate evidence preservation, label/reason validation, requester pseudonyms, stronger CSV neutralization, restored analyzer API, schema 1.2 conformance."
   - "2.4.5 — reviewer-facing human-label queue: schema 1.2 requester metadata, canonical execution plan preview for hmp-healthcheck@1.0.0, stable review IDs, append-only labels, and synthetic/organic queue split."
   - "2.4.4 — data-collection tightening per Fausto review 2026-07-31: request-scoped mandatory provenance (legacy_unclassified/unknown bucketing), peer_id on every event, clean cohort boundary (deployment_id/timestamp/plugin_artifact_hash/schema), chain correlation (session/episode/turn/task/tool_call/retrieval_event_id/code_hash), traffic_type+dedupe (organic_user/cron/test/retry/calibration), durable append-only review labels, event-time windows, read-only/mutating stream separation, CSV formula neutralization. Acceptance test 25 fresh events PASS (25/25 all criteria, 0 chain errors, 0 legacy in clean, 0 labels lost)."
@@ -70,6 +71,7 @@ capability-reuse/
 ├── tests/                       ← 57 source tests after v2.4.3 provenance/review/rollup blocker remediation
 
 Operational references:
+- `references/v2.4.16-clean-cohort-live-metadata-gates-2026-08-02.md` — v2.4.16 clean-cohort/live-metadata gate order: exact running artifact identity, reviewed archive+hash selection, clean deployment boundary, organic-hook metadata proof, retrieval/chain disposition accounting, fail-closed formal eligibility, remote restart verification, and peer58/peer106 scope statement.
 - `references/v2.4.5-reviewer-facing-queue-implementation-2026-08-01.md` — v2.4.5 implementation notes: reviewer-facing queue for `hmp-healthcheck@1.0.0`, schema 1.2 retrieval events, actor/channel separation, shared execution-plan preview/dispatch, stable review IDs, append-only labels, and separate acceptance/organic queue outputs.
 - `references/v2.4.4-implementation-acceptance-run-2026-07-31.md` — v2.4.4 peer70 implementation/acceptance notes: final clean deployment passed 25 fresh retrieval chains with 0 chain errors; includes pitfalls (false PASS with zero events, nested event.data payloads, current deployment_id filtering).
 - `references/point1-passive-harvest-stabilization-2026-07-30.md` — Point-1 passive harvesting stabilization: peer70 as canonical collector, per-peer analyzer cron with explicit `--peer-id`, shadow retrieval probes, fleet `latest.json`, offline-peer follow-up.
@@ -287,6 +289,21 @@ The zip named `capability-reuse-v2.4.3.zip` (SHA verified against its sidecar) c
 ### Plugin relative-import pitfall (v2.4.4)
 
 `from .v244_metadata import ...` inside `event_store.py` breaks when the module is imported as a standalone script (`ImportError: attempted relative import with no known parent package`). Plugin files that are exercised both by the gateway and by standalone acceptance/analyzer scripts must use absolute imports (`from v244_metadata import ...`), and the test script must `sys.path.insert(0, <plugin dir>)` before importing.
+
+### Disposition-accounting zero-orphan rule (T3, 2026-08-13)
+
+Review-queue generation MUST assign every `retrieval_event` exactly one
+disposition — a review row OR an explicit exclusion with structured reason.
+`generate-review-queue-v245.py` had a silent `continue` for events without
+candidates/`top_capability`, orphaning 20/143 events (incl. 3 organic_peer).
+Fix + cross-check recipe: `references/t3-disposition-accounting-fix-2026-08-13.md`.
+Gate passes only when `records + excluded == total retrieval events`.
+
+### Clean-cohort live metadata gate discipline (v2.4.16)
+
+When a reviewer gates capability-reuse validation on live metadata, treat the order as mandatory: identify the exact running artifact, select/review the fixed release archive+hash, deploy a clean cohort, prove one genuine organic hook event carries complete metadata, and account for every retrieval/execution-chain disposition before running positive cases. A remote healthcheck response alone is not proof: the processing peer must emit a fresh retrieval/intervention/invocation chain from its own live hook path. Copying plugin files is also not proof of deployment; verify gateway PID/start time changed, hooks loaded, runtime tree hash matches the reviewed artifact, and a fresh post-restart event appears. Full reusable checklist: `references/v2.4.16-clean-cohort-live-metadata-gates-2026-08-02.md`.
+
+Peer58/peer106 follow-up pitfall (2026-08-02): gateway restart + plugin enabled + successful HMP health response can still be insufficient. Verify the runtime *hook surface* directly: `CAPABILITY_REUSE_MODE` in the gateway process, `invoke_capability` actually registered in effective tools, and a fresh post-trigger `retrieval_event` on the processing peer. On systemd-managed peers, writing `CAPABILITY_REUSE_*` lines to `~/.hermes/.env` may not affect the gateway process if the unit does not load that env file; add a user-service drop-in or unit `Environment=` entries, run `systemctl --user daemon-reload`, restart, then re-check `/proc/<pid>/environ` (or equivalent) before testing. If the processing peer reports a healthcheck result but no matching retrieval event, mark the case blocked; do not count local CLI/API runs or HMP responses as reversed-case evidence unless they produced the authoritative retrieval/intervention/invocation chain. For artifact identity, prefer canonical top-level source file hashes / reviewed manifest over ad-hoc tree hashes that may include `__pycache__` or transient files; investigate mismatches before claiming deployment drift.
 
 ### HMP-DM session execution fallback (recurring lesson)
 

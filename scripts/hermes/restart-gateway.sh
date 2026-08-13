@@ -1,7 +1,9 @@
 #!/bin/bash
-# restart-gateway.sh — Riavvia il gateway Hermes
-# Scritto per essere eseguito da crontab (fuori dal processo gateway)
-export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
-sleep 5
-systemctl --user restart hermes-gateway.service
-echo "[$(date)] Gateway restart tentato" >> /home/fausto/.hermes/peer-network/restart.log
+# Restart gateway peer70 (plugin patch load) — eseguito da cron no_agent
+PID=$(ps aux | grep 'hermes_cli.main gateway' | grep -v grep | awk '{print $2}' | head -1)
+if [ -n "$PID" ]; then
+  kill -9 "$PID"
+  echo "Gateway $PID killed — systemd riavvia automaticamente"
+else
+  echo "Gateway process non trovato"
+fi

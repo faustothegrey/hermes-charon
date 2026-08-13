@@ -1,5 +1,5 @@
 from __future__ import annotations
-"""Reviewer-facing queue builder for capability-reuse v2.4.6."""
+"""Reviewer-facing queue builder for capability-reuse v2.4.10."""
 import csv
 import hashlib
 import json
@@ -27,6 +27,9 @@ EXCLUDED_TRAFFIC_TYPES = {"acceptance_test", "calibration_probe", "operator_seed
 ACTOR_TYPES = {"human", "agent", "scheduler", "service", "unknown"}
 REQUEST_CHANNELS = {"telegram", "hmp", "cron", "local", "api", "gateway", "unknown"}
 LABELS = {"ACCEPT", "REJECT", "UNSURE"}
+EXPECTED_PLUGIN_VERSION = "2.4.17"
+EXPECTED_COHORT_LABEL = "v2.4.16_peer58_peer106"
+
 REASON_CODES = {
     "exact_match", "partial_coverage", "wrong_capability", "wrong_target", "effect_mismatch",
     "informational_only", "code_generation_request", "composite_request", "requester_unclear",
@@ -151,10 +154,10 @@ def formal_holdout_validation(event: dict[str, Any], data: dict[str, Any], reque
     provenance = data.get("provenance") if isinstance(data.get("provenance"), dict) else {}
     reasons: list[str] = []
     if event.get("schema_version") != "1.2": reasons.append("schema_version_not_1_2")
-    if data.get("plugin_version") != "2.4.6": reasons.append("plugin_version_not_2_4_6")
+    if data.get("plugin_version") != EXPECTED_PLUGIN_VERSION: reasons.append("plugin_version_not_%s" % EXPECTED_PLUGIN_VERSION.replace(".", "_"))
     if not data.get("deployment_id"): reasons.append("missing_deployment_id")
     if not data.get("plugin_artifact_hash"): reasons.append("missing_plugin_artifact_hash")
-    if data.get("cohort_label") != "v2.4.6_review_queue": reasons.append("wrong_cohort_label")
+    if data.get("cohort_label") != EXPECTED_COHORT_LABEL: reasons.append("wrong_cohort_label")
     if provenance.get("stream") != "organic_live": reasons.append("not_organic_live_provenance")
     if provenance.get("valid") is not True:
         reasons.append(provenance.get("reason") or "invalid_provenance")

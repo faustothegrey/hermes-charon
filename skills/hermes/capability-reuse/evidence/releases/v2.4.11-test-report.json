@@ -1,0 +1,7 @@
+{
+  "generated_at": "2026-08-02T10:08:21Z",
+  "command": "env -u CAPABILITY_REUSE_* python3 -m unittest discover -s tests -v",
+  "status": "OK",
+  "tests": 72,
+  "log": "/tmp/unit-v2.4.11.log"
+}

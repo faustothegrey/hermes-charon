@@ -953,6 +953,10 @@ The Hermes API server (:8642) and the HMP gateway plugin (:18643) are **separate
 - Use `/hmp/send` on **port 18643** for bidirectional ping (the HMP healthcheck pattern)
 
 The combined health monitors (`peer-health.py`) use port 8642; the HMP-specific healthchecks (`hmp-healthcheck.py`, `peer-health-watch.py`) use port 18643. Keep both so you know which service is down.
+
+### Peer unreachable — "No route to host" diagnostics
+
+When a script/cron fails with `[Errno 113] No route to host` or `curl exit 7` against a peer, classify **host down vs service down** before assuming anything: check ARP (`ip neigh` — FAILED = machine powered off/disconnected at L2, REACHABLE = service issue), then rebuild the outage window from cron output history (last OK → first FAIL) and the healthcheck log (peers that stop answering ping are **omitted** from `hmp-healthcheck.log` lines entirely). Full workflow, commands, and a worked example (peer84 down ~22h, Aug 2026) in `references/peer-unreachable-diagnostics.md`. Note: `ping peer84`/`ping N56VV` will NOT resolve — always use IPs from `peers_config.json`.
 The gateway refuses `systemctl --user restart hermes-gateway.service` from within its own process (even via `background=true` or `delegate_task`). Always use system crontab or a separate shell.
 
 ### API server config YAML structure
@@ -1219,6 +1223,17 @@ done
 ```
 
 ## Protocol Versioning & Alignment
+
+> **⚠️ CONVERGENCE IN PROGRESS (2026-08):** the standalone dual-plane server
+> (:18644, `hmp_dual_plane*.py`) is being **retired** — its functionality
+> merges into the HMP gateway plugin (:18643, v0.1.4+), which internally uses
+> the Hermes API (:8642). One port, one process, one systemd restart; the
+> recurring "dual-plane didn't restart after reboot" failure disappears. Until
+> the rollout completes, :18644 still runs on peers but is legacy. Full
+> migration plan, parity battery, live-shadow metadata propagation
+> (`traffic_type`/`requester`/`provenance` must be stamped by the sender —
+> gateway hooks do NOT fire on HMP traffic), and the setsid restart pattern:
+> **`hermes-hmp` skill → `references/dual-plane-to-plugin-convergence.md`**.
 
 The HMP protocol is versioned via **SemVer**. See **`hermes-hmp` skill** (v1.9.0) for the canonical protocol reference.
 

@@ -1,0 +1,7 @@
+{
+  "generated_at": "2026-08-02T10:45:00Z",
+  "command": "env -u CAPABILITY_REUSE_MODE -u CAPABILITY_REUSE_ACTIVE_CAPABILITIES -u CAPABILITY_REUSE_AVAILABLE_CAPABILITIES -u CAPABILITY_REUSE_PERMISSIONS python3 -m unittest discover -s tests -v",
+  "status": "OK",
+  "tests": 72,
+  "log": "/tmp/unit-v2.4.13.log"
+}

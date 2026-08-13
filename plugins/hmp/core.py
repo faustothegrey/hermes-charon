@@ -141,11 +141,17 @@ class HMPStatusStore(object):
             )
         return self.get(message_id) or {"message_id": message_id, "status": "accepted"}
 
-    def queue(self, message_id: str, body: Dict[str, Any], from_peer: str, to_peer: str, text: str) -> Dict[str, Any]:
-        """Persist an inbound HMP message for asynchronous gateway delivery."""
+    def queue(self, message_id: str, body: Dict[str, Any], from_peer: str, to_peer: str, text: str, chat_id: Optional[str] = None) -> Dict[str, Any]:
+        """Persist an inbound HMP message for asynchronous gateway delivery.
+
+        chat_id defaults to from_peer (backward compatible). When the sender
+        provides an explicit session_id (dual-plane parity), it is used as the
+        chat id so the gateway keeps per-peer-pair conversational context.
+        """
         ts = now_ts()
         idempotency_key = str(body.get("idempotency_key") or message_id)
-        chat_id = from_peer
+        if chat_id is None:
+            chat_id = from_peer
         raw_json = json_dumps(body)
         with self._connect() as conn:
             conn.execute(

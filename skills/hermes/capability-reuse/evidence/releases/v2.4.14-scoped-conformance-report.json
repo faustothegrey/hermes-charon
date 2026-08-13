@@ -1,0 +1,13 @@
+{
+  "generated_at": "2026-08-02T10:52:11Z",
+  "status": "passed_source_tests",
+  "scope": "peer58_peer106_only",
+  "plugin_tree_hash": "sha256:33758531d6d79130381f5c04a4e10b898beb4b5bd14cf3b71ae34bfee1c0d1b3",
+  "checks": [
+    "version surfaces aligned to 2.4.14",
+    "source archive SHA-256 sidecar fixed",
+    "source compiles and unit tests pass",
+    "Case B semantic candidate visibility fixed without accepting mutating composite requests",
+    "two-peer scope statement included"
+  ]
+}

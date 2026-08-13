@@ -40,10 +40,10 @@ def set_cohort():
     data = {
         "deployment_id": dep,
         "deployment_timestamp": now(),
-        "plugin_version": "2.4.6",
-        "plugin_artifact_hash": "v246-reviewer-queue-local",
+        "plugin_version": "2.4.16",
+        "plugin_artifact_hash": "v2416-reviewer-queue-local",
         "schema_version": "1.2",
-        "cohort_label": "v2.4.6_review_queue",
+        "cohort_label": "v2.4.16_review_queue",
     }
     COHORT.parent.mkdir(parents=True, exist_ok=True)
     COHORT.write_text(json.dumps(data, indent=2), encoding="utf-8")

@@ -75,6 +75,125 @@ Decryption requires the matching SSH private key (`~/.ssh/id_rsa`). If lost, sec
 - SSH/GPG/API private keys
 - `.git/` artifacts, `__pycache__/`, `.pyc`
 
+> ⚠️ **Pitfall:** `state.db` has crept into `secret_candidates` (generate-backup.py)
+> and the `for item in ...` loop (backup-hermes.sh) before — a 1GB+ state.db
+> makes `secrets/*.tar.gz.enc` exceed GitHub's 100MB per-file limit and the
+> nightly push fails silently (`last_status: error`). Keep it OUT of both
+> scripts. Full diagnosis + history rewrite: `references/secrets-bundle-state-db-bloat.md`.
+
+## ⚠️ Pitfall: state.db crept into the secrets bundle and broke the nightly
+
+`~/.hermes/state.db` (the session store) can reach 1+ GB. If it ends up in the
+encrypted secrets bundle (it did on peer70 — someone added it to
+`secret_candidates` and the shell `for item in ...` loop), the tar.gz.enc becomes
+hundreds of MB, **exceeds GitHub's 100 MB per-file limit, and every nightly push
+fails with `GH001: Large files detected` / `pre-receive hook declined`** while
+`last_status: error` in the cron list. `state.db` is runtime state, not a secret
+— it must stay out of the bundle.
+
+**Diagnosis when the nightly fails:** check the backup repo for large blobs:
+`git rev-list --objects --all | git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)' | awk '$1=="blob" && $3>50000000 {print $3, $4}'`
+and inspect `secrets/*.enc` sizes.
+
+**Fix:** remove `state.db` from BOTH places (`generate-backup.py`
+`secret_candidates` list AND the `for item in` loop in `backup-hermes.sh`), then
+purge the oversized blob from git history before the next push:
+`git reset --soft <last-good-commit> && git rm -q -r --cached . && git add -A && git commit -m "fix: exclude state.db"`.
+Verify no >50 MB blob remains, then re-encrypt the bundle (it should drop from
+~300 MB to ~10 KB) and push. Re-run the cron job manually to confirm
+`last_status: ok`.
+
+## Scripts needed
+
+`state.db` cresce fino a 1GB+ dopo mesi di sessioni. Se finisce nei
+`secret_candidates` (generate-backup.py) O nel loop `for item in ...`
+(backup-hermes.sh), il `hermes-secrets.tar.gz.enc` supera il limite
+GitHub di **100MB/file** → il push viene rifiutato con
+`GH001: Large files detected` e il nightly fallisce silenziosamente
+(`last_status: error`). Il file .enc è AES-encrypted quindi NON si
+comprime nel pack — 322MB di input restano 322MB.
+
+**Verifica dopo ogni modifica agli script** — grep per `state.db` in
+ENTRAMBI i file:
+```bash
+grep -n "state.db" ~/Backups/hermes-config/scripts/generate-backup.py \
+                   ~/Backups/hermes-config/scripts/backup-hermes.sh
+```
+Il secrets bundle sano è pochi KB, non centinaia di MB. Il manifest
+(`secrets/MANIFEST.json`) deve elencare solo `.env`, `auth.json`,
+`google_token.json`, `google_client_secret.json`, `gateway_state.json`,
+`pairing`.
+
+**Recupero dopo un push fallito** — il commit locale contiene già il blob
+enorme; riscrivi la history PRIMA di ripushare:
+```bash
+git reset --soft <ultimo-commit-valido>      # es. il primo commit del repo
+git rm -q -r --cached .                       # untrack tutto
+git add -A && git commit -m "..." && git push
+# verifica che non restino blob >50MB:
+git rev-list --objects --all | git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)' \
+  | awk '$1=="blob" && $3>50000000 {print $3, $4}'
+```
+
+## ⚠️ Pitfall critico: state.db nel secrets bundle → backup nightly rotto
+
+`state.db` (SQLite delle sessioni) può crescere a **>1GB** (sessioni HMP
+enormi, sessioni Telegram vecchie). Se finisce nel secrets bundle, il
+`secrets/hermes-secrets.tar.gz.enc` supera il **limite GitHub di 100MB/file**
+e il push fallisce con `GH001: Large files detected`. Sintomo: il cron
+nightly mostra `last_status: error` ma non c'è alcun alert all'utente.
+
+**Controllo rapido**: `ls -la ~/Backups/<repo>/secrets/*.enc` → se il
+`.tar.gz.enc` è centinaia di MB, è rotto (sano = KB).
+
+**Fix**:
+1. Rimuovere `state.db` da `secret_candidates` in `scripts/generate-backup.py`
+   E dalla lista `for item in ...` in `scripts/backup-hermes.sh` — **entrambi**
+   i file la contengono e si desincronizzano facilmente
+2. Riscrivere la history git per eliminare il blob gigante (il push fallito
+   lascia il commit locale con il blob):
+   ```bash
+   git reset --soft <ultimo-commit-valido>
+   git rm -q -r --cached . && git add -A && git commit -m "backup: fix exclude state.db"
+   ```
+3. Verificare che non restino blob >50MB: `git rev-list --objects --all | git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)' | awk '$1=="blob" && $3>50000000'`
+4. Rigenerare il bundle secrets (senza state.db → pochi KB), commit, push
+5. Test end-to-end: `cronjob action='run'` sul nightly → `last_status: ok`
+
+**Regola**: `state.db` è runtime state, NON un segreto — non va MAI nel
+bundle crittografato né nel repo. La config (che è il vero valore) è già
+coperta da config/, skills/, plugins/, memories/.
+
+### ⚠️ Pitfall: state.db creeps back into the secrets bundle
+
+`state.db` (the Hermes session store, SQLite+FTS5) can reach **1+ GB**.
+It is documented as NOT-to-backup, but it has been found in
+`secret_candidates` in BOTH `generate-backup.py` AND the `for item in
+...` loop of `backup-hermes.sh` — someone added it later as a "session
+backup" idea. Consequence: the encrypted bundle becomes
+`hermes-secrets.tar.gz.enc` of **322 MB**, GitHub rejects the push
+(`GH001: File ... exceeds GitHub's file size limit of 100.00 MB`), the
+nightly cron shows `last_status: error`, and NO backup happens — for
+days, silently (deliver=local hides the failure).
+
+**Checklist when the nightly backup fails or the .enc file is huge:**
+
+1. `ls -la ~/Backups/hermes-config/secrets/*.enc` — if > 100 MB, this pitfall.
+2. `grep -n "state.db" scripts/generate-backup.py scripts/backup-hermes.sh`
+   — remove it from both `secret_candidates` and the `for item in` loop.
+3. Verify no blob > 50 MB in the history:
+   `git rev-list --objects --all | git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)' | awk '$1=="blob" && $3>50000000'`
+4. If the oversized commit was already committed locally (push rejected),
+   rewrite: `git reset --soft <last-good-commit>`, `git rm -r --cached .`,
+   `git add -A`, re-commit, then push.
+5. Re-run the cron job (`cronjob action=run`) and confirm `last_status: ok`.
+6. Optionally add a `backup-monitor` job that greps for `.enc` size and
+   alerts if > 50 MB.
+
+`state.db` and `sessions/` are runtime state — they regenerate. The
+config (config.yaml, skills, plugins, memories, secrets) is what a
+restore actually needs.
+
 ## ⚠️ Pitfall: state.db leaked into the secrets bundle → GitHub push rejected
 
 `state.db` (the session store) grows to 1GB+ on busy gateway nodes. If it
@@ -160,6 +279,53 @@ git remote add origin git@github.com:<user>/hermes-config-peer70.git
 # Run first backup manually: bash scripts/backup-hermes.sh
 # Then set up cron
 ```
+
+## ⚠️ Pitfall: state.db must NEVER go into the secrets bundle
+
+`state.db` (the canonical SQLite session store) can grow to **1GB+** — it holds
+every session/message. If it sneaks into the encrypted secrets tarball, the
+`.tar.gz.enc` exceeds **GitHub's 100MB per-file limit** and the push is
+rejected:
+
+```
+remote: error: File secrets/hermes-secrets.tar.gz.enc is 322.36 MB; this exceeds GitHub's file size limit of 100.00 MB
+remote: error: GH001: Large files detected.
+ ! [remote rejected] main -> main (pre-receive hook declined)
+```
+
+The nightly cron then fails silently (`last_status: error`) for days while the
+config backup stops being pushed. **Detection:** after a failed push, check the
+secrets bundle size — a healthy bundle is KBs, not hundreds of MB.
+
+**state.db is runtime state, NOT configuration** — it is regenerable and is
+listed in "What NOT to backup". Restore of config/skills/memories does not need
+it. Exclude it in BOTH places (they are separate and both were wrong in 2026-08):
+
+1. `scripts/generate-backup.py` → `secret_candidates` list
+2. `scripts/backup-hermes.sh` → the `for item in ...` loop
+
+```bash
+# verify no large blobs remain in the repo history
+git rev-list --objects --all | git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)' \
+  | awk '$1=="blob" && $3>50000000 {print $3, $4}'
+```
+
+### Purge a large blob already committed
+
+If the oversized `.enc` was committed locally (push rejected), rewrite the
+history before the next push — otherwise git keeps trying to upload the blob:
+
+```bash
+# find the last good commit on the remote, then squash-replace everything after it
+git reset --soft <last_good_remote_commit>
+git rm -q -r --cached . 2>/dev/null
+git add -A
+git commit -m "backup: rebuild without oversized secrets bundle"
+git push
+```
+
+Then regenerate the secrets bundle (now KBs) and commit again. Verify with the
+`git rev-list` check above that no blob >50MB remains.
 
 ## Cross-platform validation
 
@@ -258,6 +424,119 @@ Secrets bundle after fix: ~10KB instead of 322MB.
 `cronjob action=list`) is the earliest signal — check it if backups stop
 arriving. Also: `hermes sessions prune --older-than N --yes` + `VACUUM` keeps
 state.db small in the first place (see `hermes-session-lifecycle` skill).
+
+## ⚠️ Pitfall: state.db sneaks into the secrets bundle → push rejected (GH001)
+
+The skill's "What NOT to backup" table lists `state.db*` — but the
+deployed scripts can silently drift from that rule. On peer70 the
+`secret_candidates` list in BOTH `generate-backup.py` AND `backup-hermes.sh`
+contained `state.db` (1.18GB SQLite session store). Result: the encrypted
+bundle `secrets/hermes-secrets.tar.gz.enc` grew to **322MB**, exceeding
+GitHub's **100MB per-file limit**, and every `git push` was rejected:
+
+```
+remote: error: File secrets/hermes-secrets.tar.gz.enc is 322.36 MB; this exceeds GitHub's file size limit of 100.00 MB
+remote: error: GH001: Large files detected.
+! [remote rejected] main -> main (pre-receive hook declined)
+```
+
+The nightly cron showed `last_status: error` — silently failing for days.
+
+**Fix checklist (when the bundle is too big):**
+
+1. Remove `state.db` from `secret_candidates` in `generate-backup.py`
+   AND from the `for item in ...` loop in `backup-hermes.sh` (both places —
+   they are maintained separately).
+2. Purge the giant blob from git history:
+   ```bash
+   cd ~/Backups/hermes-config
+   rm -f secrets/hermes-secrets.tar.gz.enc secrets/*.key.enc secrets/*.key.pub
+   git reset --soft <last_good_commit>
+   git rm -q -r --cached . ; git add -A
+   git commit -m "backup: fix — exclude state.db from secrets bundle"
+   ```
+3. Regenerate the bundle WITHOUT state.db (should be KBs, not MBs):
+   ```bash
+   python3 scripts/generate-backup.py
+   # then re-run the openssl envelope-encrypt block from backup-hermes.sh
+   ```
+4. Verify no blob >50MB remains in the rewritten history:
+   ```bash
+   git rev-list --objects --all | git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)' \
+     | awk '$1=="blob" && $3>50000000 {print $3, $4}'
+   ```
+5. `git push` → confirm `b6f4043..<new>  main -> main` succeeds.
+6. Re-run the nightly cron job (`cronjob action='run'`) and check
+   `last_status: ok`.
+
+**Rule:** `state.db` is runtime state (sessions/messages — recreatable),
+NOT config. Never include it in the secrets bundle; if the user wants it
+archived, keep it local-only or in a separate LFS repo.
+
+## Pitfall: state.db in the secrets bundle breaks GitHub pushes (100MB limit)
+
+**Symptom:** nightly backup cron reports `last_status: error`; manual
+`git push` fails with:
+```
+remote: error: File secrets/hermes-secrets.tar.gz.enc is 322.36 MB; this exceeds GitHub's file size limit of 100.00 MB
+```
+
+**Root cause:** `state.db` (the SQLite session store, can reach 1GB+)
+had been added to the secrets bundle. The encrypted bundle
+`secrets/hermes-secrets.tar.gz.enc` bloated past GitHub's 100MB per-file
+limit → every push rejected. The backup had been silently failing for
+days.
+
+**Fix — `state.db` must NEVER be in the secrets bundle** (it's runtime
+state, not a secret; the skill's own "What NOT to backup" list already
+excludes `state.db*`). Remove it from BOTH places:
+
+1. `scripts/generate-backup.py` → `secret_candidates` list
+2. `scripts/backup-hermes.sh` → the `for item in ...` copy loop
+
+Then clean the oversized `.enc` from git history (the bad commit is
+usually unpushed — the push was rejected):
+```bash
+rm -f secrets/hermes-secrets.tar.gz.enc secrets/hermes-secrets.key.enc secrets/hermes-secrets.key.pub
+git reset --soft <last-good-commit> && git rm -q -r --cached . 2>/dev/null
+git add -A && git commit -m "backup: fix — exclude state.db from secrets bundle"
+git push
+# Verify no blob > 50MB remains in the new history:
+git rev-list --objects --all | git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)' | awk '$1=="blob" && $3>50000000'
+```
+
+After the fix, a healthy `secrets/hermes-secrets.tar.gz.enc` is a few KB
+(only .env, auth.json, tokens), not hundreds of MB.
+
+**Verification habit:** after any backup change, check the cron job's
+`last_status` (was `error` before the fix, `ok` after) and confirm the
+remote HEAD moved:
+```bash
+git -C ~/Backups/hermes-config log --oneline origin/main -1
+```
+
+## Pitfall: state.db nel secrets bundle → push fallito (GitHub 100MB limit)
+
+`state.db` (SQLite session store) può crescere a **1GB+** (sessioni vecchie, indici
+FTS). Se compare in `secret_candidates` (generate-backup.py) o nel loop di
+backup-hermes.sh, il bundle cifrato supera il **limite GitHub di 100MB/file**:
+
+**Sintomo**: `git push` fallisce con
+`remote: error: File secrets/hermes-secrets.tar.gz.enc is 322.36 MB; this exceeds
+GitHub's file size limit of 100.00 MB` e il nightly resta `last_status: error`.
+
+**Fix**:
+1. Rimuovere `state.db` da `secret_candidates` in `generate-backup.py` E dalla
+   `for item in ...` loop in `backup-hermes.sh` (è runtime state ricreabile, non un segreto)
+2. Riscrivere la history git per eliminare il blob gigante già committato:
+   `git reset --soft <ultimo-push-ok>` → `git rm -r --cached .` → `git add -A` →
+   nuovo commit → push
+3. Verifica: `git rev-list --objects --all | git cat-file --batch-check='%(objecttype)
+   %(objectname) %(objectsize) %(rest)' | awk '$1=="blob" && $3>50000000'` → nessun blob >50MB
+4. Testare il nightly: `cronjob(action='run')` sul job backup → `last_status: ok`
+
+**Controllo rapido** se il bundle è gonfio prima del push: `ls -la secrets/*.enc`
+(un bundle sano è ~10KB, non centinaia di MB).
 
 ## See also
 

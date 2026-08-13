@@ -49,6 +49,25 @@ chmod 600 /root/.ssh/authorized_keys
 **Key:** `fausto@domotz.com` (see `~/.ssh/id_rsa.pub` on peer70).
 Login as **root** on RPi/DietPi peers (they use system-wide systemd, not `--user`).
 
+**⚠️ Not always root/systemd-system (peer141/Stella, 2026-08-13):** fresh
+Hermes installs on RPi may run as user `fausto` with **systemd --user**
+(`systemctl --user restart hermes-gateway.service`, home `/home/fausto`,
+`~/.config/systemd/user/hermes-gateway.service`). Check first:
+`ps aux | grep 'hermes_cli.main gateway'` → shows the user; `ls ~/.config/systemd/user/`
+→ shows user-units. Use the SAME ssh user the gateway runs as
+(peer141 = `fausto@192.168.178.141`, hostname Stella, Hermes v0.20.0).
+
+**⚠️ Variant — fresh Hermes install as a normal user (peer141/Stella):** not
+all new peers run as root. A fresh `hermes setup` on RPi/Debian can live
+under `/home/fausto/.hermes` with **systemd `--user`** (`hermes-gateway.service`
+in `~/.config/systemd/user/`, `enabled`). Detect before assuming root:
+`ls ~/.hermes`, `systemctl --user list-unit-files | grep -i hermes`,
+`ps aux | grep hermes_cli.main gateway` (user column). If user-mode: SCP to
+`fausto@` not `root@`, restart with `systemctl --user restart hermes-gateway.service`,
+and use `/home/fausto/.hermes/...` paths in config (database_path, .env).
+The gateway process user tells you the home dir — peer141 ran as `fausto`
+with PID in `ss -tlnp | grep hermes`.
+
 After setup, verify from peer70:
 ```bash
 ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o BatchMode=yes \
@@ -87,6 +106,23 @@ scp ~/.hermes/plugins/hmp/adapter.py   root@192.168.178.138:~/.hermes/plugins/hm
 scp ~/.hermes/plugins/hmp/core.py      root@192.168.178.138:~/.hermes/plugins/hmp/core.py
 scp ~/.hermes/plugins/hmp/plugin.yaml  root@192.168.178.138:~/.hermes/plugins/hmp/plugin.yaml
 ```
+
+### 5b. Copy the hermes-hmp skill to the new peer (full peers only)
+
+A full Hermes peer must also HAVE the protocol skill locally — the user
+explicitly checks "hmp skill active". SCP the whole skill directory:
+
+```bash
+scp -qr ~/.hermes/skills/software-development/hermes-hmp \
+  fausto@192.168.178.XXX:~/.hermes/skills/software-development/
+```
+
+Then have the peer PROVE it read the skill (not just that the files exist):
+in the welcome message (step 20) ask it to run `skill_view(name='hermes-hmp')`
+and confirm the protocol version. Files present ≠ skill loaded — the
+notification-vs-alignment rule applies to onboarding too. Verified on
+peer141: the peer answered with the full protocol summary only after being
+asked to load it.
 
 ### 6. Add plugin + HMP config to config.yaml
 
@@ -132,6 +168,51 @@ hmp:
 
 Replace `peer138` and paths with the actual peer ID/IP.
 
+**⚠️ Hermes v0.20.0+ (2026.8+): api_server needs `API_SERVER_KEY`.** Without
+it the gateway logs `[Api_Server] Refusing to start: API_SERVER_KEY is
+required for the API server, including loopback-only binds on 0.0.0.0.` and
+`:8642` never listens. Generate one and append to the peer's `~/.hermes/.env`
+(before restarting the gateway):
+
+```bash
+KEY=$(python3 -c "import secrets; print(secrets.token_hex(32))")
+ssh fausto@<peer> "grep -q API_SERVER_KEY ~/.hermes/.env || echo API_SERVER_KEY=$KEY >> ~/.hermes/.env"
+```
+
+Verify with `curl :8642/health` → `{"status":"ok","platform":"hermes-agent","version":...}`.
+
+**Safer than sed — temp-file append:** write the config block locally, SCP
+it, then `cat /tmp/hmp-append.yaml >> ~/.hermes/config.yaml` on the peer.
+Verify YAML parses before restarting:
+`python3 -c "import yaml; print(yaml.safe_load(open('/home/fausto/.hermes/config.yaml'))['hmp'])"`
+This avoids the sed `enabled:`-matches-everything corruption pitfall entirely.
+
+### 6b. API_SERVER_KEY required on Hermes v0.20.0+ (verified peer141, 2026-08-13)
+
+Hermes v0.20.0+ refuses to start the `api_server` platform (:8642) without
+`API_SERVER_KEY`, even for loopback/0.0.0.0 binds:
+
+```
+ERROR gateway.platforms.api_server: [Api_Server] Refusing to start:
+API_SERVER_KEY is required for the API server, including loopback-only binds on 0.0.0.0.
+```
+
+**Symptom:** `:18643/health` OK, but `:8642` dead — the API plane (dual-plane
+fallback, agent sessions) never comes up. peer70 keeps its key in
+`~/.hermes/.env` (`API_SERVER_KEY=...`). The onboarding config in step 6 does
+NOT include it, so a fresh v0.20.0 peer will silently lack :8642.
+
+**Fix on the peer** (as the gateway user):
+
+```bash
+KEY=$(python3 -c "import secrets; print(secrets.token_hex(32))")
+echo "API_SERVER_KEY=$KEY" >> ~/.hermes/.env
+systemctl --user restart hermes-gateway.service   # or systemctl restart for root/system-wide
+```
+
+Verify both planes after restart: `curl :18643/health` AND `curl :8642/health`
+→ both must return JSON (api_server: `{"status":"ok","platform":"hermes-agent",...}`).
+
 ### 7. Clear __pycache__ and restart gateway
 
 ```bash
@@ -160,6 +241,24 @@ ssh root@192.168.178.138 "
 
 The gateway may also need 5-10s to fully start listening. Use a polling loop
 from peer70 if `curl` fails immediately after restart.
+
+**⚠️ First start after plugin install is SLOW on RPi (15-30s+):** the gateway
+process shows `active` but `ss -tln` has no `:18643`/`:8642` listener for a
+while (bytecode compilation, plugin import). Do NOT declare failure on the
+first curl — poll:
+
+```bash
+for i in $(seq 1 15); do
+  curl -sf --connect-timeout 2 http://192.168.178.141:18643/health && break
+  sleep 2
+done
+```
+
+**⚠️ journalctl may be EMPTY on user-mode installs:** `journalctl --user -u
+hermes-gateway.service` can return "No journal files were found" (user
+journal not persisted). Read `~/.hermes/logs/gateway.log` on the peer
+instead — it carries the platform start/error lines (including the
+API_SERVER_KEY refusal and the "Gateway running with N platform(s)" line).
 
 ### 8. Verify HMP endpoints
 
@@ -383,6 +482,11 @@ curl -s -X POST http://192.168.178.138:18643/hmp/send \
 | No `plugins:` section in config.yaml | Fresh Hermes install | Must add it via SSH (see step 6) |
 | "No messaging platforms enabled" in logs | YAML corrupted by sed | Check config for spurious `- capability-reuse` lines; clean with `sed -i '/^    - capability-reuse/d'` |
 | Gateway active but no listener on :18643 | Plugin failed; check journal with HERMES_PLUGINS_DEBUG=1 | Enable debug logging, check plugin loading phase |
+| `:8642` never listens; "API_SERVER_KEY is required" in gateway.log | Hermes v0.20.0+ requires the key even for loopback binds | Add `API_SERVER_KEY=<hex>` to `~/.hermes/.env`, restart |
+| Gateway `active` but no :18643/:8642 listener for 15-30s | First start after plugin install (RPi slow, bytecode compile) | Poll /health every 2s up to 30s before declaring failure |
+| `journalctl --user -u hermes-gateway` → "No journal files were found" | User journal not persisted on some images | Read `~/.hermes/logs/gateway.log` on the peer instead |
+| Fresh install is user-mode (fausto, not root) | `hermes setup` as normal user on RPi/Debian | Use `fausto@`, `systemctl --user`, `/home/fausto/.hermes/...` paths |
+| Peer answers welcome message but can't confirm skill loaded | Skill files present but never loaded via skill_view | Ask peer to run `skill_view(name='hermes-hmp')` and report protocol version |
 
 ## Detection checklist (from peer70)
 
@@ -398,3 +502,25 @@ done
 
 Typical fresh state: only port 22 (SSH) open. After onboarding: 18643 (HMP)
 and optionally 8642 (API) should be open.
+
+## Replacing a retired peer (e.g. peer105 → peer141)
+
+When a new machine takes over a dead peer's slot, do the same onboarding but
+ALSO remove the old peer everywhere, or scripts keep pinging the corpse:
+
+1. registry.json: delete the old peer object, add the new one (skills,
+   plugins_detail), bump `updated_at`
+2. `peers/peer141.json` manifest: create for the new peer (peer_id, host,
+   hostname, os, hermes_version, notes: "replaces peer105")
+3. peer-map.json: remove old IP, add new IP
+4. Delete stale per-peer files in `~/.hermes/peer-network/`:
+   `peer105-registry.json`, `peer105-status.json` (and any peer105.json in
+   `registry/peers/` if no longer relevant)
+5. SKILL.md peer tables ("Peer della rete", "Peer registrati") + deploy
+   pipeline note: old peer out, new peer in, mark "sostituisce peer105"
+6. memory: record the replacement so future sessions don't quote the dead peer
+
+Verified 2026-08-13: peer141 (Stella, RPi, Hermes v0.20.0, fausto user)
+replaced peer105; keys were ALREADY exchanged both ways (check
+`ssh -o BatchMode=yes fausto@IP 'hostname'` + `grep -c Stella
+~/.ssh/authorized_keys` before assuming you must push keys).

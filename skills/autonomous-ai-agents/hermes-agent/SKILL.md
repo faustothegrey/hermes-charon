@@ -926,6 +926,7 @@ grep -i "failed to send\|error" ~/.hermes/logs/gateway.log | tail -20
 ```
 
 Common gateway problems:
+- **Gateway can't be killed/restarted from inside itself**: commands that stop or restart the gateway process (`kill -9 <gateway PID>`, `systemctl --user restart hermes-gateway`, even a *delayed* restart scheduled via `systemd-run --on-active=…`) are blocked by the sandbox guard when run from a session inside the gateway — the gateway would kill the command (and the cron/session) before it completes, so the report would never be delivered. Run `hermes gateway restart` from a separate shell outside the gateway, or use `/restart` in a gateway chat. Note: the systemd unit ships with `Restart=always` / `RestartSec=5`, so killing the process from an *external* shell auto-restarts the service; verify with `curl http://127.0.0.1:8642/health` afterwards.
 - **Gateway dies on SSH logout**: Enable linger: `sudo loginctl enable-linger $USER`
 - **Gateway dies on WSL2 close**: WSL2 requires `systemd=true` in `/etc/wsl.conf` for systemd services to work. Without it, gateway falls back to `nohup` (dies when session closes).
 - **Gateway crash loop**: Reset the failed state: `systemctl --user reset-failed hermes-gateway`

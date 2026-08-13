@@ -1,0 +1,13 @@
+{
+  "checks": [
+    "version surfaces aligned to 2.4.9",
+    "HMP platform hook derives requester_peer_id from sender_id",
+    "organic_peer traffic type derived for HMP",
+    "provenance includes valid/reason",
+    "retrieval event emits target_peer_id, processing_peer_id, top_capability"
+  ],
+  "generated_at": "2026-08-02T09:23:29Z",
+  "plugin_tree_hash": "sha256:5d9e3784edf509da1b8d8453716fd64040378d3a0229cf958c4b48d37ab8464c",
+  "scope": "peer58_peer106_only",
+  "status": "passed_source_tests"
+}

@@ -1,0 +1,227 @@
+{
+  "generated_at": "2026-08-02T09:32:11Z",
+  "cutoff_timestamp": "2026-08-02T09:32:09Z",
+  "cohort": {
+    "cohort_label": "v2.4.9_peer58_peer106_clean",
+    "deployment_id": "dep-v249-peer58-peer106-20260802092345",
+    "deployment_timestamp": "2026-08-02T09:23:45Z",
+    "legacy_boundary": "events before this deployment_id are legacy and excluded from current-release metrics",
+    "plugin_artifact_hash": "sha256:5d9e3784edf509da1b8d8453716fd64040378d3a0229cf958c4b48d37ab8464c",
+    "plugin_tree_hash": "sha256:5d9e3784edf509da1b8d8453716fd64040378d3a0229cf958c4b48d37ab8464c",
+    "plugin_version": "2.4.9",
+    "schema_version": "1.2",
+    "scope": "peer58_peer106_only",
+    "source_archive": "/root/.hermes/skills/hermes/capability-reuse/evidence/releases/capability-reuse-v2.4.9.tar.gz",
+    "source_archive_sha256": "d5765be875277b863ab472c2d7b36d62fde6b1a389d40d1275bafaad0c68a27e"
+  },
+  "totals": {
+    "events_loaded": 86,
+    "bad_json_lines": 0,
+    "retrieval_events": 13,
+    "current_cohort_retrievals": 3,
+    "review_rows_produced": 3,
+    "execution_chain_events_current_cohort_to_cutoff": 11
+  },
+  "retrieval_dispositions": [
+    {
+      "line": 7,
+      "retrieval_event_id": "91336e10f093438e",
+      "timestamp": "2026-08-02T09:23:04Z",
+      "deployment_id": "dep-v248-peer58-peer106-20260802091939",
+      "plugin_version": "2.4.9",
+      "disposition": "outside cohort",
+      "reason": "legacy_or_previous_deployment"
+    },
+    {
+      "line": 8,
+      "retrieval_event_id": "4a5ed9fa5c874db5",
+      "timestamp": "2026-08-02T09:23:04Z",
+      "deployment_id": "dep-v248-peer58-peer106-20260802091939",
+      "plugin_version": "2.4.9",
+      "disposition": "outside cohort",
+      "reason": "legacy_or_previous_deployment"
+    },
+    {
+      "line": 9,
+      "retrieval_event_id": "5c60ff898da14157",
+      "timestamp": "2026-08-02T09:23:04Z",
+      "deployment_id": "dep-v248-peer58-peer106-20260802091939",
+      "plugin_version": "2.4.9",
+      "disposition": "outside cohort",
+      "reason": "legacy_or_previous_deployment"
+    },
+    {
+      "line": 10,
+      "retrieval_event_id": "e99a6b6d62e94190",
+      "timestamp": "2026-08-02T09:23:04Z",
+      "deployment_id": "dep-v248-peer58-peer106-20260802091939",
+      "plugin_version": "2.4.9",
+      "disposition": "outside cohort",
+      "reason": "legacy_or_previous_deployment"
+    },
+    {
+      "line": 11,
+      "retrieval_event_id": "06b6357733a542cd",
+      "timestamp": "2026-08-02T09:23:04Z",
+      "deployment_id": "dep-v248-peer58-peer106-20260802091939",
+      "plugin_version": "2.4.9",
+      "disposition": "outside cohort",
+      "reason": "legacy_or_previous_deployment"
+    },
+    {
+      "line": 12,
+      "retrieval_event_id": "24f87a2b9e0d4023",
+      "timestamp": "2026-08-02T09:23:04Z",
+      "deployment_id": "dep-v248-peer58-peer106-20260802091939",
+      "plugin_version": "2.4.9",
+      "disposition": "outside cohort",
+      "reason": "legacy_or_previous_deployment"
+    },
+    {
+      "line": 13,
+      "retrieval_event_id": "a00f34f8e370495b",
+      "timestamp": "2026-08-02T09:23:04Z",
+      "deployment_id": "dep-v248-peer58-peer106-20260802091939",
+      "plugin_version": "2.4.9",
+      "disposition": "outside cohort",
+      "reason": "legacy_or_previous_deployment"
+    },
+    {
+      "line": 14,
+      "retrieval_event_id": "43d4d0e62cea482f",
+      "timestamp": "2026-08-02T09:23:04Z",
+      "deployment_id": "dep-v248-peer58-peer106-20260802091939",
+      "plugin_version": "2.4.9",
+      "disposition": "outside cohort",
+      "reason": "legacy_or_previous_deployment"
+    },
+    {
+      "line": 15,
+      "retrieval_event_id": "9953dfd94fd94257",
+      "timestamp": "2026-08-02T09:23:04Z",
+      "deployment_id": "dep-v248-peer58-peer106-20260802091939",
+      "plugin_version": "2.4.9",
+      "disposition": "outside cohort",
+      "reason": "legacy_or_previous_deployment"
+    },
+    {
+      "line": 17,
+      "retrieval_event_id": "310fda4ed4ca471c",
+      "timestamp": "2026-08-02T09:23:05Z",
+      "deployment_id": "dep-v248-peer58-peer106-20260802091939",
+      "plugin_version": "2.4.9",
+      "disposition": "outside cohort",
+      "reason": "legacy_or_previous_deployment"
+    },
+    {
+      "line": 33,
+      "retrieval_event_id": "af97c6ffd8234e08",
+      "timestamp": "2026-08-02T09:24:02Z",
+      "deployment_id": "dep-v249-peer58-peer106-20260802092345",
+      "plugin_version": "2.4.8",
+      "disposition": "review row produced",
+      "reason": "review_id=review_6a25392e1075059289f52e8313f5e867"
+    },
+    {
+      "line": 47,
+      "retrieval_event_id": "57b59f801de14dc7",
+      "timestamp": "2026-08-02T09:28:01Z",
+      "deployment_id": "dep-v249-peer58-peer106-20260802092345",
+      "plugin_version": "2.4.9",
+      "disposition": "review row produced",
+      "reason": "review_id=review_a26cdafe14f0b57fbdb44ef656f163f7"
+    },
+    {
+      "line": 74,
+      "retrieval_event_id": "a7d8229e21404a6a",
+      "timestamp": "2026-08-02T09:30:36Z",
+      "deployment_id": "dep-v249-peer58-peer106-20260802092345",
+      "plugin_version": "2.4.9",
+      "disposition": "review row produced",
+      "reason": "review_id=review_bed7b4ba51bde7af60fc52c8fcafe9d9"
+    }
+  ],
+  "retrieval_chain_checks": [
+    {
+      "retrieval_event_id": "af97c6ffd8234e08",
+      "check": "retrieval without execution start",
+      "disposition": "excluded with structured reason",
+      "reason": "shadow_mode retrieval; no active intervention/invocation expected before Case A"
+    },
+    {
+      "retrieval_event_id": "57b59f801de14dc7",
+      "check": "retrieval without execution start",
+      "disposition": "excluded with structured reason",
+      "reason": "shadow_mode retrieval; no active intervention/invocation expected before Case A"
+    },
+    {
+      "retrieval_event_id": "a7d8229e21404a6a",
+      "check": "retrieval without execution start",
+      "disposition": "excluded with structured reason",
+      "reason": "shadow_mode retrieval; no active intervention/invocation expected before Case A"
+    }
+  ],
+  "execution_chain_dispositions": [
+    {
+      "key": "6bb42d079e93cd43",
+      "disposition": "excluded with structured reason",
+      "reason": "start_without_completion_before_cutoff_direct_tool_or_in_progress",
+      "starts": 1,
+      "completions": 0
+    },
+    {
+      "key": "ea3739faecb5e76a",
+      "disposition": "excluded with structured reason",
+      "reason": "start_without_completion_before_cutoff_direct_tool_or_in_progress",
+      "starts": 1,
+      "completions": 0
+    },
+    {
+      "key": "d9e45e0f522aa924",
+      "disposition": "excluded with structured reason",
+      "reason": "start_without_completion_before_cutoff_direct_tool_or_in_progress",
+      "starts": 1,
+      "completions": 0
+    },
+    {
+      "key": "131d2cc8cd0931f1",
+      "disposition": "excluded with structured reason",
+      "reason": "start_without_completion_before_cutoff_direct_tool_or_in_progress",
+      "starts": 1,
+      "completions": 0
+    },
+    {
+      "key": "a4d6d0235a4c2136",
+      "disposition": "excluded with structured reason",
+      "reason": "start_without_completion_before_cutoff_direct_tool_or_in_progress",
+      "starts": 1,
+      "completions": 0
+    },
+    {
+      "key": "call_5WivwCjMayYdIDi169RTqk8f",
+      "disposition": "excluded with structured reason",
+      "reason": "completion_without_start_in_report_window_or_legacy_start",
+      "starts": 0,
+      "completions": 1
+    },
+    {
+      "key": "call_NFZNct01RnCwEqi0EqwMylxy",
+      "disposition": "excluded with structured reason",
+      "reason": "completion_without_start_in_report_window_or_legacy_start",
+      "starts": 0,
+      "completions": 1
+    },
+    {
+      "key": "57b59f801de14dc7",
+      "disposition": "excluded with structured reason",
+      "reason": "completion_without_start_in_report_window_or_legacy_start",
+      "starts": 0,
+      "completions": 4
+    }
+  ],
+  "unexplained": {
+    "retrieval_orphans": [],
+    "execution_chain_orphans": []
+  },
+  "verdict": "PASS"
+}

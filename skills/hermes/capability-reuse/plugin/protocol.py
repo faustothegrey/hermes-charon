@@ -32,7 +32,7 @@ from datetime import datetime, timezone
 from dataclasses import dataclass, field
 from typing import Optional
 
-VERSION = "2.4.6"
+VERSION = "2.4.17"
 
 # ── Constants ──
 DEFAULT_FALLBACK_TTL_SECONDS = 300  # 5 minutes
@@ -618,8 +618,8 @@ def retrieve(session_id="", user_message="", hook_context=None) -> Optional[dict
             available_permissions = _csv_env("CAPABILITY_REUSE_PERMISSIONS")
         if available_capabilities is None:
             available_capabilities = _csv_env("CAPABILITY_REUSE_AVAILABLE_CAPABILITIES")
-    threshold = float(os.environ.get("CAPABILITY_REUSE_INTERVENTION_THRESHOLD", getattr(retriever, "DEFAULT_INTERVENTION_THRESHOLD", 0.75)))
-    margin = float(os.environ.get("CAPABILITY_REUSE_MINIMUM_MARGIN", getattr(retriever, "DEFAULT_MINIMUM_MARGIN", 0.15)))
+    threshold = float(os.environ.get("CAPABILITY_REUSE_INTERVENTION_THRESHOLD", os.environ.get("CAPABILITY_REUSE_THRESHOLD", getattr(retriever, "DEFAULT_INTERVENTION_THRESHOLD", 0.75))))
+    margin = float(os.environ.get("CAPABILITY_REUSE_MINIMUM_MARGIN", os.environ.get("CAPABILITY_REUSE_MIN_MARGIN", getattr(retriever, "DEFAULT_MINIMUM_MARGIN", 0.15))))
     result = retriever.retrieve(
         session_id=session_id,
         user_message=user_message,
@@ -849,6 +849,10 @@ def invoke_capability(params=None, hook_context=None) -> dict:
     cap_ver = params.get("capability_version", "")
     inputs = params.get("inputs", {})
     invocation_id = f"inv_{uuid.uuid4().hex[:16]}"
+    plan = {}
+    preview_target_peer_id = ""
+    dispatcher_target_peer_id = ""
+    result_target_peer_id = ""
     if cap_id not in _active_allowlist():
         return {"success": False, "error": "capability_not_active", "capability_id": cap_id}
     intervention = _store.get_intervention(iid)
@@ -863,24 +867,38 @@ def invoke_capability(params=None, hook_context=None) -> dict:
     if contract.get("effect_class") != "read_only":
         events.emit_failure_escalation(iid, invocation_id, contract.get("effect_class", "unknown"), "mutating_active_dispatch_blocked")
         return {"success": False, "error": "effect_class_not_active_safe"}
+    try:
+        plan = dispatcher.build_execution_plan(cap_id, cap_ver, inputs)
+        preview_target_peer_id = plan.get("target_peer_id") or ""
+        dispatcher_target_peer_id = preview_target_peer_id
+    except Exception:
+        plan = {}
     check = comp.strict_validate_against_schema(inputs, contract.get("input_schema", {}))
     if not check.compatible:
-        events.emit_invocation(iid, cap_id, cap_ver, reg.get_contract_hash(cap_id, cap_ver), "failed", "failed", "invalid_input", "none", None, (time.monotonic()-start)*1000, invocation_id=invocation_id)
+        events.emit_invocation(iid, cap_id, cap_ver, reg.get_contract_hash(cap_id, cap_ver), "failed", "failed", "invalid_input", "none", None, (time.monotonic()-start)*1000, invocation_id=invocation_id, validated_inputs=inputs if isinstance(inputs, dict) else {}, preview_target_peer_id=preview_target_peer_id, dispatcher_target_peer_id=dispatcher_target_peer_id, result_target_peer_id=result_target_peer_id)
         return {"success": False, "error": "invalid_input", "message": check.reason}
     if not _store.claim_intervention(iid, "capability", invocation_id):
         return {"success": False, "error": "intervention_already_claimed", "intervention_id": iid}
     events.emit_state_transition(iid, "open", "claimed_by_capability", reason="invoke_capability")
     result = dispatcher.dispatch(cap_id, cap_ver, inputs, contract)
+    try:
+        out = result.get("output")
+        if isinstance(out, list) and out:
+            result_target_peer_id = ",".join(str(x.get("peer", "")) for x in out if isinstance(x, dict) and x.get("peer"))
+        elif isinstance(out, dict):
+            result_target_peer_id = str(out.get("peer") or out.get("target_peer_id") or "")
+    except Exception:
+        result_target_peer_id = ""
     latency = (time.monotonic() - start) * 1000
     if result.get("success"):
         output_check = comp.strict_validate_against_schema(result.get("output"), contract.get("output_schema", {}))
         if not output_check.compatible:
             _store.transition(iid, "failed_unclean_read_only", invocation_id=invocation_id, failure_code="output_contract_violation")
             events.emit_state_transition(iid, "claimed_by_capability", "failed_unclean_read_only", reason="output_contract_violation")
-            events.emit_invocation(iid, cap_id, cap_ver, reg.get_contract_hash(cap_id, cap_ver), "passed", "output_contract_violation", "output_contract_violation", "none", None, latency, invocation_id=invocation_id)
+            events.emit_invocation(iid, cap_id, cap_ver, reg.get_contract_hash(cap_id, cap_ver), "passed", "output_contract_violation", "output_contract_violation", "none", None, latency, invocation_id=invocation_id, validated_inputs=inputs if isinstance(inputs, dict) else {}, preview_target_peer_id=preview_target_peer_id, dispatcher_target_peer_id=dispatcher_target_peer_id, result_target_peer_id=result_target_peer_id)
             return {"success": False, "error": "output_contract_violation", "message": output_check.reason, "intervention_id": iid, "state": "failed_unclean_read_only", "invocation_id": invocation_id}
         _store.transition(iid, "resolved_success")
-        events.emit_invocation(iid, cap_id, cap_ver, reg.get_contract_hash(cap_id, cap_ver), "passed", "succeeded", None, "none", None, latency, invocation_id=invocation_id)
+        events.emit_invocation(iid, cap_id, cap_ver, reg.get_contract_hash(cap_id, cap_ver), "passed", "succeeded", None, "none", None, latency, invocation_id=invocation_id, validated_inputs=inputs if isinstance(inputs, dict) else {}, preview_target_peer_id=preview_target_peer_id, dispatcher_target_peer_id=dispatcher_target_peer_id, result_target_peer_id=result_target_peer_id)
         events.emit_state_transition(iid, "claimed_by_capability", "resolved_success", reason="dispatcher_success")
         events.emit_outcome(intervention.get("episode_id", ""), iid, "resolved_success", "capability_success", latency, reg.get_contract_hash(cap_id, cap_ver))
         return {"success": True, "capability_id": cap_id, "capability_version": cap_ver, "output": result.get("output"), "intervention_id": iid, "invocation_id": invocation_id}
@@ -896,16 +914,16 @@ def invoke_capability(params=None, hook_context=None) -> dict:
         fallback_id = _store.issue_fallback_token(iid, invocation_id, failure_code)
         events.emit_fallback_authorization(iid, fallback_id or "", invocation_id, failure_code, DEFAULT_FALLBACK_TTL_SECONDS, action="issued")
         state = "fallback_authorized" if fallback_id else "claimed_by_capability"
-        events.emit_invocation(iid, cap_id, cap_ver, reg.get_contract_hash(cap_id, cap_ver), "passed", "failed_clean", failure_code, "none", fallback_id, latency, invocation_id=invocation_id)
+        events.emit_invocation(iid, cap_id, cap_ver, reg.get_contract_hash(cap_id, cap_ver), "passed", "failed_clean", failure_code, "none", fallback_id, latency, invocation_id=invocation_id, validated_inputs=inputs if isinstance(inputs, dict) else {}, preview_target_peer_id=preview_target_peer_id, dispatcher_target_peer_id=dispatcher_target_peer_id, result_target_peer_id=result_target_peer_id)
         return {"success": False, "error": failure_code, "fallback_authorization_id": fallback_id, "intervention_id": iid, "state": state, "invocation_id": invocation_id}
     if effect == "read_only":
         _store.transition(iid, "failed_unclean_read_only", invocation_id=invocation_id, failure_code=failure_code)
         events.emit_state_transition(iid, "claimed_by_capability", "failed_unclean_read_only", reason=failure_code)
-        events.emit_invocation(iid, cap_id, cap_ver, reg.get_contract_hash(cap_id, cap_ver), "passed", "failed_unclean", failure_code, "none", None, latency, invocation_id=invocation_id)
+        events.emit_invocation(iid, cap_id, cap_ver, reg.get_contract_hash(cap_id, cap_ver), "passed", "failed_unclean", failure_code, "none", None, latency, invocation_id=invocation_id, validated_inputs=inputs if isinstance(inputs, dict) else {}, preview_target_peer_id=preview_target_peer_id, dispatcher_target_peer_id=dispatcher_target_peer_id, result_target_peer_id=result_target_peer_id)
         return {"success": False, "error": failure_code, "intervention_id": iid, "state": "failed_unclean_read_only", "invocation_id": invocation_id}
     _store.transition(iid, "failed_requires_safety", invocation_id=invocation_id, failure_code=failure_code)
     events.emit_failure_escalation(iid, invocation_id, effect, failure_code)
-    events.emit_invocation(iid, cap_id, cap_ver, reg.get_contract_hash(cap_id, cap_ver), "passed", "failed_requires_safety", failure_code, "unknown", None, latency, invocation_id=invocation_id)
+    events.emit_invocation(iid, cap_id, cap_ver, reg.get_contract_hash(cap_id, cap_ver), "passed", "failed_requires_safety", failure_code, "unknown", None, latency, invocation_id=invocation_id, validated_inputs=inputs if isinstance(inputs, dict) else {}, preview_target_peer_id=preview_target_peer_id, dispatcher_target_peer_id=dispatcher_target_peer_id, result_target_peer_id=result_target_peer_id)
     return {"success": False, "error": failure_code, "intervention_id": iid, "state": "failed_requires_safety", "invocation_id": invocation_id}
 
 def _stable_hash(text: str) -> str:

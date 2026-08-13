@@ -8,7 +8,7 @@ import json, os, re, uuid, socket, hashlib
 from pathlib import Path
 from datetime import datetime, timezone
 
-PLUGIN_VERSION = "2.4.6"
+PLUGIN_VERSION = "2.4.17"
 SCHEMA_VERSION = "1.2"
 
 def peer_id() -> str:
@@ -36,15 +36,19 @@ def resolve_provenance(stream=None, source=None, detail=None, context=None):
     if context and isinstance(context, dict):
         if context.get("provenance") and isinstance(context["provenance"], dict):
             pv = context["provenance"]
-            return {"stream": pv.get("stream") or "unknown",
+            stream = pv.get("stream") or "unknown"
+            valid = stream in ("organic_live", "operator_seeded", "calibration_probe")
+            return {"stream": stream,
                     "source": pv.get("source") or "gateway",
-                    "detail": pv.get("detail") or "explicit_request"}
+                    "detail": pv.get("detail") or "explicit_request",
+                    "valid": valid,
+                    "reason": "" if valid else "invalid_provenance"}
     if stream:
         s = str(stream)
         if s not in ("organic_live", "operator_seeded", "calibration_probe"):
-            return {"stream": "unknown", "source": source or "gateway", "detail": detail or "invalid_value"}
-        return {"stream": s, "source": source or "gateway", "detail": detail or ""}
-    return {"stream": "legacy_unclassified", "source": source or "unknown", "detail": detail or "missing_metadata"}
+            return {"stream": "unknown", "source": source or "gateway", "detail": detail or "invalid_value", "valid": False, "reason": "invalid_provenance"}
+        return {"stream": s, "source": source or "gateway", "detail": detail or "", "valid": True, "reason": ""}
+    return {"stream": "legacy_unclassified", "source": source or "unknown", "detail": detail or "missing_metadata", "valid": False, "reason": "missing_provenance"}
 
 def traffic_type(parent_task_id=None, schedule_id=None, retry_of=None, is_cron=False, is_test=False):
     if is_test: return "test"
@@ -116,10 +120,12 @@ def mandatory(event_type: str, data: dict, context=None) -> dict:
         "requester_peer_id": req.get("requester_peer_id") or "",
         "processing_peer_id": req.get("processing_peer_id") or out.get("peer_id") or peer_id(),
     }
-    # traffic_type
-    if "traffic_type" not in out:
-        tt = context or {}
-        out["traffic_type"] = traffic_type(
+    # traffic_type: inherit request-scoped value from retrieval context.
+    # Treat blank/unknown as missing so execution-chain events cannot overwrite
+    # an organic retrieval's traffic_type with a fail-open default.
+    tt = context or {}
+    if not out.get("traffic_type") or out.get("traffic_type") == "unknown":
+        out["traffic_type"] = tt.get("traffic_type") or traffic_type(
             parent_task_id=tt.get("parent_task_id"), schedule_id=tt.get("schedule_id"),
             retry_of=tt.get("retry_of"), is_cron=tt.get("is_cron"), is_test=tt.get("is_test"))
     for k in ("parent_task_id", "retry_of", "schedule_id"):
@@ -133,6 +139,13 @@ def mandatory(event_type: str, data: dict, context=None) -> dict:
                 out[k] = context[k]
             else:
                 out[k] = ""
+    # Ensure retrieval top-level processor mirrors the authoritative requester
+    # processor after requester normalization. Earlier v2.4.10 builds populated
+    # requester.processing_peer_id but left retrieval_event.processing_peer_id
+    # blank because emit_retrieval constructed the top-level field before
+    # mandatory requester enrichment.
+    if event_type == "retrieval_event" and not out.get("processing_peer_id"):
+        out["processing_peer_id"] = out.get("requester", {}).get("processing_peer_id") or out.get("peer_id") or peer_id()
     # cohort
     for k, v in cohort_fields().items():
         if k not in out:

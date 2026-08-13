@@ -53,8 +53,11 @@ def main():
     evs,bad=load_events(); now=datetime.now(timezone.utc); labels=load_labels()
     rows=[(e,payload(e),etype(e),ev_time(e)) for e in evs]
     recent=[r for r in rows if (now-r[3]).total_seconds()<3600]
-    current_dep=json.loads((Path.home()/".hermes/data/reuse-observer/cohort.json").read_text()).get("deployment_id")
-    clean=[r for r in rows if r[1].get("cohort_label")=="v2.4.4_clean_live" and r[1].get("plugin_version")=="2.4.4" and r[1].get("deployment_id")==current_dep]
+    cohort=json.loads((Path.home()/".hermes/data/reuse-observer/cohort.json").read_text())
+    current_dep=cohort.get("deployment_id")
+    cohort_label=cohort.get("cohort_label") or "v2.4.4_clean_live"
+    cohort_ver=cohort.get("plugin_version") or "2.4.4"
+    clean=[r for r in rows if r[1].get("cohort_label")==cohort_label and r[1].get("plugin_version")==cohort_ver and r[1].get("deployment_id")==current_dep]
     legacy=[r for r in rows if r not in clean]
     clean_retr=[r for r in clean if r[2]=="retrieval_event"]
     ro=[r for r in clean_retr if str(r[1].get("effect_stream") or r[1].get("effect_class") or "").startswith("read")]

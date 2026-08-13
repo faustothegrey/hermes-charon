@@ -1,0 +1,15 @@
+{
+  "generated_at": "2026-08-02T10:08:21Z",
+  "status": "passed_source_tests",
+  "scope": "peer58_peer106_only",
+  "plugin_tree_hash": "sha256:2df06df3e4dd783d5246c8c12422348d492553df0a82262a9183f45c7661ad1a",
+  "checks": [
+    "version surfaces aligned to 2.4.11",
+    "source archive SHA-256 sidecar fixed",
+    "live-path requester/traffic/provenance target metadata retained",
+    "retrieval top-level processing_peer_id fixed",
+    "threshold/margin config aliases honored",
+    "retrieval events expose second_score/score_margin/threshold/minimum_margin/effect/coverage/eligibility/dispatch",
+    "two-peer scope statement included"
+  ]
+}

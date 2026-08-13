@@ -1,0 +1,43 @@
+{
+  "validated_on": "peer106",
+  "status": "PASS_WITH_DEPLOYMENT_NOTES",
+  "local": {
+    "python": "3.7.7",
+    "compileall": "PASS",
+    "unittest": "45/45 PASS",
+    "local_conformance": "15/15 PASS",
+    "runtime_plugin_sync": "PASS",
+    "gateway_health": "peer106 :18643 /hmp/health PASS; :8642 /health PASS",
+    "shadow_retrieval_overhead": {
+      "iterations": 1200,
+      "mean_ms": 10.0632,
+      "median_ms": 9.9965,
+      "p95_ms": 14.2383,
+      "p99_ms": 14.951,
+      "max_ms": 72.9272,
+      "budget_ms": 100,
+      "budget_pass": true
+    }
+  },
+  "peer_active_canary_from_peer106": {
+    "peer70": {"positive": "5/5", "negative_false_positive": "0/5", "fallback": "PASS", "unclean": "PASS", "correlation_errors": 0},
+    "peer128": {"positive": "5/5", "negative_false_positive": "0/5", "fallback": "PASS", "unclean": "PASS", "correlation_errors": 0},
+    "peer138": {"positive": "5/5", "negative_false_positive": "0/5", "fallback": "PASS", "unclean": "PASS", "correlation_errors": 0},
+    "peer106": {"positive": "4/5", "negative_false_positive": "0/5", "fallback": "PASS", "unclean": "PASS", "correlation_errors": 0, "note": "one shorthand recall miss: ping HMP status for peer106"},
+    "peer84": {"positive": "3/5", "negative_false_positive": "0/5", "fallback": "PASS", "unclean": "PASS", "correlation_errors": 0, "note": "two shorthand recall misses; direct health reachable"},
+    "trixie": {"positive": "3/5", "negative_false_positive": "0/5", "fallback": "PASS", "unclean": "PASS", "correlation_errors": 0, "note": "lightweight /health peer; two shorthand recall misses"},
+    "peer105": {"status": "UNREACHABLE", "error": "No route to host on :18643"}
+  },
+  "peer_self_reports_via_hmp": {
+    "peer128": "PASS — compileall 0 errs, unittest 37/37, conformance 15/15, overhead p99 0.003ms compat / 0.071ms scoring, no blocker",
+    "peer138": "PASS — 7/7 py compile, hooks registered, overhead p99 pre_llm=1893us pre_tool_exec=1034us post_tool=728us, no blockers",
+    "peer84": "FAIL/ABSENT — capability-reuse skill/plugin not installed locally, nothing to validate",
+    "peer70": "ACK only — validation queued, final local result not returned in HMP response"
+  },
+  "deployment_notes": [
+    "Formal Phase 0 closure remains NO-GO; this is engineering safety/overhead validation only.",
+    "Peer84 needs fresh install; peer105 was offline/unreachable during validation.",
+    "Peer106/84/trixie shorthand recall misses are not Hermes-breaking; they are retriever recall gaps for some healthcheck phrasings.",
+    "Active rollout must remain allowlisted to hmp-healthcheck@1.0.0 unless peer70 registry review changes policy."
+  ]
+}

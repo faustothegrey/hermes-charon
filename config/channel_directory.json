@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-08-01T22:59:29.110203",
+  "updated_at": "2026-08-13T22:42:05.093459",
   "platforms": {
     "telegram": [
       {
@@ -117,6 +117,60 @@
       {
         "id": "unknown",
         "name": "unknown",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "parity_t1_1786637633",
+        "name": "parity_t1_1786637633",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "parity_t2_1786637665",
+        "name": "parity_t2_1786637665",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "parity_t3a_1786637714",
+        "name": "parity_t3a_1786637714",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "parity_t3b_1786637714",
+        "name": "parity_t3b_1786637714",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "parity",
+        "name": "parity",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "peer141",
+        "name": "peer141",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "peer58_peer70_convergence_test",
+        "name": "peer58_peer70_convergence_test",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "peer58_peer70_t2_via_plugin",
+        "name": "peer58_peer70_t2_via_plugin",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "peer58_peer70_t5a_reversed",
+        "name": "peer58_peer70_t5a_reversed",
         "type": "dm",
         "thread_id": null
       }

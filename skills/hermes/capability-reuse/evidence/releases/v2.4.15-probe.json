@@ -1,0 +1,90 @@
+{
+  "retrieval_ids": [
+    "731d9d421198464e"
+  ],
+  "intervention_ids": [],
+  "events": [
+    {
+      "event_type": "retrieval_event",
+      "event_id": "731d9d421198464e",
+      "timestamp": "2026-08-02T11:16:03Z",
+      "data": {
+        "retrieval_event_id": "731d9d421198464e",
+        "intervention_id": null,
+        "invocation_id": null,
+        "capability_id": null,
+        "capability_version": null,
+        "validated_inputs": {
+          "peer_list": [
+            "peer58"
+          ],
+          "timeout_seconds": 5
+        },
+        "preview_target_peer_id": null,
+        "dispatcher_target_peer_id": null,
+        "result_target_peer_id": null,
+        "requester": {
+          "actor_type": "agent",
+          "actor_id": "peer106",
+          "request_channel": "hmp",
+          "requester_peer_id": "peer106",
+          "processing_peer_id": "peer106"
+        },
+        "traffic_type": "organic_peer",
+        "target_peer_id": "peer58",
+        "processing_peer_id": "peer106",
+        "top_capability": "hmp-healthcheck@1.0.0",
+        "top_score": 0.6481,
+        "second_score": 0.0,
+        "score_margin": 0.6481,
+        "intervention_threshold": 0.65,
+        "minimum_margin": 0.05,
+        "request_effect": "read_only",
+        "capability_effect": "read_only",
+        "whole_request_covered": true,
+        "eligibility": "rejected",
+        "eligibility_reason": "below_threshold_or_margin",
+        "dispatch": "none",
+        "intervened": false,
+        "shadow_mode": false,
+        "plugin_version": "2.4.15",
+        "plugin_artifact_hash": "sha256:a862d11a5a7b6209e2e9ca4729c1ffd69a5c4d15211338ad674492264960cbd1",
+        "deployment_id": "dep-v2415-peer58-peer106-20260802T110716Z",
+        "deployment_timestamp": "2026-08-02T11:07:16Z",
+        "schema_version": "1.2",
+        "provenance": {
+          "stream": "organic_live",
+          "source": "hook_context.platform",
+          "detail": "platform_hook_context",
+          "valid": true,
+          "reason": ""
+        },
+        "invocation_status": null,
+        "input_validation": null,
+        "final_state": null,
+        "outcome": null,
+        "from_state": null,
+        "to_state": null,
+        "reason": null,
+        "candidates": [
+          {
+            "capability_id": "hmp-healthcheck",
+            "capability_version": "1.0.0",
+            "score": 0.6481,
+            "semantic_candidate": true,
+            "eligible_for_intervention": true,
+            "ineligibility_reasons": [],
+            "effect_class": "read_only",
+            "request_effect": "read_only",
+            "capability_effect": "read_only",
+            "whole_request_covered": true,
+            "eligibility": "accepted",
+            "eligibility_reason": "",
+            "dispatch": "pending",
+            "trust_state": "trusted"
+          }
+        ]
+      }
+    }
+  ]
+}

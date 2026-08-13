@@ -1,0 +1,27 @@
+{
+  "event_schema_version": "1.2",
+  "external_sha256_sidecar": "/root/.hermes/skills/hermes/capability-reuse/evidence/releases/capability-reuse-v2.4.9.tar.gz.sha256",
+  "fixes": [
+    "HMP platform hook context derives requester_peer_id from sender_id",
+    "HMP platform hook context derives traffic_type=organic_peer",
+    "organic_live request-scoped provenance includes valid=true/reason envelope",
+    "retrieval events expose target_peer_id, processing_peer_id, and top_capability for hook-path proof"
+  ],
+  "generated_at": "2026-08-02T09:23:29Z",
+  "plugin_tree_hash": "sha256:5d9e3784edf509da1b8d8453716fd64040378d3a0229cf958c4b48d37ab8464c",
+  "plugin_version": "2.4.9",
+  "protocol_version": "2.4.9",
+  "release": "capability-reuse-v2.4.9",
+  "release_manifest": "/root/.hermes/skills/hermes/capability-reuse/evidence/releases/v2.4.9-manifest.json",
+  "review_scope": "Validation is currently limited to peer58 and peer106. Cross-peer observations refer only to recurrence between these two peers and must not be generalized to the wider fleet. Threshold observations remain specific to this deployment, registry, capability set, and traffic mix.",
+  "scoped_conformance_report": "/root/.hermes/skills/hermes/capability-reuse/evidence/releases/v2.4.9-scoped-conformance-report.json",
+  "source_archive": "/root/.hermes/skills/hermes/capability-reuse/evidence/releases/capability-reuse-v2.4.9.tar.gz",
+  "source_archive_sha256": "d5765be875277b863ab472c2d7b36d62fde6b1a389d40d1275bafaad0c68a27e",
+  "test_report": "/root/.hermes/skills/hermes/capability-reuse/evidence/releases/v2.4.9-test-report.json",
+  "version_surfaces": {
+    "SKILL.md": "2.4.9",
+    "plugin/plugin.yaml": "2.4.9",
+    "plugin/protocol.py": "2.4.9",
+    "plugin/v244_metadata.py": "2.4.9"
+  }
+}

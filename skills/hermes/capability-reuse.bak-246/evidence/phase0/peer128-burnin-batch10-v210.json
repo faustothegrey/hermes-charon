@@ -1,0 +1,31 @@
+{
+  "peer": "peer128",
+  "version": "2.1.0",
+  "runs": 10,
+  "errors": 0,
+  "positive_success": 50,
+  "positive_total": 50,
+  "negative_false_positives": 0,
+  "negative_total": 50,
+  "full_hook_blocks": 50,
+  "session_only_blocks": 50,
+  "clean_fallback_ok": 10,
+  "unclean_continuation_ok": 10,
+  "correlation_errors": 0,
+  "events_total": 580,
+  "run_logs": [
+    "run-1.log",
+    "run-10.log",
+    "run-2.log",
+    "run-3.log",
+    "run-4.log",
+    "run-5.log",
+    "run-6.log",
+    "run-7.log",
+    "run-8.log",
+    "run-9.log"
+  ],
+  "score_min": 0.6627,
+  "score_max": 0.7191,
+  "score_mean": 0.6864
+}

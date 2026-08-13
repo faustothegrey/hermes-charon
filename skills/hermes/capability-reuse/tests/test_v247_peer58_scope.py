@@ -1,0 +1,56 @@
+from __future__ import annotations
+import importlib.util
+import importlib
+import sys
+import unittest
+from pathlib import Path
+
+SKILL_DIR = Path(__file__).resolve().parents[1]
+PLUGIN_DIR = SKILL_DIR / "plugin"
+if str(SKILL_DIR) not in sys.path:
+    sys.path.insert(0, str(SKILL_DIR))
+
+def load_module(name: str, path: Path):
+    spec = importlib.util.spec_from_file_location(name, str(path))
+    mod = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(mod)
+    return mod
+
+execution_plan = load_module("execution_plan", PLUGIN_DIR / "execution_plan.py")
+v244_metadata = load_module("v244_metadata_v249", PLUGIN_DIR / "v244_metadata.py")
+review_queue = load_module("review_queue", PLUGIN_DIR / "review_queue.py")
+retriever = importlib.import_module("plugin.retriever")
+
+class V249Peer58ScopeTests(unittest.TestCase):
+    def test_peer58_is_supported_in_preview_and_dispatch_targeting(self):
+        plan = execution_plan.build_execution_plan("hmp-healthcheck", "1.0.0", {"peer_list": ["peer58"], "timeout_seconds": 5})
+        self.assertEqual(plan["preview_status"], "exact")
+        self.assertEqual(plan["target_peer_id"], "peer58")
+        self.assertEqual(plan["endpoint"], "http://192.168.178.58:18643/hmp/health")
+        self.assertIn("GET http://192.168.178.58:18643/hmp/health", plan["command_preview"])
+
+    def test_version_surfaces_are_v2414_and_formal_eligibility_uses_v2414(self):
+        self.assertEqual(v244_metadata.PLUGIN_VERSION, "2.4.16")
+        event = {"schema_version": "1.2"}
+        data = {
+            "plugin_version": "2.4.16",
+            "deployment_id": "dep-v2414-live",
+            "plugin_artifact_hash": "sha256:abc",
+            "cohort_label": "v2.4.16_peer58_peer106",
+            "provenance": {"stream": "organic_live", "valid": True},
+            "traffic_type": "organic_peer",
+        }
+        requester = {"requester_type": "hmp_peer", "processing_peer_id": "peer106"}
+        ok, reasons = review_queue.formal_holdout_validation(event, data, requester)
+        self.assertTrue(ok, reasons)
+
+    def test_hmp_platform_hook_context_derives_organic_peer_metadata(self):
+        ctx = {"platform": "hmp", "sender_id": "peer106"}
+        self.assertEqual(retriever._extract_traffic_type(ctx), "organic_peer")
+        self.assertEqual(retriever._extract_requester(ctx)["requester_peer_id"], "peer106")
+        self.assertEqual(retriever._extract_requester(ctx)["request_channel"], "hmp")
+        self.assertEqual(retriever._request_provenance(ctx), ("organic_live", "platform_hook_context", "hook_context.platform"))
+
+if __name__ == "__main__":
+    unittest.main()

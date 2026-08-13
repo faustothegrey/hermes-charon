@@ -39,7 +39,7 @@ STDOUT:
   Nous Portal   ✓ logged in
     Portal URL: https://portal.nousresearch.com
     Inference:  https://inference-api.nousresearch.com/v1
-    Access exp: 2026-08-01 23:37:25 CEST
+    Access exp: 2026-08-13 23:36:40 CEST
     Key exp: "<REDACTED>"
     Refresh:    yes
   OpenAI Codex  ✗ not logged in (run: hermes model)
@@ -94,13 +94,13 @@ STDOUT:
 ◆ Gateway Service
   Status:       ✓ running
   Manager:      systemd (user)
-  PID(s):       1364253
+  PID(s):       45111
 
 ◆ Scheduled Jobs
-  Jobs:         25 active, 25 total
+  Jobs:         2 active, 25 total
 
 ◆ Sessions
-  Active:       17 session(s)
+  Active:       26 session(s)
 
 ────────────────────────────────────────────────────────────
   Run 'hermes doctor' for detailed diagnostics

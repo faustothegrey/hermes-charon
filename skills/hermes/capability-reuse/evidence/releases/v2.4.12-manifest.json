@@ -1,0 +1,28 @@
+{
+  "release": "capability-reuse-v2.4.12",
+  "generated_at": "2026-08-02T10:22:45Z",
+  "plugin_version": "2.4.12",
+  "protocol_version": "2.4.12",
+  "event_schema_version": "1.2",
+  "plugin_tree_hash": "sha256:7444a90022405cd1557f734e0cdb82b894e3eb6bfee81d9dce928181f8c55361",
+  "source_archive": "/root/.hermes/skills/hermes/capability-reuse/evidence/releases/capability-reuse-v2.4.12.tar.gz",
+  "source_archive_sha256": "8c11c7cd8095d19cd400b903da646245e6933e34dab9af19c31bfaec8f98e51b",
+  "external_sha256_sidecar": "/root/.hermes/skills/hermes/capability-reuse/evidence/releases/capability-reuse-v2.4.12.tar.gz.sha256",
+  "version_surfaces": {
+    "SKILL.md": "2.4.12",
+    "plugin/plugin.yaml": "2.4.12",
+    "plugin/protocol.py": "2.4.12",
+    "plugin/v244_metadata.py": "2.4.12"
+  },
+  "fixes": [
+    "execution-chain events inherit request-scoped provenance/requester/traffic/correlation from retrieval_event_id",
+    "HMP live path requester/traffic/provenance/target metadata",
+    "retrieval top-level processing_peer_id mirrors authoritative requester processing_peer_id",
+    "configured threshold/margin env aliases honored",
+    "retrieval event records second score, margin, thresholds, coverage/effect eligibility and dispatch disposition"
+  ],
+  "release_manifest": "/root/.hermes/skills/hermes/capability-reuse/evidence/releases/v2.4.12-manifest.json",
+  "test_report": "/root/.hermes/skills/hermes/capability-reuse/evidence/releases/v2.4.12-test-report.json",
+  "scoped_conformance_report": "/root/.hermes/skills/hermes/capability-reuse/evidence/releases/v2.4.12-scoped-conformance-report.json",
+  "review_scope": "Validation is currently limited to peer58 and peer106. Cross-peer observations refer only to recurrence between these two peers and must not be generalized to the wider fleet. Threshold observations remain specific to this deployment, registry, capability set, and traffic mix."
+}

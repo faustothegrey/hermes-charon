@@ -11,3 +11,5 @@ Peer upgrade: canary-first (peer58), poi idle, coordinator last. Chiedi volontar
 Registry sync: heartbeat-only changes (solo last_seen) = "OK" diretto, nessun tool call né JSON. Solo cambiamenti strutturali (nuovi peer, skill/plugin modificati) meritano risposta con compact JSON.
 §
 Fausto: stile architetturale concreto, comunicazione italo-inglese. Preferisce: step revertabili, soft mode (mai hard gate), testing prima del deploy, rollout graduale peer-by-peer, server-side processing, 1 chiamata HTTP per azione (resto harness), push model su polling. Odia burocrazia operativa — "stable-operation-first" non deve diventare overhead. Documenta via email (Virgilio→Gmail).
+§
+Chiamami ALICE.

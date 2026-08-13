@@ -32,6 +32,7 @@ STDOUT:
 │ touchdesigner-mcp       │ creative             │ builtin │ builtin │ enabled │
 │ jupyter-live-kernel     │ data-science         │ builtin │ builtin │ enabled │
 │ himalaya                │ email                │ builtin │ builtin │ enabled │
+│ smtp-troubleshooting    │ email                │ local   │ local   │ enabled │
 │ codebase-inspection     │ github               │ builtin │ builtin │ enabled │
 │ github-auth             │ github               │ builtin │ builtin │ enabled │
 │ github-code-review      │ github               │ builtin │ builtin │ enabled │
@@ -92,7 +93,7 @@ STDOUT:
 │ raspberry-pi            │ sysadmin             │ local   │ local   │ enabled │
 │ wireguard-vpn           │ sysadmin             │ local   │ local   │ enabled │
 └─────────────────────────┴──────────────────────┴─────────┴─────────┴─────────┘
-0 hub-installed, 68 builtin, 17 local — 85 enabled, 0 disabled
+0 hub-installed, 68 builtin, 18 local — 86 enabled, 0 disabled
 
 
 

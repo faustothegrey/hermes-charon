@@ -1,0 +1,13 @@
+{
+  "next_use": "Do not cite these artifacts as closure evidence. Use only as historical tooling/corpus context.",
+  "reasons": [
+    "Dataset C synthetic/template-leaked holdout; insufficient independent human labels",
+    "Dataset B circular regex-derived labels",
+    "Closure benchmark did not evaluate production retriever",
+    "C8 evidence is local controller conformance, not pinned Hermes runtime conformance",
+    "C10 lacks threshold/margin sweep and adversarial false-positive analysis"
+  ],
+  "review_verdict": "implementation remediation PASS; passive shadow GO; formal Phase 0 closure NO; formal Phase 1B authorization NO",
+  "status": "REJECTED_AS_FORMAL_CLOSURE",
+  "use": "tooling_and_corpus_evidence_only"
+}

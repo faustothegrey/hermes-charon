@@ -1,0 +1,96 @@
+{
+  "case": "caseB",
+  "text": "check peer58 health and restart it if unhealthy",
+  "retrieval_ids": [
+    "88990b012b664b5a"
+  ],
+  "intervention_ids": [],
+  "event_count": 1,
+  "events": [
+    {
+      "event_type": "retrieval_event",
+      "event_id": "88990b012b664b5a",
+      "timestamp": "2026-08-02T11:00:30Z",
+      "data": {
+        "retrieval_event_id": "88990b012b664b5a",
+        "intervention_id": null,
+        "invocation_id": null,
+        "capability_id": null,
+        "capability_version": null,
+        "validated_inputs": {
+          "peer_list": [
+            "peer58"
+          ],
+          "timeout_seconds": 5
+        },
+        "preview_target_peer_id": null,
+        "dispatcher_target_peer_id": null,
+        "result_target_peer_id": null,
+        "requester": {
+          "actor_type": "agent",
+          "actor_id": "peer106",
+          "request_channel": "hmp",
+          "requester_peer_id": "peer106",
+          "processing_peer_id": "peer106"
+        },
+        "traffic_type": "organic_peer",
+        "target_peer_id": "peer58",
+        "processing_peer_id": "peer106",
+        "top_capability": "hmp-healthcheck@1.0.0",
+        "top_score": 0.6385,
+        "second_score": 0.0,
+        "score_margin": 0.6385,
+        "intervention_threshold": 0.65,
+        "minimum_margin": 0.05,
+        "request_effect": "mutating",
+        "capability_effect": "read_only",
+        "whole_request_covered": false,
+        "eligibility": "rejected",
+        "eligibility_reason": "partial_coverage",
+        "dispatch": "none",
+        "intervened": false,
+        "shadow_mode": false,
+        "plugin_version": "2.4.14",
+        "plugin_artifact_hash": "sha256:33758531d6d79130381f5c04a4e10b898beb4b5bd14cf3b71ae34bfee1c0d1b3",
+        "deployment_id": "dep-v2414-peer58-peer106-20260802105229Z",
+        "deployment_timestamp": "2026-08-02T10:52:29Z",
+        "schema_version": "1.2",
+        "provenance": {
+          "stream": "organic_live",
+          "source": "hook_context.platform",
+          "detail": "platform_hook_context",
+          "valid": true,
+          "reason": ""
+        },
+        "invocation_status": null,
+        "input_validation": null,
+        "final_state": null,
+        "outcome": null,
+        "from_state": null,
+        "to_state": null,
+        "reason": null,
+        "candidates": [
+          {
+            "capability_id": "hmp-healthcheck",
+            "capability_version": "1.0.0",
+            "score": 0.6385,
+            "semantic_candidate": true,
+            "eligible_for_intervention": false,
+            "ineligibility_reasons": [
+              "Effect class mismatch: request='mutating', capability='read_only'. Allowed transitions from 'mutating': {'mutating'}",
+              "partial_coverage"
+            ],
+            "effect_class": "read_only",
+            "request_effect": "mutating",
+            "capability_effect": "read_only",
+            "whole_request_covered": false,
+            "eligibility": "rejected",
+            "eligibility_reason": "partial_coverage",
+            "dispatch": "none",
+            "trust_state": "trusted"
+          }
+        ]
+      }
+    }
+  ]
+}

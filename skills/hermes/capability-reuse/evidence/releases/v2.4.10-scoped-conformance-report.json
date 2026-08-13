@@ -1,0 +1,15 @@
+{
+  "checks": [
+    "version surfaces aligned to 2.4.10",
+    "source archive SHA-256 sidecar fixed",
+    "live-path requester/traffic/provenance target metadata retained",
+    "threshold/margin config aliases honored",
+    "retrieval events expose second_score/score_margin/threshold/minimum_margin/effect/coverage/eligibility/dispatch",
+    "two-peer scope statement included"
+  ],
+  "generated_at": "2026-08-02T09:53:41Z",
+  "plugin_tree_hash": "sha256:fd35652bb769ce1d5d2ec1b88f29828e052f30e6fae100592cc073e0c7e32352",
+  "scope": "peer58_peer106_only",
+  "status": "passed_source_tests",
+  "corrected_at": "2026-08-02T09:59:56Z"
+}

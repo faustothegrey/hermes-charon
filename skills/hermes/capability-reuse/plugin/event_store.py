@@ -37,6 +37,17 @@ from typing import Optional
 
 PROVENANCE_STREAMS = {"organic_live", "operator_seeded", "calibration_probe", "legacy_unclassified", "unknown"}
 
+def candidate_label(candidate: dict) -> str:
+    """Return capability@version for both canonical and legacy candidate shapes."""
+    if not isinstance(candidate, dict):
+        return ""
+    cap = candidate.get("capability")
+    if cap:
+        return str(cap)
+    cid = candidate.get("capability_id") or candidate.get("id") or ""
+    ver = candidate.get("capability_version") or candidate.get("version") or ""
+    return (str(cid) + "@" + str(ver)) if cid and ver else str(cid or "")
+
 EVENT_DIR = Path.home() / ".hermes" / "data" / "reuse-observer"
 EVENT_LOG = EVENT_DIR / "events.jsonl"
 SESSION_LOG = EVENT_DIR / "session-context.jsonl"
@@ -44,6 +55,7 @@ SESSION_LOG = EVENT_DIR / "session-context.jsonl"
 # ── Lock for thread-safe writes ──
 _write_lock = threading.Lock()
 _event_counter = 0
+_CHAIN_CONTEXT_BY_INTERVENTION: dict[str, dict] = {}
 
 # ── Schema version ──
 SCHEMA_VERSION = "1.2"
@@ -144,10 +156,82 @@ def normalize_provenance(stream: str | None = None, detail: str = "", source: st
         "detail": redact_preview(detail or os.environ.get("CAPABILITY_REUSE_PROVENANCE_DETAIL", ""), 120),
     }
 
+
+def _context_for_retrieval_id(retrieval_event_id: str) -> dict:
+    if not retrieval_event_id:
+        return {}
+    try:
+        if not EVENT_LOG.exists():
+            return {}
+        # Scan backwards: events are append-only and the target is normally recent.
+        for line in reversed(EVENT_LOG.read_text(errors="replace").splitlines()):
+            if retrieval_event_id not in line:
+                continue
+            event = json.loads(line)
+            if event.get("event_type") != "retrieval_event":
+                continue
+            data = event.get("data") if isinstance(event.get("data"), dict) else {}
+            if data.get("retrieval_event_id") == retrieval_event_id or data.get("event_id") == retrieval_event_id or event.get("event_id") == retrieval_event_id:
+                return {
+                    "provenance": data.get("provenance"),
+                    "requester": data.get("requester"),
+                    "traffic_type": data.get("traffic_type"),
+                    "session_id": data.get("session_id", ""),
+                    "episode_id": data.get("episode_id", ""),
+                    "turn_id": data.get("turn_id", ""),
+                    "task_id": data.get("task_id", ""),
+                    "tool_call_id": data.get("tool_call_id", ""),
+                    "retrieval_event_id": data.get("retrieval_event_id") or retrieval_event_id,
+                }
+    except Exception:
+        return {}
+    return {}
+
+def _context_for_payload(event_type: str, data: dict, context: dict | None = None) -> dict | None:
+    if context:
+        return context
+    if not isinstance(data, dict):
+        return None
+    iid = data.get("intervention_id", "")
+    if iid and iid in _CHAIN_CONTEXT_BY_INTERVENTION:
+        return dict(_CHAIN_CONTEXT_BY_INTERVENTION[iid])
+    rid = data.get("retrieval_event_id", "")
+    if rid:
+        ctx = _context_for_retrieval_id(rid)
+        if ctx and iid:
+            _CHAIN_CONTEXT_BY_INTERVENTION[iid] = dict(ctx)
+        return ctx or None
+    return None
+
+def _remember_chain_context(event_type: str, data: dict) -> None:
+    if not isinstance(data, dict):
+        return
+    iid = data.get("intervention_id", "")
+    if not iid:
+        return
+    if event_type == "intervention_event" and data.get("retrieval_event_id"):
+        _CHAIN_CONTEXT_BY_INTERVENTION[iid] = {
+            "provenance": data.get("provenance"),
+            "requester": data.get("requester"),
+            "traffic_type": data.get("traffic_type"),
+            "session_id": data.get("session_id", ""),
+            "episode_id": data.get("episode_id", ""),
+            "turn_id": data.get("turn_id", ""),
+            "task_id": data.get("task_id", ""),
+            "tool_call_id": data.get("tool_call_id", ""),
+            "retrieval_event_id": data.get("retrieval_event_id", ""),
+        }
+
 # ── Core emit ──
 
 def emit(event_type: str, data: dict, context: dict | None = None) -> Optional[str]:
+    context = _context_for_payload(event_type, data, context)
     data = _mandatory244(event_type, data, context=context)
+    if context:
+        for _k in ("traffic_type", "retrieval_event_id", "session_id", "episode_id", "turn_id", "task_id", "tool_call_id"):
+            if _k not in data or not data.get(_k) or (_k == "traffic_type" and data.get(_k) == "unknown"):
+                data[_k] = context.get(_k, "")
+    _remember_chain_context(event_type, data)
     """
     Emit an event to the JSONL log. Thread-safe, append-only.
     Returns event_id or None on error (never blocks the caller).
@@ -216,7 +300,12 @@ def emit_retrieval(session_id: str, user_message_preview: str,
                    config_version: str = "text-v1", provenance: str | None = None,
                    provenance_detail: str = "", provenance_source: str = "",
                    requester: dict | None = None, validated_inputs: dict | None = None,
-                   redaction_status: str = "applied", traffic_type: str = ""):
+                   redaction_status: str = "applied", traffic_type: str = "",
+                   second_score: float = 0.0, score_margin: float = 0.0,
+                   intervention_threshold: float = 0.0, minimum_margin: float = 0.0,
+                   request_effect: str = "", capability_effect: str = "",
+                   whole_request_covered: bool = True, eligibility: str = "",
+                   eligibility_reason: str = "", dispatch: str = "none"):
     """Retrieval attempt result (shadow or active), with labelable candidate evidence."""
     safe_candidates = []
     for c in candidates[:10]:
@@ -236,9 +325,22 @@ def emit_retrieval(session_id: str, user_message_preview: str,
         "requester": requester or {"actor_type": "unknown", "actor_id": "unknown", "request_channel": "unknown", "requester_peer_id": "", "processing_peer_id": ""},
         "validated_inputs": validated_inputs or {},
         "traffic_type": traffic_type or "unknown",
+        "target_peer_id": ((validated_inputs or {}).get("target_peer_id") or (((validated_inputs or {}).get("peer_list") or [""])[0] if isinstance((validated_inputs or {}).get("peer_list"), list) else "")),
+        "processing_peer_id": (requester or {}).get("processing_peer_id", ""),
+        "top_capability": (candidate_label(safe_candidates[0]) if safe_candidates else ""),
         "candidate_count": len(candidates),
         "candidates": safe_candidates,
         "top_score": round(top_score, 4),
+        "second_score": round(second_score, 4),
+        "score_margin": round(score_margin, 4),
+        "intervention_threshold": round(intervention_threshold, 4),
+        "minimum_margin": round(minimum_margin, 4),
+        "request_effect": request_effect or "unknown",
+        "capability_effect": capability_effect or "unknown",
+        "whole_request_covered": bool(whole_request_covered),
+        "eligibility": eligibility or ("accepted" if intervened else "rejected"),
+        "eligibility_reason": eligibility_reason,
+        "dispatch": dispatch,
         "intervened": intervened,
         "shadow_mode": shadow_mode,
         "config_version": config_version,
@@ -285,7 +387,11 @@ def emit_invocation(intervention_id: str, capability_id: str,
                     failure_code: str | None = None,
                     partial_effect_state: str = "none",
                     fallback_authorization_id: str | None = None,
-                    latency_ms: float = 0.0, invocation_id: str = ""):
+                    latency_ms: float = 0.0, invocation_id: str = "",
+                    validated_inputs: dict | None = None,
+                    preview_target_peer_id: str = "",
+                    dispatcher_target_peer_id: str = "",
+                    result_target_peer_id: str = ""):
     """invoke_capability result."""
     return emit("capability_invocation_event", {
         "intervention_id": intervention_id,
@@ -299,6 +405,10 @@ def emit_invocation(intervention_id: str, capability_id: str,
         "partial_effect_state": partial_effect_state,
         "fallback_authorization_id": fallback_authorization_id,
         "latency_ms": round(latency_ms, 2),
+        "validated_inputs": validated_inputs or {},
+        "preview_target_peer_id": preview_target_peer_id,
+        "dispatcher_target_peer_id": dispatcher_target_peer_id,
+        "result_target_peer_id": result_target_peer_id,
     })
 
 def emit_fallback_authorization(intervention_id: str, token_id: str,

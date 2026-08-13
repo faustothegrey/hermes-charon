@@ -211,37 +211,51 @@ def main():
     evs,bad=load_events(); now=datetime.now(timezone.utc); labels=load_labels()
     rows=[(e,payload(e),etype(e),ev_time(e)) for e in evs]
     recent=[r for r in rows if (now-r[3]).total_seconds()<3600]
-    current_dep=json.loads((Path.home()/".hermes/data/reuse-observer/cohort.json").read_text()).get("deployment_id")
-    clean=[r for r in rows if r[1].get("cohort_label")=="v2.4.4_clean_live" and r[1].get("plugin_version")=="2.4.4" and r[1].get("deployment_id")==current_dep]
+    cohort=json.loads((Path.home()/".hermes/data/reuse-observer/cohort.json").read_text())
+    current_dep=cohort.get("deployment_id")
+    expected_version=cohort.get("plugin_version")
+    expected_hash=cohort.get("plugin_artifact_hash")
+    expected_schema=cohort.get("schema_version", "1.2")
+    clean=[r for r in rows if r[1].get("deployment_id")==current_dep and r[1].get("plugin_version")==expected_version and r[1].get("plugin_artifact_hash")==expected_hash and (r[1].get("schema_version") or r[0].get("schema_version"))==expected_schema]
     legacy=[r for r in rows if r not in clean]
     clean_retr=[r for r in clean if r[2]=="retrieval_event"]
-    ro=[r for r in clean_retr if str(r[1].get("effect_stream") or r[1].get("effect_class") or "").startswith("read")]
-    mu=[r for r in clean_retr if str(r[1].get("effect_stream") or r[1].get("effect_class") or "").startswith("mutat")]
-    # chain errors for clean cohort
-    starts=defaultdict(int); comps=defaultdict(int); retrieval_keys=set(); chain_errors=[]
+    ro=[r for r in clean_retr if str(r[1].get("request_effect") or r[1].get("effect_stream") or r[1].get("effect_class") or "").startswith("read")]
+    mu=[r for r in clean_retr if str(r[1].get("request_effect") or r[1].get("effect_stream") or r[1].get("effect_class") or "").startswith("mutat")]
+    # chain errors for clean cohort. Capability invocations and execute_code chains are separate:
+    # active reuse retrievals correlate through intervention/invocation/outcome; only actual execute_code
+    # starts require execute_code completions. Do not require execute_code for dispatch=none or capability success.
+    starts=defaultdict(int); comps=defaultdict(int); chain_errors=[]
+    retrieval_ids=set(); intervention_by_rid=defaultdict(int); invocation_by_rid=defaultdict(int); outcome_by_rid=defaultdict(int)
     for _,d,t,_ in clean:
-        k=chain_key(d)
-        if t=="retrieval_event": retrieval_keys.add(k)
-        elif t=="execute_code_started_event": starts[k]+=1
-        elif t=="execute_code_completed_event": comps[k]+=1
-    for k in retrieval_keys:
-        if not all(k): chain_errors.append({"type":"identifier_mismatch","key":k})
-        if starts.get(k,0)!=1: chain_errors.append({"type":"start_count","key":k,"count":starts.get(k,0)})
-        if comps.get(k,0)!=1: chain_errors.append({"type":"completion_count","key":k,"count":comps.get(k,0)})
+        rid=d.get("retrieval_event_id") or d.get("event_id") or ""
+        if t=="retrieval_event": retrieval_ids.add(rid)
+        elif t=="intervention_event": intervention_by_rid[d.get("retrieval_event_id","")]+=1
+        elif t=="capability_invocation_event": invocation_by_rid[d.get("retrieval_event_id","")]+=1
+        elif t=="outcome_event": outcome_by_rid[d.get("retrieval_event_id","")]+=1
+        elif t=="execute_code_started_event" and d.get("code_hash") and d.get("retrieval_event_id"):
+            starts[chain_key(d)] += 1
+        elif t=="execute_code_completed_event" and d.get("code_hash") and d.get("retrieval_event_id"):
+            comps[chain_key(d)] += 1
+    retrieval_by_id={ (d.get("retrieval_event_id") or d.get("event_id") or ""): d for _,d,t,_ in clean if t=="retrieval_event" }
+    for rid,d in retrieval_by_id.items():
+        if d.get("intervened") is True:
+            if intervention_by_rid.get(rid,0)!=1: chain_errors.append({"type":"retrieval_without_single_intervention","retrieval_event_id":rid,"count":intervention_by_rid.get(rid,0)})
+            if invocation_by_rid.get(rid,0)!=1: chain_errors.append({"type":"intervention_without_single_completion","retrieval_event_id":rid,"count":invocation_by_rid.get(rid,0)})
+            if outcome_by_rid.get(rid,0)!=1: chain_errors.append({"type":"completion_without_outcome","retrieval_event_id":rid,"count":outcome_by_rid.get(rid,0)})
     for k,c in starts.items():
-        if k not in retrieval_keys: chain_errors.append({"type":"start_without_retrieval","key":k,"count":c})
+        if comps.get(k,0)==0: chain_errors.append({"type":"start_without_completion","key":k,"count":c})
     for k,c in comps.items():
-        if k not in starts: chain_errors.append({"type":"completion_without_start","key":k,"count":c})
+        if starts.get(k,0)==0: chain_errors.append({"type":"completion_without_start","key":k,"count":c})
         if c>1: chain_errors.append({"type":"duplicate_completion","key":k,"count":c})
     independent=len(set((d.get("session_id"),d.get("peer_id"),d.get("task_id")) for _,d,_,_ in clean_retr))
     by_cap=Counter((d.get("top_capability") or (d.get("candidates") or [{}])[0].get("capability") or "<missing>") for _,d,_,_ in clean_retr)
     summary={
         "generated_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "generated_by": "batch-reuse-analyzer v2.4.6",
+        "generated_by": "batch-reuse-analyzer v2.4.16",
         "bad_json_lines": bad,
         "total_events": len(evs),
         "events_last_1h_event_time": len(recent),
-        "cohort": {"current_deployment_id": current_dep, "v2.4.4_clean_live_events": len(clean), "legacy_or_pre_events": len(legacy), "v2.4.4_clean_live_retrievals": len(clean_retr)},
+        "cohort": {"current_deployment_id": current_dep, "expected_plugin_version": expected_version, "expected_plugin_artifact_hash": expected_hash, "current_clean_events": len(clean), "legacy_or_pre_events": len(legacy), "current_clean_retrievals": len(clean_retr)},
         "streams": {"read_only_retrievals": len(ro), "mutating_retrievals": len(mu), "mutating_in_read_only": sum(1 for _,d,_,_ in ro if str(d.get("effect_class","")).startswith("mutat"))},
         "recurrence": {"raw_occurrences": len(clean_retr), "independent_occurrences": independent, "by_top_capability": dict(by_cap)},
         "by_type": dict(Counter(t for _,_,t,_ in rows)),
@@ -252,7 +266,7 @@ def main():
         },
         "chain_correlation": {"errors": len(chain_errors), "sample": chain_errors[:5]},
         "durable_labels": len(labels),
-        "version": "2.4.6",
+        "version": "2.4.16",
         "shadow_mode": True,
         "active_scope": "hmp-healthcheck@1.0.0",
     }

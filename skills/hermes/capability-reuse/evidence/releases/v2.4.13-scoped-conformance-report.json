@@ -1,0 +1,14 @@
+{
+  "generated_at": "2026-08-02T10:45:00Z",
+  "status": "passed_source_tests",
+  "scope": "peer58_peer106_only",
+  "plugin_tree_hash": "sha256:f7b1069bbf5e9c607f0ddc8252c22b42de1b191b3eb628d6707187d8baa63d07",
+  "checks": [
+    "version surfaces aligned to 2.4.13",
+    "source archive SHA-256 sidecar fixed",
+    "source compiles and unit tests pass",
+    "execution-chain traffic_type inheritance from retrieval context fixed",
+    "invocation event target evidence fields added",
+    "two-peer scope statement included"
+  ]
+}

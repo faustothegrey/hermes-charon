@@ -1,0 +1,13 @@
+{
+  "version": "2.4.15",
+  "generated_at": "2026-08-02T11:23:05Z",
+  "scope_statement": "Validation is currently limited to peer58 and peer106. Cross-peer observations refer only to recurrence between these two peers and must not be generalized to the wider fleet. Threshold observations remain specific to this deployment, registry, capability set, and traffic mix.",
+  "checks": [
+    "source archive SHA-256 sidecar fixed",
+    "version surfaces aligned",
+    "unit tests pass",
+    "acceptance isolation pass from isolated HOME",
+    "live organic cases verified in v2.4.15-live-validation-report.json"
+  ],
+  "verdict": "PASS for two-peer engineering validation; not fleet-wide precision/threshold closure"
+}

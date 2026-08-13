@@ -1,21 +1,21 @@
-Obsidian vault: /home/fausto/Documents/Obsidian Vault/. Progetti/Hermes/ per note tecniche.
+Obsidian vault: ~/Documents/Obsidian Vault/Progetti/Hermes/ per note tecniche.
 §
-Esecuzione immediata — non descrivere. Ripetizione 2x = esegui. HMP > API > SSH.
-§
-Fausto: harness-first, stable-operation-first, soft mode. "E poi?"=azione. "Basta X"=stop. peer136 escluso. peer105 offline. peer84 solo dopo 17:00. Phase 0 tooling 7/7 ok. Live-shadow authorized.
+Esecuzione immediata, ripetizione 2x = esegui. HMP > API > SSH.
 §
 Fausto: minimal tool calls, risposte concise, OK diretto se registry invariato, usa contesto già disponibile. Registry HMP: ~/.hermes/registry/registry.json. Sync: "registry sync?" → JSON compatto se cambiato, OK se no; niente patch heartbeat artificiali (i peer aggiornano last_seen da soli). Gateway = systemd user hermes-gateway.service.
 §
-HMP :18643 delivery between peer70 and peers often gets stuck delivering. Dual-plane :18644 reliable. Use dual-plane per messaggi importanti. peer105 offline fino a nuovo avviso. peer84 cooling 11-17 (calore fisico).
+Gateway restart peer70: cron one-shot inaffidabile (run_at passato=mai, ticker 5min) → restart manuale di Fausto. shutdown/reboot hardline assoluto. Peer remoti: SSH kill -9 + script no_agent OK. Dual-plane :18644 in ritiro, non riavviare.
 §
-Skill v2.4.6, live-shadow attivo
+Session-size: compressione 50% (auxiliary→auto=nous), watchdog 70% cron session-watchdog-70pct (~/.hermes/scripts/session_watchdog.py, deepseek-v4-flash=1M). Skill: hermes-session-lifecycle.
 §
-Gateway restart peer70: solo cron one-shot deliver=local (kill -9 e SSH esterno bloccati dal safety scanner). Peer remoti: SSH kill -9 OK. Dopo restart riavviare dual-plane :18644.
+Undervoltage Charon RISOLTO 13/08 (nuovo caricatore, trial-error Fausto): throttled 0x0, ondemand 1500MHz, protezioni rimosse (service undervoltage-protect disabilitato, powersave tolto da rc.local), zram/journal mantenuti.
 §
-Session-size: compressione auto 50% OK (auxiliary rimosso→auto=nous). Watchdog 70% attivo: cron session-watchdog-70pct, script ~/.hermes/scripts/session_watchdog.py (last_prompt_tokens da sessions.json, deepseek-v4-flash=1M). session_reset.notify è post, no pre-warning nativo. Skill: hermes-session-lifecycle.
+capability-reuse 2.4.17 VALIDATA 13/08 (T1-T6 ✅ peer106 conferma, fix T3 disposition + T5a pattern italiani) e distribuita su peer70/106/58/138/141 (backup .bak-2417).
 §
-Email: fausto.lelli@gmail.com via Virgilio (riattivato 2026-08-01). Config SMTP funzionante: smtp.libero.it:587 STARTTLS (465/993 conn reset da IOL, cert *.libero.it; himalaya fallisce 'Unparseable SMTP reply' su IOL → usare smtplib python). pass ~/.config/himalaya/virgilio.pass — password attuale rifiutata 535, va aggiornata da Fausto.
+peer106 (192.168.178.106, Fedora) = "trixie" nel linguaggio di Fausto (parlare: trixie; registry/docs: peer106). Macchina .136 (pi.dev, ex-trixie) ora = "Diet".
 §
-SSH peer: root/ccll4372=peer106/138; fausto/ccll4372=peer84/58 (root su peer58 fallisce).
+WireGuard: peer58 .58:51820, peer128=10.0.0.6 DDNS settembre2.homepc.it. peer138=.138 (capability-reuse). Sessioni HMP da peer: SSH/sudo/upnpc timeout senza approvazione Fausto → fargli fare da console.
 §
-peer70 (Charon, RPi Bullseye py3.9): undervoltage cronico (PSU scarso). Protetto in rc.local: powersave 600MHz, zram 512M, dirty 1500/1000/10, journald 100M. Backup GitHub: state.db escluso dai secrets. Watchdog: undervoltage 15m (cooldown 60m), session 70% 30m.
+peer141 (192.168.178.141, Stella, RPi aarch64, Hermes v0.20.0): nuovo peer 13/08/26, sostituisce peer105 (defunto). HMP :18643 v0.1.3 + API :8642 attivi, skill hermes-hmp caricata. SSH user fausto, key bidirezionale OK.
+§
+Dual-plane :18644 RITIRATO 13/08 da tutta la rete (peer70/58/106/138/141, confermato da tutti). Plugin HMP :18643 unico canale, v0.1.4 con live-shadow metadata (T2 capreuse PASS). hmp_dual_plane*.py rimossi ovunque. Non riavviare :18644.

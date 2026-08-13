@@ -1,0 +1,196 @@
+{
+  "generated_at": "2026-08-02T10:44:13Z",
+  "cohort": {
+    "cohort_label": "v2.4.13_peer58_peer106",
+    "deployment_id": "dep-v2413-peer58-peer106-20260802103806Z",
+    "deployment_timestamp": "2026-08-02T10:38:06Z",
+    "legacy_boundary": "events before this deployment_id are legacy and excluded from current-release metrics",
+    "plugin_artifact_hash": "sha256:f7b1069bbf5e9c607f0ddc8252c22b42de1b191b3eb628d6707187d8baa63d07",
+    "plugin_tree_hash": "sha256:f7b1069bbf5e9c607f0ddc8252c22b42de1b191b3eb628d6707187d8baa63d07",
+    "plugin_version": "2.4.13",
+    "schema_version": "1.2",
+    "scope": "peer58_peer106_only",
+    "source_archive": "/root/.hermes/skills/hermes/capability-reuse/evidence/releases/capability-reuse-v2.4.13.tar.gz",
+    "source_archive_sha256": "6a4d0eb729cd45cfdfde600a1bd0986fd63957bad66612ca6b36d907221353e2"
+  },
+  "totals": {
+    "events_loaded": 71,
+    "bad_json_lines": 0,
+    "retrieval_events": 11,
+    "current_cohort_retrievals": 1,
+    "review_rows_produced": 1,
+    "current_cohort_events": 45,
+    "execution_chain_events_current_cohort": 5
+  },
+  "retrieval_dispositions": [
+    {
+      "line": 7,
+      "retrieval_event_id": "e4fab95b56684d2e",
+      "timestamp": "2026-08-02T10:37:33Z",
+      "deployment_id": "dep-v2412-peer58-peer106-20260802102300",
+      "plugin_version": "2.4.13",
+      "disposition": "outside cohort",
+      "reason": "legacy_or_previous_deployment"
+    },
+    {
+      "line": 8,
+      "retrieval_event_id": "523a11fd734c4b9d",
+      "timestamp": "2026-08-02T10:37:33Z",
+      "deployment_id": "dep-v2412-peer58-peer106-20260802102300",
+      "plugin_version": "2.4.13",
+      "disposition": "outside cohort",
+      "reason": "legacy_or_previous_deployment"
+    },
+    {
+      "line": 9,
+      "retrieval_event_id": "a79272950dee4aa6",
+      "timestamp": "2026-08-02T10:37:33Z",
+      "deployment_id": "dep-v2412-peer58-peer106-20260802102300",
+      "plugin_version": "2.4.13",
+      "disposition": "outside cohort",
+      "reason": "legacy_or_previous_deployment"
+    },
+    {
+      "line": 10,
+      "retrieval_event_id": "25061b0e7f464f3b",
+      "timestamp": "2026-08-02T10:37:33Z",
+      "deployment_id": "dep-v2412-peer58-peer106-20260802102300",
+      "plugin_version": "2.4.13",
+      "disposition": "outside cohort",
+      "reason": "legacy_or_previous_deployment"
+    },
+    {
+      "line": 11,
+      "retrieval_event_id": "1bc6d55f9aa440bf",
+      "timestamp": "2026-08-02T10:37:33Z",
+      "deployment_id": "dep-v2412-peer58-peer106-20260802102300",
+      "plugin_version": "2.4.13",
+      "disposition": "outside cohort",
+      "reason": "legacy_or_previous_deployment"
+    },
+    {
+      "line": 12,
+      "retrieval_event_id": "6c56e850f3be4cc8",
+      "timestamp": "2026-08-02T10:37:33Z",
+      "deployment_id": "dep-v2412-peer58-peer106-20260802102300",
+      "plugin_version": "2.4.13",
+      "disposition": "outside cohort",
+      "reason": "legacy_or_previous_deployment"
+    },
+    {
+      "line": 13,
+      "retrieval_event_id": "66d19b10fc834f88",
+      "timestamp": "2026-08-02T10:37:33Z",
+      "deployment_id": "dep-v2412-peer58-peer106-20260802102300",
+      "plugin_version": "2.4.13",
+      "disposition": "outside cohort",
+      "reason": "legacy_or_previous_deployment"
+    },
+    {
+      "line": 14,
+      "retrieval_event_id": "75c8848a640842e3",
+      "timestamp": "2026-08-02T10:37:33Z",
+      "deployment_id": "dep-v2412-peer58-peer106-20260802102300",
+      "plugin_version": "2.4.13",
+      "disposition": "outside cohort",
+      "reason": "legacy_or_previous_deployment"
+    },
+    {
+      "line": 15,
+      "retrieval_event_id": "e5545d009c4c405d",
+      "timestamp": "2026-08-02T10:37:33Z",
+      "deployment_id": "dep-v2412-peer58-peer106-20260802102300",
+      "plugin_version": "2.4.13",
+      "disposition": "outside cohort",
+      "reason": "legacy_or_previous_deployment"
+    },
+    {
+      "line": 17,
+      "retrieval_event_id": "5a4b7840c96c4a52",
+      "timestamp": "2026-08-02T10:37:34Z",
+      "deployment_id": "dep-v2412-peer58-peer106-20260802102300",
+      "plugin_version": "2.4.13",
+      "disposition": "outside cohort",
+      "reason": "legacy_or_previous_deployment"
+    },
+    {
+      "line": 57,
+      "retrieval_event_id": "403aaaebf4f34f36",
+      "timestamp": "2026-08-02T10:43:08Z",
+      "deployment_id": "dep-v2413-peer58-peer106-20260802103806Z",
+      "plugin_version": "2.4.13",
+      "disposition": "review row produced",
+      "reason": "review_id=review_2f59f7c82d1d908b1c4484757c482583"
+    }
+  ],
+  "retrieval_chain_checks": [
+    {
+      "retrieval_event_id": "403aaaebf4f34f36",
+      "check": "retrieval/intervention/invocation/review correlation",
+      "disposition": "review row produced",
+      "reason": "complete active chain",
+      "event_types": {
+        "retrieval_event": 1,
+        "intervention_event": 1,
+        "protocol_state_transition": 3,
+        "capability_invocation_event": 1,
+        "outcome_event": 1
+      },
+      "ids": {
+        "intervention_ids": [
+          "int_25c0a1b05fdf45c0b4165b7ae72788cf"
+        ],
+        "invocation_ids": [
+          "inv_0c5e8d8613fe4ef5"
+        ]
+      }
+    }
+  ],
+  "execution_chain_dispositions": [
+    {
+      "key": "2d819cc469f086d5",
+      "check": "start without completion",
+      "disposition": "excluded with structured reason",
+      "reason": "direct tool instrumentation or in-progress/non-retrieval chain; not active capability chain",
+      "starts": 1,
+      "completions": 0
+    },
+    {
+      "key": "a0da7c290116f19e",
+      "check": "start without completion",
+      "disposition": "excluded with structured reason",
+      "reason": "direct tool instrumentation or in-progress/non-retrieval chain; not active capability chain",
+      "starts": 1,
+      "completions": 0
+    },
+    {
+      "key": "d6706dd57e95222e",
+      "check": "start without completion",
+      "disposition": "excluded with structured reason",
+      "reason": "direct tool instrumentation or in-progress/non-retrieval chain; not active capability chain",
+      "starts": 1,
+      "completions": 0
+    },
+    {
+      "key": "call_A2vfCUECNMckcgkO1L5ZhOvE",
+      "check": "completion without start",
+      "disposition": "excluded with structured reason",
+      "reason": "completion has no start in current report window or legacy start",
+      "starts": 0,
+      "completions": 1
+    },
+    {
+      "key": "call_majHQf8uD6XVN4OzJhLbqY32",
+      "check": "completion without start",
+      "disposition": "excluded with structured reason",
+      "reason": "completion has no start in current report window or legacy start",
+      "starts": 0,
+      "completions": 1
+    }
+  ],
+  "unexplained": {
+    "retrieval_orphans": [],
+    "execution_chain_orphans": []
+  },
+  "verdict": "PASS"
+}

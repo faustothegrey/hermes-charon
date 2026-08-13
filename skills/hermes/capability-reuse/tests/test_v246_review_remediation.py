@@ -55,10 +55,10 @@ class V246ReviewRemediationTests(unittest.TestCase):
                 {"capability": "peer-heartbeat@1.0.0", "score": 0.4, "effect_class": "read_only"},
             ],
             "top_score": 0.91,
-            "deployment_id": "dep-v246-live",
-            "plugin_version": "2.4.6",
+            "deployment_id": "dep-v2414-peer58-peer106",
+            "plugin_version": "2.4.16",
             "plugin_artifact_hash": "abc123",
-            "cohort_label": "v2.4.6_review_queue",
+            "cohort_label": "v2.4.16_peer58_peer106",
             "peer_id": "peer70",
         }
         data.update(overrides)

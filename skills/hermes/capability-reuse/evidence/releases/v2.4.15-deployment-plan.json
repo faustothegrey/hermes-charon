@@ -1,0 +1,23 @@
+{
+  "selected_release": "2.4.15",
+  "source_archive": "/root/.hermes/skills/hermes/capability-reuse/evidence/releases/capability-reuse-v2.4.15.tar.gz",
+  "source_archive_sha256": "394fb907e55cc5dfae86248759b3de2898a8732d6478cff2b3f884468e7f4705",
+  "external_sha256_sidecar": "/root/.hermes/skills/hermes/capability-reuse/evidence/releases/capability-reuse-v2.4.15.tar.gz.sha256",
+  "runtime_plugin_path": "/root/.hermes/plugins/capability-reuse",
+  "runtime_plugin_tree_hash": "sha256:6f498b8d3790f2b34c94b5f4f6531862c9a04a4d0701501ff9d67c1d559fea20",
+  "deployment": {
+    "deployment_id": "dep-v2415-reviewed-peer58-peer106-20260802T112326Z",
+    "deployment_timestamp": "2026-08-02T11:23:26Z",
+    "plugin_version": "2.4.15",
+    "plugin_artifact_hash": "sha256:6f498b8d3790f2b34c94b5f4f6531862c9a04a4d0701501ff9d67c1d559fea20",
+    "plugin_tree_hash": "sha256:6f498b8d3790f2b34c94b5f4f6531862c9a04a4d0701501ff9d67c1d559fea20",
+    "event_schema_version": "1.2",
+    "schema_version": "1.2",
+    "protocol_version": "1.6",
+    "loaded_plugin_path": "/root/.hermes/plugins/capability-reuse",
+    "cohort_label": "v2.4.15_peer58_peer106_clean_reviewed",
+    "scope": "peer58-peer106 only",
+    "legacy_before_deployment_boundary": true
+  },
+  "restart_required": true
+}

@@ -1,0 +1,128 @@
+{
+  "delegated_agent_conformance": false,
+  "evidence_scope": "local-controller",
+  "failed": 0,
+  "gate_passed": true,
+  "gateway_conformance": false,
+  "hermes_home": "/root/.hermes",
+  "passed": 15,
+  "pinned_hermes_cli_conformance": false,
+  "plugin_dir": "/root/.hermes/plugins/capability-reuse",
+  "plugin_version": "2.4.3",
+  "profile": "full-required",
+  "report_version": "v2.4.3",
+  "results": [
+    {
+      "desc": "Approved plugin artifact discovered exactly once; register() completes",
+      "detail": "Plugin discovered/register() OK. Hooks: ['pre_llm_call', 'pre_tool_call', 'post_tool_call']. SHA256: 5259f6a3d732aa66",
+      "id": 1,
+      "name": "Plugin discovery & registration",
+      "status": "pass"
+    },
+    {
+      "desc": "Resolved source/path, version, artifact hash match deployment manifest",
+      "detail": "Source: /root/.hermes/plugins/capability-reuse",
+      "id": 2,
+      "name": "Plugin identity & source integrity",
+      "status": "pass"
+    },
+    {
+      "desc": "Tool appears in effective tool definitions; is directly callable",
+      "detail": "tool hidden in shadow; visible/callable in active with explicit non-success dispatcher result",
+      "id": 3,
+      "name": "invoke_capability tool visibility",
+      "status": "pass"
+    },
+    {
+      "desc": "Context returned reaches model before tool loop",
+      "detail": "pre_llm_call fired once and persisted one correlated shadow retrieval without injection",
+      "id": 4,
+      "name": "pre_llm_call fires once per turn",
+      "status": "pass"
+    },
+    {
+      "desc": "Including calls routed through tool-search bridge",
+      "detail": "pre_tool_call fired exactly once for execute_code in harness dispatch",
+      "id": 5,
+      "name": "pre_tool_call fires exactly once per execute_code",
+      "status": "pass"
+    },
+    {
+      "desc": "Return {\"action\": \"block\", \"message\": \"...\"} prevents handler execution",
+      "detail": "static Verdict path works; live handler block prevention still requires runtime",
+      "id": 6,
+      "name": "Block return contract",
+      "status": "pass"
+    },
+    {
+      "desc": "Fires for success, failure, and plugin-blocked calls",
+      "detail": "post_tool_call observed success, failure, and plugin-blocked synthetic outcomes",
+      "id": 7,
+      "name": "post_tool_call fires for all outcomes",
+      "status": "pass"
+    },
+    {
+      "desc": "session_id, task_id, tool_call_id stable enough for correlation",
+      "detail": "session_id/task_id/tool_call_id stable across pre and post hook callbacks",
+      "id": 8,
+      "name": "Identifier stability",
+      "status": "pass"
+    },
+    {
+      "desc": "Two concurrent tool calls cannot claim the same intervention",
+      "detail": "single-process atomic claim verified",
+      "id": 9,
+      "name": "Concurrent claiming prevention",
+      "status": "pass"
+    },
+    {
+      "desc": "Plugin exceptions, malformed returns, timeouts fail open (agent continues)",
+      "detail": "shadow invoke returns explicit non-executing error",
+      "id": 10,
+      "name": "Fail-open behavior",
+      "status": "pass"
+    },
+    {
+      "desc": "Hook behavior same in CLI, gateway, and any enabled delegation path",
+      "detail": "same hook callback accepts CLI/gateway/delegation-shaped surface kwargs",
+      "id": 11,
+      "name": "Cross-surface consistency",
+      "status": "pass"
+    },
+    {
+      "desc": "kwargs delivered to hooks captured and persisted",
+      "detail": "hook kwargs delivered exactly, including nested structured values",
+      "id": 12,
+      "name": "Exact kwargs capture",
+      "status": "pass"
+    },
+    {
+      "desc": "Injected intervention text reaches model, position relative to co-resident plugins recorded",
+      "detail": "intervention context render is reachable at user-message injection position",
+      "id": 13,
+      "name": "Injection reachability & position",
+      "status": "pass"
+    },
+    {
+      "desc": "Co-resident plugin / shell hook block vs protocol block distinguishable in event log",
+      "detail": "block origin constants present",
+      "id": 14,
+      "name": "External block distinguishability",
+      "status": "pass"
+    },
+    {
+      "desc": "Degraded-mode blocked+resubmitted execute_code observed end-to-end",
+      "detail": "blocked/degraded double-pass fallback token flow verified",
+      "id": 15,
+      "name": "Approval pipeline double-pass",
+      "status": "pass"
+    }
+  ],
+  "runtime_conformance_note": "This report exercises the local controller/harness only; pinned Hermes CLI, gateway, and delegated-agent surfaces require separate raw runtime evidence.",
+  "skipped": 0,
+  "spec_version": "1.6",
+  "suite_version": "1.0",
+  "timestamp": "2026-07-30T08:40:41Z",
+  "total": 15,
+  "version": "2.4.3"
+}

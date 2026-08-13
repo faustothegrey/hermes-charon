@@ -26,8 +26,8 @@ from . import event_store as events
 logger = logging.getLogger("capability-reuse.retriever")
 
 # ── Configuration ──
-DEFAULT_INTERVENTION_THRESHOLD = 0.75  # minimum score to intervene
-DEFAULT_MINIMUM_MARGIN = 0.15          # top - second >= margin
+DEFAULT_INTERVENTION_THRESHOLD = 0.65  # minimum score to intervene (Phase 0 peer58/peer106 scope)
+DEFAULT_MINIMUM_MARGIN = 0.05          # top - second >= margin (Phase 0 peer58/peer106 scope)
 DEFAULT_RETRIEVAL_THRESHOLD = 0.30     # minimum score to log (shadow)
 
 # ── Data classes ──
@@ -179,17 +179,19 @@ def score_capability(query: str, capability: dict) -> float:
     # health/status/check/ping intent.
     cap_id = meta.get("capability_id", "")
     ql = (query or "").lower()
-    if cap_id == "hmp-healthcheck" and "hmp" in ql and any(t in ql for t in ["health", "healthy", "status", "check", "ping"]):
-        score += 0.55
+    if cap_id == "hmp-healthcheck" and any(t in ql for t in ["health", "healthy", "status", "check", "ping", "healthcheck"]):
+        has_hmp_context = "hmp" in ql or bool(_extract_peer_targets(query))
+        if has_hmp_context:
+            score += 0.55
         # "show peer128 HMP gateway health" is a common operator phrasing;
         # the extra gateway token otherwise dilutes the small-query score just
         # below the active canary threshold despite exact read-only intent.
-        if "gateway" in ql and "health" in ql:
+        if has_hmp_context and "gateway" in ql and "health" in ql:
             score += 0.05
         # Operator shorthand "healthcheck peerX via HMP" lacks a separator
         # between health/check and can land a few thousandths below the active
         # threshold in the token-overlap scorer despite exact read-only intent.
-        if "healthcheck" in ql:
+        if has_hmp_context and "healthcheck" in ql:
             score += 0.03
     return min(score, 1.0)
 
@@ -208,6 +210,9 @@ def _extract_request_effect(query: str) -> str:
         r"\bgenerate\s+(?:python\s+)?code\b",
         r"\bwrite\s+(?:python\s+)?code\b",
         r"\bcompare\b",
+        # Italian non-operational / informational
+        r"\bspiega\b", r"\bdescrivi\b", r"\bcos'[èe]\b", r"\bche\s+cos'[èe]\b",
+        r"\bcome\s+funziona\b", r"\bdimmi\s+come\b", r"\bcosa\s+[èe]\b",
     ]
     if any(re.search(p, q) for p in non_operational_patterns):
         return "non_operational"
@@ -218,6 +223,12 @@ def _extract_request_effect(query: str) -> str:
         "modify", "update", "replace", "configure", "reboot", "shutdown", "kill",
         "terminate", "pause", "resume", "reset", "power cycle", "power-cycle",
         "patch", "upgrade",
+        # Italian operator terms (peer network is Italian-speaking)
+        "riavvia", "riavvialo", "riavviali", "ferma", "fermalo", "arresta",
+        "disattiva", "attiva", "aggiorna", "riconfigura", "ricarica", "riavvio",
+        "spegnilo", "accendilo", "termina", "uccidi", "sospendi", "riprendi",
+        "cambia", "modifica", "sostituisci", "installa", "rimuovi", "elimina",
+        "invia", "scrivi", "crea", "cancella",
     ]
     composite_mutating_patterns = [
         r"\band\s+(?:then\s+)?(?:restart|stop|start|enable|disable|modify|update|replace|configure|reboot|shutdown|kill|terminate|pause|resume|reset|power\s+cycle|patch|upgrade)\b",
@@ -227,8 +238,12 @@ def _extract_request_effect(query: str) -> str:
         r"\bif\s+(?:unhealthy|down|offline|failing|failed|not\s+ok)\b",
         r"\bif\s+[^.?!]{0,80}\b(?:fix|repair|recover|remediate|investigate|diagnose|escalate|open\s+ticket|notify|alert)\b",
         r"\b(?:check|inspect|ping|healthcheck)\b[^.?!]{0,120}\b(?:and|then)\b[^.?!]{0,120}\b(?:fix|repair|recover|remediate|investigate|diagnose|escalate|open\s+ticket|notify|alert)\b",
+        # Italian composite patterns: "e se giu riavvialo", "se non healthy riavvia"
+        r"\b(?:e\s+)?se\s+(?:non\s+)?(?:healthy|ok|su|attivo|attiva|funzionante|giu|giù|down|offline)\b[^.?!]{0,60}\b(?:riavvia|riavvialo|ferma|fermalo|arresta|disattiva|spegni|accendi|termina|uccidi|sospendi|riprendi|aggiorna|riconfigura)\b",
+        r"\b(?:controlla|check|verifica|ping)\b[^.?!]{0,80}\b(?:e|then|poi)\b[^.?!]{0,80}\b(?:riavvia|riavvialo|ferma|fermalo|arresta|disattiva|spegni|accendi|termina|sospendi|riprendi|aggiorna|riconfigura)\b",
     ]
-    read_terms = ["check", "read", "list", "inspect", "health", "status", "ping"]
+    read_terms = ["check", "read", "list", "inspect", "health", "status", "ping",
+                  "mostra", "stato", "verifica", "controlla", "salute", "elenco", "lista"]
     if any(t in q for t in mutating_terms) or any(re.search(p, q) for p in composite_mutating_patterns):
         return "mutating"
     if any(t in q for t in read_terms):
@@ -243,18 +258,20 @@ def _extract_peer_targets(query: str) -> set[str]:
 
 def _supported_hmp_health_targets() -> set[str]:
     # Keep this local to avoid importing the dispatcher in shadow collection paths.
-    return {"peer70", "peer84", "peer105", "peer106", "peer128", "peer136", "peer138"}
+    return {"peer58", "peer70", "peer84", "peer105", "peer106", "peer128", "peer136", "peer138"}
 
 
 def _extract_requester(hook_context: dict | None) -> dict:
     ctx = hook_context or {}
     req = ctx.get("requester") if isinstance(ctx.get("requester"), dict) else {}
-    channel = req.get("request_channel") or ctx.get("request_channel") or ctx.get("channel") or ctx.get("source") or "unknown"
+    platform = str(ctx.get("platform") or "").lower()
+    channel = req.get("request_channel") or ctx.get("request_channel") or ctx.get("channel") or ctx.get("source") or platform or "unknown"
     if isinstance(channel, str):
         channel = channel.lower()
-    requester_peer = req.get("requester_peer_id") or ctx.get("requester_peer_id") or ctx.get("source_peer_id") or ctx.get("hmp_requester_peer_id") or ""
+    sender = ctx.get("sender_id") or ctx.get("user_id") or ""
+    requester_peer = req.get("requester_peer_id") or ctx.get("requester_peer_id") or ctx.get("source_peer_id") or ctx.get("hmp_requester_peer_id") or (sender if channel == "hmp" else "")
     actor_type = req.get("actor_type") or ctx.get("actor_type") or "unknown"
-    actor_id = req.get("actor_id") or ctx.get("actor_id") or ctx.get("user_id") or "unknown"
+    actor_id = req.get("actor_id") or ctx.get("actor_id") or sender or "unknown"
     if channel == "hmp" or requester_peer:
         channel = "hmp"
         if actor_type == "unknown": actor_type = "agent"
@@ -275,13 +292,15 @@ def _extract_traffic_type(hook_context: dict | None) -> str:
     explicit = ctx.get("traffic_type") or ctx.get("capability_reuse_traffic_type")
     if explicit:
         return str(explicit)
+    platform = str(ctx.get("platform") or "").lower()
+    channel = str(ctx.get("request_channel") or platform or "").lower()
     if ctx.get("is_test") or ctx.get("acceptance_test"):
         return "acceptance_test"
-    if ctx.get("is_cron") or ctx.get("schedule_id"):
+    if ctx.get("is_cron") or ctx.get("schedule_id") or channel == "cron":
         return "cron"
-    if ctx.get("request_channel") == "hmp" or ctx.get("source_peer_id") or ctx.get("requester_peer_id"):
+    if channel == "hmp" or ctx.get("source_peer_id") or ctx.get("requester_peer_id"):
         return "organic_peer"
-    if ctx.get("request_channel") == "telegram" or ctx.get("user_id") or ctx.get("parent_task_id"):
+    if channel == "telegram" or ctx.get("user_id") or ctx.get("sender_id") or ctx.get("parent_task_id"):
         return "organic_user"
     return "unknown"
 
@@ -323,7 +342,22 @@ def _request_provenance(hook_context: dict | None) -> tuple[str | None, str, str
     elif prov is None and hook_context.get("provenance") is not None:
         prov = hook_context.get("provenance")
         source = "hook_context.provenance"
+    if prov is None:
+        platform = str(hook_context.get("platform") or "").lower()
+        if platform in {"hmp", "telegram", "api", "gateway", "local"}:
+            prov = "organic_live"
+            detail = detail or "platform_hook_context"
+            source = "hook_context.platform"
     return prov, detail, source
+
+def _coverage_reason(request_effect: str, capability_effect: str, query: str) -> tuple[bool, str]:
+    """Fail closed for partial/composite requests."""
+    if request_effect == "mutating" and capability_effect == "read_only":
+        q=(query or "").lower()
+        if any(t in q for t in ["restart", "if unhealthy", "fix", "recover", "remediate"]):
+            return False, "partial_coverage"
+        return False, "effect_mismatch"
+    return True, ""
 
 # ── Main retrieval ──
 
@@ -399,6 +433,11 @@ def retrieve(session_id: str = "",
             reasons.append("permissions_unknown")
         if inv.get("availability_constraints") and not available_capabilities:
             reasons.append("availability_unknown")
+        cap_effect = inv.get("effect_class", "unknown")
+        whole_request_covered, coverage_reason = _coverage_reason(request_effect, cap_effect, query)
+        if not whole_request_covered and coverage_reason not in reasons:
+            reasons.append(coverage_reason)
+            result = comp.incompatible(coverage_reason)
         record = {
             "capability_id": meta.get("capability_id", ""),
             "capability_version": meta.get("version", ""),
@@ -406,7 +445,13 @@ def retrieve(session_id: str = "",
             "semantic_candidate": True,
             "eligible_for_intervention": result.compatible,
             "ineligibility_reasons": sorted(set([r for r in reasons if r])),
-            "effect_class": inv.get("effect_class", "unknown"),
+            "effect_class": cap_effect,
+            "request_effect": request_effect or "unknown",
+            "capability_effect": cap_effect,
+            "whole_request_covered": whole_request_covered,
+            "eligibility": "accepted" if result.compatible else "rejected",
+            "eligibility_reason": coverage_reason or (result.reason if not result.compatible else ""),
+            "dispatch": "pending" if result.compatible else "none",
             "trust_state": inv.get("trust_state", ""),
         }
         candidate_records.append(record)
@@ -415,11 +460,14 @@ def retrieve(session_id: str = "",
 
     ranked = filtered if filtered else scored
     top_score, top_cap = ranked[0]
-    margin = top_score - (ranked[1][0] if len(ranked) > 1 else 0.0)
+    second_score = ranked[1][0] if len(ranked) > 1 else 0.0
+    margin = top_score - second_score
     
     # 7. Check intervention conditions
     meta = top_cap.get("retrieval_metadata", {})
     inv = top_cap.get("invocation_contract", {})
+    top_capability_effect = inv.get("effect_class", "unknown")
+    top_whole_request_covered, top_eligibility_reason = _coverage_reason(request_effect, top_capability_effect, query)
     
     should_intervene = (
         not shadow_mode
@@ -427,6 +475,7 @@ def retrieve(session_id: str = "",
         and top_score >= intervention_threshold
         and margin >= minimum_margin
         and inv.get("trust_state") == "trusted"
+        and top_whole_request_covered
     )
     
     latency = (time.monotonic() - start) * 1000
@@ -456,6 +505,16 @@ def retrieve(session_id: str = "",
         requester=_extract_requester(hook_context),
         validated_inputs=_extract_validated_inputs(user_message, top_cap),
         traffic_type=_extract_traffic_type(hook_context),
+        second_score=second_score,
+        score_margin=margin,
+        intervention_threshold=intervention_threshold,
+        minimum_margin=minimum_margin,
+        request_effect=request_effect,
+        capability_effect=top_capability_effect,
+        whole_request_covered=top_whole_request_covered,
+        eligibility="accepted" if should_intervene else "rejected",
+        eligibility_reason="" if should_intervene else (top_eligibility_reason or "below_threshold_or_margin"),
+        dispatch="pending" if should_intervene else "none",
     )
     
     if not should_intervene:

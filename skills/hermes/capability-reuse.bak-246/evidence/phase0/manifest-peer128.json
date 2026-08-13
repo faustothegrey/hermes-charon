@@ -1,0 +1,13 @@
+{
+  "home": "/Users/fausto",
+  "python": "3.9.6",
+  "platform": "macOS-26.5.2-x86_64-i386-64bit",
+  "skill_exists": true,
+  "plugin_exists": true,
+  "registry_exists": true,
+  "skill_version": "2.1.0",
+  "plugin_version": "2.1.0",
+  "skill_sha256_tree": "aec40dda17599635384db53ce0641047691b5c7789b8c54576bec0de84a61a38",
+  "plugin_sha256_tree": "ee7f5cb4c4af166edfc5ae69b85f57038932d200e99f51807de84dab63932606",
+  "registry_sha256_tree": "2ce2b455c9bc884b3d36fb66cc776a8842f2fcf704e6d0096a0f4817e0731cfc"
+}

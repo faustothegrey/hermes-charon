@@ -1,0 +1,13 @@
+{
+  "home": "/home/fausto",
+  "python": "3.9.2",
+  "platform": "Linux-5.15.61-v8+-aarch64-with-glibc2.31",
+  "skill_exists": true,
+  "plugin_exists": true,
+  "registry_exists": true,
+  "skill_version": "2.1.0",
+  "plugin_version": "2.1.0",
+  "skill_sha256_tree": "aec40dda17599635384db53ce0641047691b5c7789b8c54576bec0de84a61a38",
+  "plugin_sha256_tree": "ee7f5cb4c4af166edfc5ae69b85f57038932d200e99f51807de84dab63932606",
+  "registry_sha256_tree": "bf6faa4fb2effeddb9359f7623135b3a8191e987814633bce1c57d610211ff98"
+}

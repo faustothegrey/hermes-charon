@@ -49,12 +49,26 @@ def main():
     events, bad = load_events(EVENTS)
     labels = load_latest_labels(LABELS)
     records = []
+    excluded = []
     for ev in events:
         if not is_retrieval(ev):
             continue
         d = ev.get("data") if isinstance(ev.get("data"), dict) else ev
         candidates = d.get("candidates") if isinstance(d.get("candidates"), list) else []
         if not candidates and not d.get("top_capability"):
+            # T3: assign explicit disposition instead of silently skipping.
+            excluded.append({
+                "review_schema_version": "1.0",
+                "review_id": "excluded_%s" % (ev.get("event_id") or d.get("retrieval_event_id") or "unknown"),
+                "timestamp": d.get("timestamp") or ev.get("timestamp") or "",
+                "event_schema_version": ev.get("schema_version") or d.get("schema_version") or "",
+                "disposition": "excluded",
+                "disposition_reason": "no_reviewable_candidate",
+                "traffic_type": d.get("traffic_type") or "unknown",
+                "requester_peer_id": ((d.get("requester") or {}).get("requester_peer_id")) or "",
+                "processing_peer_id": d.get("processing_peer_id") or "",
+                "raw_request_ref": "event:%s" % (ev.get("event_id") or d.get("retrieval_event_id") or ""),
+            })
             continue
         try:
             rec0 = build_review_record(ev, candidate_rank=1)
@@ -75,16 +89,20 @@ def main():
     write_jsonl(OUTDIR / "queue-v245-organic-review.jsonl", organic)
     write_review_csv(OUTDIR / "queue-v245-organic-review.csv", organic)
     write_markdown_sample(OUTDIR / "human-review-sample.md", organic or records)
+    write_jsonl(OUTDIR / "queue-v245-excluded.jsonl", excluded)
     summary = {
         "generated_by": "generate-review-queue-v246",
         "review_schema_version": "1.0",
         "preview_schema_version": "1.0",
         "bad_json_lines": bad,
         "records_total": len(records),
+        "excluded_records": len(excluded),
+        "disposition_accounting_total": len(records) + len(excluded),
         "acceptance_records": len(acceptance),
         "organic_records": len(organic),
         "outputs": {
             "candidates": str(OUTDIR / "candidates-v245.jsonl"),
+            "excluded": str(OUTDIR / "queue-v245-excluded.jsonl"),
             "acceptance_csv": str(OUTDIR / "queue-v245-acceptance.csv"),
             "organic_csv": str(OUTDIR / "queue-v245-organic-review.csv"),
             "sample": str(OUTDIR / "human-review-sample.md"),

@@ -10,6 +10,7 @@ from typing import Any
 PREVIEW_SCHEMA_VERSION = "1.0"
 
 PEER_MAP = {
+    "peer58": ("192.168.178.58", "/hmp/health"),
     "peer70": ("192.168.178.70", "/hmp/health"),
     "peer84": ("192.168.178.84", "/hmp/health"),
     "peer105": ("192.168.178.105", "/hmp/health"),

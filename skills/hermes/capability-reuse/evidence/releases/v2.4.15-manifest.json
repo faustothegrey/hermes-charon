@@ -1,0 +1,20 @@
+{
+  "version": "2.4.15",
+  "created_at": "2026-08-02T11:23:05Z",
+  "source_archive": "/root/.hermes/skills/hermes/capability-reuse/evidence/releases/capability-reuse-v2.4.15.tar.gz",
+  "source_archive_sha256": "394fb907e55cc5dfae86248759b3de2898a8732d6478cff2b3f884468e7f4705",
+  "external_sha256_sidecar": "/root/.hermes/skills/hermes/capability-reuse/evidence/releases/capability-reuse-v2.4.15.tar.gz.sha256",
+  "plugin_tree_hash": "sha256:44953affa23356af8536c34625a2dc5014cd705a2c92eab0d64e5ca4818b3771",
+  "version_surfaces": {
+    "SKILL.md": "2.4.15",
+    "plugin/plugin.yaml": "2.4.15",
+    "plugin/protocol.py": "2.4.15"
+  },
+  "included_file_count": 34,
+  "aligned_version_surfaces": true,
+  "release_manifest": "/root/.hermes/skills/hermes/capability-reuse/evidence/releases/v2.4.15-manifest.json",
+  "test_report": "/root/.hermes/skills/hermes/capability-reuse/evidence/releases/v2.4.15-test-report.json",
+  "scoped_conformance_report": "/root/.hermes/skills/hermes/capability-reuse/evidence/releases/v2.4.15-scoped-conformance-report.json",
+  "scope": "peer58-peer106 only",
+  "release_notes": "v2.4.15 fixed live metadata propagation/review queue labels/fail-closed eligibility and analyzer disposition/correlation accounting."
+}

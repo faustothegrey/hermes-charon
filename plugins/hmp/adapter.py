@@ -10,7 +10,10 @@ from __future__ import annotations
 
 import asyncio
 import os
+import sys
+import time
 import uuid
+from pathlib import Path
 from typing import Any, Dict, Optional
 
 from aiohttp import web
@@ -26,6 +29,21 @@ from .core import (
     make_message_id,
     truthy,
 )
+
+# ── Capability Reuse event store integration (dual-plane parity) ──
+try:
+    _SKILL_DIR = Path.home() / ".hermes" / "skills" / "hermes" / "capability-reuse" / "plugin"
+    if _SKILL_DIR.exists() and str(_SKILL_DIR) not in sys.path:
+        sys.path.insert(0, str(_SKILL_DIR))
+    from event_store import (  # type: ignore
+        emit_retrieval,
+        emit_observation,
+        emit_execute_code_start,
+        emit_execute_code_complete,
+    )
+    HAS_EVENT_STORE = True
+except Exception:
+    HAS_EVENT_STORE = False
 
 
 DEFAULT_HOST = "127.0.0.1"
@@ -63,6 +81,7 @@ class HMPAdapter(BasePlatformAdapter):
                 web.get("/hmp/agent-card", self.agent_card),
                 web.post("/hmp/send", self.hmp_send),
                 web.post("/hmp/send_and_wait", self.hmp_send_and_wait),
+                web.post("/send", self.hmp_dualplane_alias),
                 web.get(r"/hmp/poll/{message_id}", self.hmp_poll),
             ]
         )
@@ -138,10 +157,11 @@ class HMPAdapter(BasePlatformAdapter):
                     "/hmp/agent-card",
                     "/hmp/send",
                     "/hmp/send_and_wait",
+                    "/send",
                     "/hmp/poll/{message_id}",
                 ],
                 "max_text_length": MAX_MESSAGE_BYTES,
-                "version": "0.1.3",
+                "version": "0.1.4",
             }
         )
 
@@ -178,6 +198,57 @@ class HMPAdapter(BasePlatformAdapter):
             return web.json_response({"message_id": message_id, "status": "not_found"}, status=404)
         return web.json_response(item)
 
+    async def hmp_dualplane_alias(self, request: web.Request) -> web.Response:
+        """Backward-compatible alias for the retired :18644 /send endpoint.
+
+        Accepts the old dual-plane body shape {session_id, text, max_tokens}
+        and routes it through the standard HMP pipeline. Blocks (send_and_wait
+        semantics) so old clients get a synchronous response like before.
+        """
+        try:
+            body = await request.json()
+        except Exception:
+            return web.json_response({"status": "error", "error": "invalid_json"}, status=400)
+        text = str(body.get("text") or "")
+        if not text:
+            return web.json_response({"status": "error", "error": "empty_text"}, status=400)
+        session_id = str(body.get("session_id") or "").strip()
+        # Wrap into the canonical HMP message shape (peer_pair_id as session_id).
+        wrapped = {
+            "hmp_version": "1.0",
+            "message_id": make_message_id("dp"),
+            "from": extract_peer(body) or self.node_id,
+            "to": self.node_id,
+            "type": "request",
+            "timeout": int(body.get("timeout") or 120),
+            "payload": {"text": text},
+        }
+        if session_id:
+            wrapped["session_id"] = session_id
+        accepted, status_code = await self._accept_hmp_message(request, wrapped)
+        if status_code >= 300:
+            return web.json_response(accepted, status=status_code)
+        message_id = accepted.get("message_id")
+        deadline = asyncio.get_event_loop().time() + self.request_timeout_seconds
+        while asyncio.get_event_loop().time() < deadline:
+            item = self.store.get(str(message_id))
+            if item and item.get("status") in {"completed", "failed"}:
+                ok = item.get("status") == "completed"
+                return web.json_response(
+                    {
+                        "status": "ok" if ok else "error",
+                        "response": item.get("response_text") or "",
+                        "session_id": session_id or item.get("chat_id") or "",
+                    },
+                    status=200 if ok else 500,
+                )
+            await asyncio.sleep(0.2)
+        self.store.mark_status(str(message_id), "timed_out", error="send alias timed out")
+        return web.json_response(
+            {"status": "error", "error": "timed_out", "message_id": message_id},
+            status=504,
+        )
+
     async def _accept_hmp_message(self, request: web.Request, body: Dict[str, Any]):
         auth_error = self._authorize_request(request, body)
         if auth_error:
@@ -209,7 +280,16 @@ class HMPAdapter(BasePlatformAdapter):
                 "actual_bytes": text_size,
             }, 413
 
-        queued = self.store.queue(message_id, body, from_peer, to_peer, text)
+        # Dual-plane parity: an explicit session_id becomes the chat id, so the
+        # gateway keeps per-peer-pair conversational context (like the retired
+        # :18644 server did with API sessions keyed by peer_pair_id).
+        session_id = str(body.get("session_id") or "").strip()
+        chat_id = session_id or from_peer
+
+        queued = self.store.queue(message_id, body, from_peer, to_peer, text, chat_id=chat_id)
+        queued["chat_id"] = chat_id
+        if session_id:
+            queued["session_id"] = session_id
         return {
             "accepted": True,
             "message_id": message_id,
@@ -225,14 +305,15 @@ class HMPAdapter(BasePlatformAdapter):
 
             message_id = str(item.get("message_id"))
             from_peer = str(item.get("from_peer") or item.get("chat_id") or "unknown")
+            chat_id = str(item.get("chat_id") or item.get("from_peer") or "unknown")
             text = str(item.get("text") or "")
             raw = item.get("raw") or {}
             event = MessageEvent(
                 text=text,
                 message_type=MessageType.TEXT,
                 source=self.build_source(
-                    chat_id=from_peer,
-                    chat_name=from_peer,
+                    chat_id=chat_id,
+                    chat_name=chat_id,
                     chat_type="dm",
                     user_id=from_peer,
                     user_name=from_peer,
@@ -241,13 +322,61 @@ class HMPAdapter(BasePlatformAdapter):
                 raw_message=raw,
                 message_id=message_id,
             )
+            # ── LIVE-SHADOW (dual-plane parity): emit retrieval chain ──
+            ec_id = None
+            _t0 = time.monotonic()
+            if HAS_EVENT_STORE:
+                try:
+                    requester_peer = str(from_peer or "").strip()
+                    emit_retrieval(
+                        session_id=chat_id,
+                        user_message_preview=text[:200],
+                        candidates=[],
+                        top_score=0.0,
+                        intervened=False,
+                        latency_ms=0.0,
+                        traffic_type="organic_peer" if requester_peer else "unknown",
+                        provenance="organic_live" if requester_peer else None,
+                        provenance_source="hmp_plugin.consumer_loop",
+                        provenance_detail="from_peer",
+                        requester={
+                            "actor_type": "agent",
+                            "actor_id": "hmp:%s" % requester_peer if requester_peer else "unknown",
+                            "request_channel": "hmp",
+                            "requester_peer_id": requester_peer,
+                            "processing_peer_id": self.node_id,
+                        } if requester_peer else None,
+                    )
+                    ec_id = emit_execute_code_start(
+                        code_preview="hmp-plugin: %s" % text[:100],
+                        session_id=chat_id,
+                    )
+                except Exception:
+                    ec_id = None
             try:
                 await self.handle_message(event)
+                outcome, err = "success", None
             except asyncio.CancelledError:
                 self.store.mark_status(message_id, "queued")
                 raise
             except Exception as exc:
                 self.store.fail(message_id, "handle_message failed: %s" % exc)
+                outcome, err = "failure", str(exc)
+            if HAS_EVENT_STORE and ec_id:
+                try:
+                    emit_execute_code_complete(
+                        code_hash=ec_id,
+                        outcome=outcome,
+                        duration_ms=(time.monotonic() - _t0) * 1000.0,
+                        error=err,
+                    )
+                    emit_observation(
+                        capability_id="hmp",
+                        capability_version="0.1.4",
+                        effect_class="read_only",
+                    )
+                except Exception:
+                    pass
 
     def _authorize_request(self, request: web.Request, body: Dict[str, Any]) -> Optional[str]:
         if self.shared_secret:

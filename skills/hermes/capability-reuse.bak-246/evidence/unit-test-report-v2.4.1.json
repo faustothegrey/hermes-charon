@@ -1,0 +1,12 @@
+{
+  "suite": "python compileall + unittest discover",
+  "timestamp": "2026-07-30T06:25:54Z",
+  "commands": [
+    "python3 -m compileall plugin tests scripts",
+    "python3 -m unittest discover -s tests -p 'test*.py'"
+  ],
+  "total": 51,
+  "passed": 51,
+  "failed": 0,
+  "status": "PASS"
+}

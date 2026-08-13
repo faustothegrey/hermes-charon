@@ -450,9 +450,27 @@ himalaya":
 ### Limitations in Cron Mode
 
 Even when local himalaya is configured, sending from within a cron session
-is blocked if Tirith is active — every `terminal()` call fails with
-`tirith:unknown`. The agent CANNOT run `himalaya template send` locally
-under those conditions.
+**may** be blocked if Tirith is active — every `terminal()` call fails with
+`tirith:unknown`. **BUT this is NOT guaranteed**: if the profile's config has
+`approvals.cron_mode: allow`, terminal works normally in cron sessions.
+
+**Probe first, then act:** Make ONE `terminal("echo probe", timeout=5)` call
+early. If it succeeds, **send the email locally right away** — this is the
+simplest and most reliable fallback (proven 2026-08-02: N56VV fully offline,
+email sent locally from peer70 via virgilio account, delivered to gmail).
+Only fall back to HMP delegation / skip when terminal is actually blocked.
+
+**SMTP config gotcha on peer70 (verified 2026-08-02):** the local himalaya
+config for the virgilio account was silently broken:
+- `auth.cmd = "cat ~/.config/himalaya/virgilio.pass"` pipes the password
+  file's **trailing newline** into AUTH → `535 Invalid User or Password`.
+  Fix: point auth.cmd at the `virgilio-password` wrapper script (strips
+  newline with `IFS= read -r pw; printf '%s' "$pw"`).
+- SMTP host must be `smtp.virgilio.it` (port 465, TLS) — a switch to
+  `smtp.libero.it` caused the 535. IMAP (`imap.virgilio.it:993`) worked
+  throughout, proving credentials were fine. See the `smtp-troubleshooting`
+  skill → `references/virgilio-iol-smtp.md` for the volatility caveat
+  (endpoint behavior flips day-to-day; test both hosts/ports if 535).
 
 ### Mitigation — Two Approaches
 
@@ -502,6 +520,46 @@ but `next_action` should only transition on threshold boundaries.
 
 This avoids spamming while ensuring the user IS notified at the
 escalation boundary.
+
+### Pitfall: Writing `manual_intervention` Before the 5th Failure Desyncs the Boundary Report
+
+The 5th-failure REPORT is triggered by the **transition** to
+`next_action: manual_intervention` being a state change. If a post-run
+agent writes `next_action: manual_intervention` into the state file at
+the 3rd or 4th failure (one cycle early), the 5th-failure run reads an
+already-escalated state → sees no state change → goes [SILENT], and the
+user never gets the escalation-boundary notification.
+
+**Rule:** `next_action` must only transition on the threshold boundaries
+per the table (1–2 → `retry_next_cycle`, 3–4 → keep prior value + escalate
+the `note`, 5+ → `manual_intervention`). At failures 3–4, escalate the
+`note` text ("Nth consecutive failure, same error") but leave
+`next_action` at `retry_next_cycle`. `run_time` is refreshed every cycle
+unconditionally; `next_action` is NOT.
+
+**If you inherit a state file where `manual_intervention` was already set
+early** (a prior agent jumped the gun): treat the current cycle's failure
+count as the deciding factor anyway — if this is the 5th failure, REPORT
+even though the state field didn't change this cycle. The boundary notice
+is the point, not the field flip.
+
+**Counting consecutive failures:** count the current streak with
+`session_search(query="Quest Advancement (round-robin)", limit=5, sort="newest")`
+— each cron session is one cycle. Note that a successful run (state file
+`run_time` fresh, or `status: no_active_quests` from a live fetch) resets
+the streak; an agent-run state-file update (e.g., `run_result:
+script_failed`) does NOT reset it because the peer was still unreachable.
+
+**Production example (2026-08-02):** N56VV unreachable since the
+2026-07-30 successful run. Failures: Aug 1 20:00 (1st, REPORT), Aug 2
+00:00 (2nd, REPORT + email), Aug 2 04:00 (3rd, REPORT), Aug 2 08:00
+(4th, correct [SILENT]). The 08:00 agent refreshed `run_time` and wrote
+`next_action: "manual_intervention"` — one cycle early. The 12:00 run is
+the 5th-failure boundary: it must REPORT (per the inherited-flag rule
+above) even though the state file already carries `manual_intervention`.
+Also note the 04:00 run failed to refresh `run_time` (stale-state trap);
+the 08:00 run fixed it — every session that touches the file must refresh
+`run_time`, even on [SILENT].
 
 ## Post-Completion Pending Actions Pattern
 

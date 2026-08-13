@@ -1,0 +1,171 @@
+{
+  "case": "A_peer106_to_peer58",
+  "generated_at": "2026-08-02T10:45:23Z",
+  "retrieval_event_id": "0f2bc5ce18b948ec",
+  "intervention_ids": [
+    "int_d9b661efadcd42aa94e2d9d0ba13db2c"
+  ],
+  "invocation_ids": [
+    "inv_338af094aae443ac"
+  ],
+  "review_event_types": {
+    "retrieval_event": 1,
+    "intervention_event": 1,
+    "protocol_state_transition": 3,
+    "capability_invocation_event": 1,
+    "outcome_event": 1
+  },
+  "top_score": 0.6602,
+  "second_score": 0.0,
+  "margin": 0.6602,
+  "threshold": 0.65,
+  "minimum_margin": 0.05,
+  "retrieval": {
+    "session_id": "20260802_052012_ff0c693e",
+    "episode_id": "20260802_052012_ff0c693e",
+    "turn_id": "",
+    "task_id": "",
+    "tool_call_id": "",
+    "user_message_preview": "check HMP health for peer58",
+    "redacted_text": "check HMP health for peer58",
+    "redaction_status": "applied",
+    "requester": {
+      "actor_type": "agent",
+      "actor_id": "peer106",
+      "request_channel": "hmp",
+      "requester_peer_id": "peer106",
+      "processing_peer_id": "peer106"
+    },
+    "validated_inputs": {
+      "peer_list": [
+        "peer58"
+      ],
+      "timeout_seconds": 5
+    },
+    "traffic_type": "organic_peer",
+    "target_peer_id": "peer58",
+    "processing_peer_id": "peer106",
+    "top_capability": "hmp-healthcheck@1.0.0",
+    "candidate_count": 1,
+    "candidates": [
+      {
+        "capability_id": "hmp-healthcheck",
+        "capability_version": "1.0.0",
+        "score": 0.6602,
+        "semantic_candidate": true,
+        "eligible_for_intervention": true,
+        "ineligibility_reasons": [],
+        "effect_class": "read_only",
+        "request_effect": "read_only",
+        "capability_effect": "read_only",
+        "whole_request_covered": true,
+        "eligibility": "accepted",
+        "eligibility_reason": "",
+        "dispatch": "pending",
+        "trust_state": "trusted"
+      }
+    ],
+    "top_score": 0.6602,
+    "second_score": 0.0,
+    "score_margin": 0.6602,
+    "intervention_threshold": 0.65,
+    "minimum_margin": 0.05,
+    "request_effect": "read_only",
+    "capability_effect": "read_only",
+    "whole_request_covered": true,
+    "eligibility": "accepted",
+    "eligibility_reason": "",
+    "dispatch": "pending",
+    "intervened": true,
+    "shadow_mode": false,
+    "config_version": "text-v1",
+    "provenance": {
+      "stream": "organic_live",
+      "source": "hook_context.platform",
+      "detail": "platform_hook_context",
+      "valid": true,
+      "reason": ""
+    },
+    "latency_ms": 4.7,
+    "event_id": "0f2bc5ce18b948ec",
+    "timestamp": "2026-08-02T10:44:42Z",
+    "peer_id": "peer106",
+    "plugin_version": "2.4.13",
+    "schema_version": "1.2",
+    "retrieval_event_id": "0f2bc5ce18b948ec",
+    "code_hash": "",
+    "deployment_id": "dep-v2413-peer58-peer106-20260802103806Z",
+    "deployment_timestamp": "2026-08-02T10:38:06Z",
+    "plugin_artifact_hash": "sha256:f7b1069bbf5e9c607f0ddc8252c22b42de1b191b3eb628d6707187d8baa63d07",
+    "cohort_label": "v2.4.13_peer58_peer106"
+  },
+  "invocation": {
+    "intervention_id": "int_d9b661efadcd42aa94e2d9d0ba13db2c",
+    "invocation_id": "inv_338af094aae443ac",
+    "capability_id": "hmp-healthcheck",
+    "capability_version": "1.0.0",
+    "contract_hash": "0477b41629ec4936",
+    "input_validation": "passed",
+    "invocation_status": "succeeded",
+    "failure_code": null,
+    "partial_effect_state": "none",
+    "fallback_authorization_id": null,
+    "latency_ms": 22.88,
+    "validated_inputs": {
+      "peer_list": [
+        "peer58"
+      ],
+      "allow_partial_failures": true,
+      "connect_timeout_seconds": 3,
+      "max_time_seconds": 8
+    },
+    "preview_target_peer_id": "peer58",
+    "dispatcher_target_peer_id": "peer58",
+    "result_target_peer_id": "peer58",
+    "event_id": "evt-b5e08286d999",
+    "timestamp": "2026-08-02T10:44:46Z",
+    "peer_id": "peer106",
+    "plugin_version": "2.4.13",
+    "schema_version": "1.2",
+    "provenance": {
+      "stream": "organic_live",
+      "source": "hook_context.platform",
+      "detail": "platform_hook_context",
+      "valid": true,
+      "reason": ""
+    },
+    "requester": {
+      "actor_type": "agent",
+      "actor_id": "peer106",
+      "request_channel": "hmp",
+      "requester_peer_id": "peer106",
+      "processing_peer_id": "peer106"
+    },
+    "traffic_type": "organic_peer",
+    "session_id": "20260802_052012_ff0c693e",
+    "episode_id": "20260802_052012_ff0c693e",
+    "turn_id": "",
+    "task_id": "",
+    "tool_call_id": "",
+    "retrieval_event_id": "0f2bc5ce18b948ec",
+    "code_hash": "",
+    "deployment_id": "dep-v2413-peer58-peer106-20260802103806Z",
+    "deployment_timestamp": "2026-08-02T10:38:06Z",
+    "plugin_artifact_hash": "sha256:f7b1069bbf5e9c607f0ddc8252c22b42de1b191b3eb628d6707187d8baa63d07",
+    "cohort_label": "v2.4.13_peer58_peer106"
+  },
+  "checks": {
+    "metadata_complete": true,
+    "selected_capability_exact": true,
+    "validated_inputs_peer58": true,
+    "effects_read_only": true,
+    "whole_request_coverage_true": true,
+    "scores_recorded": true,
+    "thresholds_recorded": true,
+    "preview_eq_dispatcher": true,
+    "result_eq_preview_dispatcher": true,
+    "ids_correlate": true,
+    "requester_processor_target_correct": true
+  },
+  "verdict": "PASS"
+}

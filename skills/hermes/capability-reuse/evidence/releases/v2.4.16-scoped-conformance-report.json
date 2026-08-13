@@ -1,0 +1,13 @@
+{
+  "generated_at": "2026-08-02T11:29:16Z",
+  "status": "passed_source_tests",
+  "scope": "peer58_peer106_only",
+  "plugin_tree_hash": "sha256:f9b875a6396afdf1aece6fa69b1ef4b3c19e75a4253facecb979be789ce074f1",
+  "checks": [
+    "source archive SHA-256 sidecar fixed",
+    "version surfaces aligned to 2.4.16",
+    "72 unit tests pass",
+    "formal eligibility fail-closed tests pass",
+    "two-peer scope statement included"
+  ]
+}

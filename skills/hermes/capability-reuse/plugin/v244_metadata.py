@@ -8,7 +8,7 @@ import json, os, re, uuid, socket, hashlib
 from pathlib import Path
 from datetime import datetime, timezone
 
-PLUGIN_VERSION = "2.4.17"
+PLUGIN_VERSION = "2.4.18"
 SCHEMA_VERSION = "1.2"
 
 def peer_id() -> str:

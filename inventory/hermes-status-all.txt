@@ -39,7 +39,7 @@ STDOUT:
   Nous Portal   ✓ logged in
     Portal URL: https://portal.nousresearch.com
     Inference:  https://inference-api.nousresearch.com/v1
-    Access exp: 2026-08-13 23:36:40 CEST
+    Access exp: 2026-08-14 16:09:43 CEST
     Key exp: "<REDACTED>"
     Refresh:    yes
   OpenAI Codex  ✗ not logged in (run: hermes model)
@@ -75,7 +75,7 @@ STDOUT:
   Sudo:         ✗ disabled
 
 ◆ Messaging Platforms
-  Telegram      ✓ configured
+  Telegram      ✓ configured (home: 8508115936)
   Discord       ✗ not configured
   WhatsApp      ✗ not configured
   Signal        ✗ not configured
@@ -94,10 +94,10 @@ STDOUT:
 ◆ Gateway Service
   Status:       ✓ running
   Manager:      systemd (user)
-  PID(s):       45111
+  PID(s):       99265
 
 ◆ Scheduled Jobs
-  Jobs:         2 active, 25 total
+  Jobs:         1 active, 24 total
 
 ◆ Sessions
   Active:       26 session(s)

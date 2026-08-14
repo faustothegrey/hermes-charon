@@ -4,7 +4,7 @@ Esecuzione immediata, ripetizione 2x = esegui. HMP > API > SSH.
 §
 Fausto: minimal tool calls, risposte concise, OK diretto se registry invariato, usa contesto già disponibile. Registry HMP: ~/.hermes/registry/registry.json. Sync: "registry sync?" → JSON compatto se cambiato, OK se no; niente patch heartbeat artificiali (i peer aggiornano last_seen da soli). Gateway = systemd user hermes-gateway.service.
 §
-Gateway restart peer70: cron one-shot inaffidabile (run_at passato=mai, ticker 5min) → restart manuale di Fausto. shutdown/reboot hardline assoluto. Peer remoti: SSH kill -9 + script no_agent OK. Dual-plane :18644 in ritiro, non riavviare.
+Cron 'once' con run_at passato gira a OGNI tick (bug noto): job kill-gateway → loop restart infinito (14/08). Restart gateway = manuale. shutdown/reboot hardline assoluto. Peer remoti: SSH kill -9 + script no_agent OK. Dual-plane :18644 in ritiro, non riavviare.
 §
 Session-size: compressione 50% (auxiliary→auto=nous), watchdog 70% cron session-watchdog-70pct (~/.hermes/scripts/session_watchdog.py, deepseek-v4-flash=1M). Skill: hermes-session-lifecycle.
 §

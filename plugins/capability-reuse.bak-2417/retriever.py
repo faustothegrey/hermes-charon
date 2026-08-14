@@ -359,24 +359,6 @@ def _coverage_reason(request_effect: str, capability_effect: str, query: str) ->
         return False, "effect_mismatch"
     return True, ""
 
-
-def _collect_filter_rejections(candidates: list[dict]) -> list[str]:
-    """v2.4.18: collect per-candidate filter/eligibility rejection reasons.
-
-    Returns a flat list of structured reasons so consumers can see WHY
-    each candidate was filtered without guessing from booleans.
-    """
-    reasons: list[str] = []
-    for c in candidates or []:
-        cap_name = str(c.get("capability") or c.get("name") or "?")
-        inelig = c.get("ineligibility_reasons") or c.get("filter_rejection_reasons")
-        if isinstance(inelig, list) and inelig:
-            for r in inelig:
-                reasons.append(f"{cap_name}: {r}")
-        elif c.get("eligible_for_intervention") is False:
-            reasons.append(f"{cap_name}: ineligible_candidate_filter")
-    return reasons
-
 # ── Main retrieval ──
 
 def retrieve(session_id: str = "",
@@ -533,26 +515,6 @@ def retrieve(session_id: str = "",
         eligibility="accepted" if should_intervene else "rejected",
         eligibility_reason="" if should_intervene else (top_eligibility_reason or "below_threshold_or_margin"),
         dispatch="pending" if should_intervene else "none",
-        # v2.4.18: explicit retrieval semantics + proof the real retriever ran.
-        retriever_executed=True,
-        retriever_version="2.4.18",
-        registry_version=reg.get_registry_version(),
-        retrieval_threshold=retrieval_threshold,
-        candidate_count=len(candidates_info),
-        filter_rejection_reasons=_collect_filter_rejections(candidates_info) if candidates_info else [],
-        # v2.4.18: explicit stage semantics — never default booleans that
-        # imply a successful evaluation when no candidate was evaluated.
-        retrieval_stages={
-            "retrieval": {"executed": True, "candidate_count": len(candidates_info)},
-            "coverage": {
-                "evaluated": bool(candidates_info),
-                "whole_request_covered": top_whole_request_covered if candidates_info else None,
-            },
-            "eligibility": {
-                "evaluated": bool(candidates_info),
-                "eligible": should_intervene if candidates_info else None,
-            },
-        },
     )
     
     if not should_intervene:

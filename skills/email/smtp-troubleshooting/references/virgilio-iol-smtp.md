@@ -30,6 +30,12 @@ account credentials.
 > from a single day's diagnosis.** If a host gives 535/connection-reset,
 > try the sibling host and both ports (465 TLS, 587 STARTTLS) before
 > concluding the credentials are wrong.
+>
+> On **2026-08-14**: `smtp.virgilio.it:465` (SMTP_SSL implicit TLS)
+> **worked** again with the same `virgilio.pass` credentials, while
+> `smtp.libero.it:587` gave `535 [LIB_300]` the same morning. Confirms
+> the pattern: prefer trying `smtp.virgilio.it:465` first with smtplib
+> SMTP_SSL; fall back to `smtp.libero.it:587` STARTTLS if it fails.
 
 ## Config diff (himalaya config.toml)
 

@@ -204,6 +204,7 @@ plugins:
   enabled:
     - hmp
     - capability-reuse
+    - harness-feedback
   disabled: []
 platforms:
   hmp:

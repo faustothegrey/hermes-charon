@@ -12,6 +12,9 @@ gli altri Hermes agent della rete. Usa HTTP + JSON su porta **18643**.
 
 ## ⚠️ DUAL-PLANE :18644 RITIRATO (2026-08-13)
 
+Pitfall del deploy/ritiro (core.py+adapter.py insieme, restart remoto via
+script, cron one-shot con timestamp futuro): `references/convergence-pitfalls-2026-08-14.md`
+
 Dual-plane (`:18644`, `hmp_dual_plane*.py`) **completamente ritirato** dalla rete
 (peer70/58/106/138/141, confermato da tutti i peer). Non riavviarlo, non ridistribuirlo.
 Tutta la comunicazione peer-to-peer passa dal **plugin HMP :18643** (unico canale, unico

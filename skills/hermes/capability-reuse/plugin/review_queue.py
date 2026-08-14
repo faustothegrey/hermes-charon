@@ -27,8 +27,8 @@ EXCLUDED_TRAFFIC_TYPES = {"acceptance_test", "calibration_probe", "operator_seed
 ACTOR_TYPES = {"human", "agent", "scheduler", "service", "unknown"}
 REQUEST_CHANNELS = {"telegram", "hmp", "cron", "local", "api", "gateway", "unknown"}
 LABELS = {"ACCEPT", "REJECT", "UNSURE"}
-EXPECTED_PLUGIN_VERSION = "2.4.17"
-EXPECTED_COHORT_LABEL = "v2.4.16_peer58_peer106"
+EXPECTED_PLUGIN_VERSION = "2.4.18"
+EXPECTED_COHORT_LABEL = "v2.4.18_live"
 
 REASON_CODES = {
     "exact_match", "partial_coverage", "wrong_capability", "wrong_target", "effect_mismatch",
@@ -153,17 +153,28 @@ def _validated_inputs(d: dict[str, Any]) -> dict[str, Any]:
 def formal_holdout_validation(event: dict[str, Any], data: dict[str, Any], requester: dict[str, Any]) -> tuple[bool, list[str]]:
     provenance = data.get("provenance") if isinstance(data.get("provenance"), dict) else {}
     reasons: list[str] = []
-    if event.get("schema_version") != "1.2": reasons.append("schema_version_not_1_2")
+    # v2.4.18: schema 1.3 required.
+    if event.get("schema_version") != "1.3": reasons.append("schema_version_not_1_3")
     if data.get("plugin_version") != EXPECTED_PLUGIN_VERSION: reasons.append("plugin_version_not_%s" % EXPECTED_PLUGIN_VERSION.replace(".", "_"))
     if not data.get("deployment_id"): reasons.append("missing_deployment_id")
-    if not data.get("plugin_artifact_hash"): reasons.append("missing_plugin_artifact_hash")
+    if not data.get("plugin_artifact_hash") or str(data.get("plugin_artifact_hash", "")).startswith("placeholder"):
+        reasons.append("missing_or_placeholder_artifact_hash")
     if data.get("cohort_label") != EXPECTED_COHORT_LABEL: reasons.append("wrong_cohort_label")
     if provenance.get("stream") != "organic_live": reasons.append("not_organic_live_provenance")
     if provenance.get("valid") is not True:
         reasons.append(provenance.get("reason") or "invalid_provenance")
+    # v2.4.18: traffic taxonomy — registry_sync/test/acceptance/calibration
+    # must automatically evaluate to false.
     if data.get("traffic_type") not in ORGANIC_TRAFFIC_TYPES: reasons.append("non_organic_traffic_type")
+    if data.get("traffic_type") in {"registry_sync", "test", "acceptance", "calibration", "cron", "retry"}:
+        reasons.append("excluded_traffic_class")
     if requester.get("requester_type") == "unknown": reasons.append("unknown_requester")
     if not (requester.get("processing_peer_id") or data.get("peer_id")): reasons.append("missing_processing_peer_id")
+    if not data.get("requester_peer_id"): reasons.append("missing_requester_peer_id")
+    # v2.4.18: complete trace envelope required.
+    if not data.get("trace_id"): reasons.append("missing_trace_id")
+    if data.get("producer_surface") in (None, "", "unknown"):
+        reasons.append("missing_producer_surface")
     return (len(reasons) == 0), reasons
 
 
@@ -248,6 +259,9 @@ def build_review_record(event: dict[str, Any], candidate_rank: int = 1, latest_l
         "intended_execution": plan,
         "formal_holdout_eligible": formal_ok,
         "formal_holdout_rejection_reasons": formal_reasons,
+        # v2.4.18: review row linked to the same trace — trivial joins.
+        "trace_id": d.get("trace_id") or d.get("session_id") or "",
+        "retrieval_event_id_ref": retrieval_event_id,
         "human_review": human,
     }
 

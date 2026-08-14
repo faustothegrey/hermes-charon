@@ -1,0 +1,8 @@
+name: harness-feedback
+version: 0.1.0
+description: "Dummy harness-consideration feedback via pre_tool_call observe hook"
+plugin_type: general
+author: peer70
+dependencies: []
+hooks:
+  - pre_tool_call

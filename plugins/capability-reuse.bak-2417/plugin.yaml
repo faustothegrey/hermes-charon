@@ -1,5 +1,5 @@
 name: capability-reuse
-version: 2.4.18
+version: 2.4.17
 description: "Capability Retrieval & Reuse Control Loop — Hermes plugin"
 plugin_type: general
 author: peer70

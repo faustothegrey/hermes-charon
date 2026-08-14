@@ -1,7 +1,7 @@
 ---
 name: capability-reuse
 type: custom
-version: 2.4.17
+version: 2.4.18
 phase: "0+1"
 spec_version: "1.6"
 description: Capability Retrieval & Reuse Control Loop — v1.6; Phase 0 tooling/corpus complete; empirical labeling and independent validation pending
@@ -72,6 +72,8 @@ capability-reuse/
 
 Operational references:
 - `references/v2.4.16-clean-cohort-live-metadata-gates-2026-08-02.md` — v2.4.16 clean-cohort/live-metadata gate order: exact running artifact identity, reviewed archive+hash selection, clean deployment boundary, organic-hook metadata proof, retrieval/chain disposition accounting, fail-closed formal eligibility, remote restart verification, and peer58/peer106 scope statement.
+- `references/harness-feedback-progress-plumbing-2026-08-14.md` — architecture map of Hermes tool-progress streaming (`progress_callback`, `progress_queue`, `display.tool_progress`) AND the IMPLEMENTED non-blocking `pre_tool_call` return `{"action": "observe", "feedback": ...}`. Final wiring: `feedback_sink` param on `get_pre_tool_call_block_message()` (single-fire — never invoke the hook twice), sink closure at the real dispatch gate in `agent/tool_executor.py` (~line 958, NOT the concurrent branch), rendering via `tool.considered` in `gateway/run.py`. Pitfalls: (1) new plugins MUST be added to `plugins.enabled` in config.yaml or discovery won't load them; (2) `*.bak-*` skill dirs inside `skills/hermes/` collide as skill names — keep backups outside the skills tree. Dummy plugin `~/.hermes/plugins/harness-feedback/` shows `🔍 azione considerata · harness ... (dummy)` bubbles; replace dummy rule with real retrieval decisions for 2.4.18.
+- `references/v2.4.18-telemetry-correlation-spec-2026-08-14.md` — THE v2.4.18 specification (external reviewer, adopted by Fausto): telemetry/correlation correctness release, schema 1.2→1.3, correlation envelope with top-level trace_id, producer identity, `surface_execution_*` replacing fake `execute_code_*` for HMP, explicit retrieval stages + retriever proof, composite-rejection semantics (Case B), traffic taxonomy (registry_sync excluded from recurrence), requester/processor/target separation, 3 functional cases, review-from-trace, label persistence, analyzer event-log-hash staleness rejection, cohort filtering, 10-item release gate, and current implementation status on peer70 (points 1-4 done: schema 1.3 + envelope + producer + surface_execution_* in `event_store.py` and `plugins/hmp/adapter.py`).
 - `references/v2.4.5-reviewer-facing-queue-implementation-2026-08-01.md` — v2.4.5 implementation notes: reviewer-facing queue for `hmp-healthcheck@1.0.0`, schema 1.2 retrieval events, actor/channel separation, shared execution-plan preview/dispatch, stable review IDs, append-only labels, and separate acceptance/organic queue outputs.
 - `references/v2.4.4-implementation-acceptance-run-2026-07-31.md` — v2.4.4 peer70 implementation/acceptance notes: final clean deployment passed 25 fresh retrieval chains with 0 chain errors; includes pitfalls (false PASS with zero events, nested event.data payloads, current deployment_id filtering).
 - `references/point1-passive-harvest-stabilization-2026-07-30.md` — Point-1 passive harvesting stabilization: peer70 as canonical collector, per-peer analyzer cron with explicit `--peer-id`, shadow retrieval probes, fleet `latest.json`, offline-peer follow-up.
@@ -275,6 +277,18 @@ Fausto rejected the first v2.4.4 acceptance run because it reported `total_fresh
 4. **Chain correlation counts**: generate retrieval + execute_code_started + execute_code_completed as one chain per sample, and assert zero chain errors (start-without-completion, completion-without-start, duplicate completion, identifier mismatch), not just equal aggregate counts.
 5. **Durable labels**: save ≥3 labels, then regenerate the review queue and assert 0 labels lost.
 
+### Plugin runtime vs skill-source divergence (v2.4.17 rollout, 2026-08-14)
+
+`~/.hermes/skills/hermes/capability-reuse/` (skill) and
+`~/.hermes/plugins/capability-reuse/` (runtime plugin the gateway loads)
+are SEPARATE installs. Deploying the skill to peers does NOT update the
+runtime plugin: after the 2.4.17 release the skill said 2.4.17 on all
+peers but the plugin stayed 2.4.6/2.4.16, so `events.jsonl` kept gaining
+stale-version events even after a clean. Release rule: a skill release is
+not deployed until BOTH dirs agree on version on EVERY peer AND the
+gateway restarted (pycache cleaning alone is not enough). Version-cleanup
+procedure + detection one-liners: `references/plugin-runtime-vs-skill-divergence-2026-08-14.md`.
+
 ### Artifact internal-version trap (v2.4.3 rollout, 2026-07-31)
 
 The zip named `capability-reuse-v2.4.3.zip` (SHA verified against its sidecar) contained `plugin.yaml`/`SKILL.md` declaring **2.4.1**. Filename+checksum verification is NOT version verification. Before distributing any artifact:
@@ -298,6 +312,28 @@ disposition — a review row OR an explicit exclusion with structured reason.
 candidates/`top_capability`, orphaning 20/143 events (incl. 3 organic_peer).
 Fix + cross-check recipe: `references/t3-disposition-accounting-fix-2026-08-13.md`.
 Gate passes only when `records + excluded == total retrieval events`.
+
+### Mutating-effect classification must cover the operator language (T5a, 2026-08-13)
+
+`_extract_request_effect()` in `plugin/retriever.py` was English-only: on an
+Italian-speaking operator network, prompts like `controlla health e se giu
+riavvialo` / `se non healthy riavvia peer58` were classified `read_only`
+(instead of `mutating`) → a mutating composite could slip past the
+read-only canary. Fix (keep in mind for any future retriever work):
+- `mutating_terms`: add Italian verb forms (`riavvia`, `riavvialo`, `ferma`,
+  `arresta`, `disattiva`, `attiva`, `aggiorna`, `riconfigura`, `termina`,
+  `uccidi`, `sospendi`, `riprendi`, `sostituisci`, `installa`, `rimuovi`,
+  `elimina`, `invia`, `scrivi`, `crea`, `cancella`, ...).
+- `composite_mutating_patterns`: add Italian conditionals
+  (`se non healthy riavvialo`, `controlla ... e poi riavvialo`, `e se giu ...`).
+- `read_terms`: add `mostra`, `stato`, `verifica`, `controlla`, `salute`,
+  `elenco`, `lista`.
+- `non_operational_patterns`: add `spiega`, `descrivi`, `cos'è`,
+  `che cos'è`, `come funziona`, `dimmi come`, `cosa è`.
+Validation: 10/10 cases PASS after the fix (mix of EN/IT mutating, read_only,
+non_operational). Test directly with
+`from plugin.retriever import _extract_request_effect` (import from the skill
+root, not from inside `plugin/`, to satisfy relative imports).
 
 ### Clean-cohort live metadata gate discipline (v2.4.16)
 

@@ -7,22 +7,15 @@ STDOUT:
 │                         Scheduled Jobs                                  │
 └─────────────────────────────────────────────────────────────────────────┘
 
-  20ed1557cd17 [active]
-    Name:      Esegui: kill -9 $(ps aux | grep 'hermes_cli.main g
-    Schedule:  once at 2026-07-30 18:00
-    Repeat:    0/1
-    Next run:  None
-    Deliver:   local
-
   1813aa7164e5 [active]
     Name:      undervoltage-watchdog
     Schedule:  every 15m
     Repeat:    ∞
-    Next run:  2026-08-13T22:56:08.699228+02:00
+    Next run:  2026-08-14T15:29:08.772923+02:00
     Deliver:   origin
     Script:    undervoltage_watchdog.py
     Mode:      no-agent (script stdout delivered directly)
-    Last run:  2026-08-13T22:41:08.699228+02:00  ok
+    Last run:  2026-08-14T15:14:08.772923+02:00  ok
 
 
 

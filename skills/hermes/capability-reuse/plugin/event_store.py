@@ -58,7 +58,54 @@ _event_counter = 0
 _CHAIN_CONTEXT_BY_INTERVENTION: dict[str, dict] = {}
 
 # ── Schema version ──
-SCHEMA_VERSION = "1.2"
+SCHEMA_VERSION = "1.3"
+
+# ── v2.4.18 correlation envelope ──────────────────────────────────────
+# One immutable envelope propagated through the entire chain:
+# retrieval → decision → invocation → completion → review.
+# Consumers join on trace_id (top-level), never reconstruct from timestamps.
+ENVELOPE_KEYS = (
+    "trace_id", "session_id", "episode_id", "turn_id", "task_id",
+    "tool_call_id", "retrieval_event_id", "requester_peer_id",
+    "processing_peer_id", "target_peer_id", "collector_peer_id",
+    "traffic_type", "provenance",
+)
+
+# Producer identity: exactly which component emitted the event.
+DEFAULT_PRODUCER = {
+    "component": "capability_reuse_plugin",
+    "version": "2.4.18",
+    "surface": "unknown",
+}
+
+VALID_SURFACES = {
+    "hermes_cli", "gateway", "hmp_ingress", "execute_code_hook",
+    "delegated_agent", "unknown",
+}
+
+# ── v2.4.18 traffic taxonomy ─────────────────────────────────────────
+# Explicit categories so protocol traffic (registry sync, health pings)
+# never contaminates ordinary organic reuse statistics.
+VALID_TRAFFIC_TYPES = {
+    "organic_user",      # human-initiated request (Telegram, CLI, ...)
+    "organic_peer",      # peer-initiated organic request via HMP
+    "scheduled_protocol",  # scheduled/periodic protocol traffic
+    "registry_sync",     # registry sync messages ("registry sync?")
+    "cron",              # scheduled job traffic
+    "retry",             # retried delivery
+    "test",              # test traffic
+    "acceptance",        # acceptance/validation suite traffic
+    "calibration",       # calibration traffic
+    "unknown",
+}
+
+# Traffic classification helper: registry-sync phrases must map to
+# registry_sync, not organic_peer, so repeated sync messages do not
+# dominate recurrence/precision statistics.
+REGISTRY_SYNC_PATTERNS = (
+    "registry sync", "registry_sync", "sync registry",
+    "registry status", "registry check", "sync?",
+)
 
 # ── Valid event types ──
 VALID_EVENTS = {
@@ -73,6 +120,8 @@ VALID_EVENTS = {
     "bypass_event",
     "execute_code_started_event",
     "execute_code_completed_event",
+    "surface_execution_started_event",
+    "surface_execution_completed_event",
     "alternate_execution_event",
     "observation_event",
     "outcome_event",
@@ -157,6 +206,34 @@ def normalize_provenance(stream: str | None = None, detail: str = "", source: st
     }
 
 
+def classify_traffic_type(text: str = "", channel: str = "", is_cron: bool = False,
+                          is_test: bool = False, requester_peer: str = "") -> str:
+    """v2.4.18: classify request traffic into the explicit taxonomy.
+
+    Registry-sync / protocol phrases are detected BEFORE generic
+    organic_peer classification so repeated sync messages never dominate
+    organic reuse statistics.
+    """
+    q = (text or "").lower()
+    ch = (channel or "").lower()
+
+    if is_test or ch == "test":
+        return "acceptance"
+    if is_cron or ch == "cron":
+        return "cron"
+    if ch == "retry":
+        return "retry"
+    if ch == "registry_sync" or any(p in q for p in REGISTRY_SYNC_PATTERNS):
+        return "registry_sync"
+    if ch in ("organic_peer", "organic_user", "scheduled_protocol", "calibration"):
+        return ch
+    if requester_peer:
+        return "organic_peer"
+    if ch in ("telegram", "cli", "gateway") or (q and not requester_peer):
+        return "organic_user"
+    return "unknown"
+
+
 def _context_for_retrieval_id(retrieval_event_id: str) -> dict:
     if not retrieval_event_id:
         return {}
@@ -225,17 +302,39 @@ def _remember_chain_context(event_type: str, data: dict) -> None:
 # ── Core emit ──
 
 def emit(event_type: str, data: dict, context: dict | None = None) -> Optional[str]:
-    context = _context_for_payload(event_type, data, context)
-    data = _mandatory244(event_type, data, context=context)
-    if context:
-        for _k in ("traffic_type", "retrieval_event_id", "session_id", "episode_id", "turn_id", "task_id", "tool_call_id"):
-            if _k not in data or not data.get(_k) or (_k == "traffic_type" and data.get(_k) == "unknown"):
-                data[_k] = context.get(_k, "")
-    _remember_chain_context(event_type, data)
     """
     Emit an event to the JSONL log. Thread-safe, append-only.
     Returns event_id or None on error (never blocks the caller).
     """
+    context = _context_for_payload(event_type, data, context)
+    data = _mandatory244(event_type, data, context=context)
+    if context:
+        for _k in ENVELOPE_KEYS:
+            if _k == "provenance":
+                if _k not in data or not data.get(_k):
+                    data[_k] = context.get(_k, {})
+            elif _k not in data or not data.get(_k):
+                data[_k] = context.get(_k, "")
+    # v2.4.18: producer identity — every event states which component emitted it.
+    producer = data.get("producer")
+    if not isinstance(producer, dict):
+        surface = (context or {}).get("producer_surface", "") or data.get("producer_surface", "") or ""
+        if surface not in VALID_SURFACES:
+            surface = "unknown"
+        producer = {
+            "component": "capability_reuse_plugin",
+            "version": "2.4.18",
+            "surface": surface,
+        }
+        data["producer"] = producer
+    # v2.4.18: top-level trace_id for trivial joins across the chain.
+    if not data.get("trace_id"):
+        trace_id = (context or {}).get("trace_id", "")
+        if not trace_id:
+            trace_id = data.get("session_id") or ""
+        if trace_id:
+            data["trace_id"] = trace_id
+    _remember_chain_context(event_type, data)
     if event_type not in VALID_EVENTS:
         return None
 
@@ -305,7 +404,15 @@ def emit_retrieval(session_id: str, user_message_preview: str,
                    intervention_threshold: float = 0.0, minimum_margin: float = 0.0,
                    request_effect: str = "", capability_effect: str = "",
                    whole_request_covered: bool = True, eligibility: str = "",
-                   eligibility_reason: str = "", dispatch: str = "none"):
+                   eligibility_reason: str = "", dispatch: str = "none",
+                   trace_id: str = "", requester_peer_id: str = "",
+                   processing_peer_id: str = "", target_peer_id: str = "",
+                   collector_peer_id: str = "", producer_surface: str = "",
+                   retriever_executed: bool | None = None,
+                   retriever_version: str = "", registry_version: str = "",
+                   retrieval_threshold: float = 0.0, candidate_count: int | None = None,
+                   filter_rejection_reasons: list | None = None,
+                   retrieval_stages: dict | None = None):
     """Retrieval attempt result (shadow or active), with labelable candidate evidence."""
     safe_candidates = []
     for c in candidates[:10]:
@@ -325,10 +432,20 @@ def emit_retrieval(session_id: str, user_message_preview: str,
         "requester": requester or {"actor_type": "unknown", "actor_id": "unknown", "request_channel": "unknown", "requester_peer_id": "", "processing_peer_id": ""},
         "validated_inputs": validated_inputs or {},
         "traffic_type": traffic_type or "unknown",
-        "target_peer_id": ((validated_inputs or {}).get("target_peer_id") or (((validated_inputs or {}).get("peer_list") or [""])[0] if isinstance((validated_inputs or {}).get("peer_list"), list) else "")),
-        "processing_peer_id": (requester or {}).get("processing_peer_id", ""),
+        "target_peer_id": target_peer_id or ((validated_inputs or {}).get("target_peer_id") or (((validated_inputs or {}).get("peer_list") or [""])[0] if isinstance((validated_inputs or {}).get("peer_list"), list) else "")),
+        "processing_peer_id": processing_peer_id or (requester or {}).get("processing_peer_id", ""),
+        "requester_peer_id": requester_peer_id or (requester or {}).get("requester_peer_id", ""),
+        "collector_peer_id": collector_peer_id,
+        "trace_id": trace_id or session_id,
+        "retriever_executed": retriever_executed,
+        "retriever_version": retriever_version,
+        "registry_version": registry_version,
+        "retrieval_threshold": retrieval_threshold,
+        "filter_rejection_reasons": filter_rejection_reasons or [],
+        "retrieval_stages": retrieval_stages or {},
+        "producer_surface": producer_surface,
         "top_capability": (candidate_label(safe_candidates[0]) if safe_candidates else ""),
-        "candidate_count": len(candidates),
+        "candidate_count": len(candidates) if candidate_count is None else candidate_count,
         "candidates": safe_candidates,
         "top_score": round(top_score, 4),
         "second_score": round(second_score, 4),
@@ -492,6 +609,65 @@ def emit_execute_code_complete(code_hash: str = "", outcome: str = "success",
         "duration_ms": round(duration_ms, 2),
         "error_preview": redact_preview(error, 200) if error else None,
         "block_origin": block_origin,
+    })
+
+def emit_surface_execution_start(execution_surface: str = "hmp_plugin",
+                                 surface_preview: str = "",
+                                 session_id: str = "", episode_id: str = "",
+                                 turn_id: str = "", task_id: str = "",
+                                 tool_call_id: str = "", retrieval_event_id: str = "",
+                                 requester_peer_id: str = "", processing_peer_id: str = "",
+                                 trace_id: str = "", traffic_type: str = "",
+                                 producer_surface: str = ""):
+    """v2.4.18: generic surface (HMP ingress, gateway, etc.) started processing.
+
+    NOT execute_code — reserved exclusively for real execute_code calls.
+    Replaces the v2.4.16 misuse of execute_code_started_event for HMP
+    message processing that never ran execute_code.
+    """
+    return emit("surface_execution_started_event", {
+        "execution_surface": execution_surface,
+        "surface_preview": redact_preview(surface_preview, 200),
+        "session_id": session_id,
+        "episode_id": episode_id or session_id,
+        "turn_id": turn_id,
+        "task_id": task_id,
+        "tool_call_id": tool_call_id,
+        "retrieval_event_id": retrieval_event_id,
+        "requester_peer_id": requester_peer_id,
+        "processing_peer_id": processing_peer_id,
+        "trace_id": trace_id,
+        "traffic_type": traffic_type,
+        "producer_surface": producer_surface,
+    })
+
+def emit_surface_execution_complete(execution_surface: str = "hmp_plugin",
+                                    outcome: str = "success",
+                                    duration_ms: float = 0.0,
+                                    error: str | None = None,
+                                    session_id: str = "", episode_id: str = "",
+                                    turn_id: str = "", task_id: str = "",
+                                    tool_call_id: str = "", retrieval_event_id: str = "",
+                                    requester_peer_id: str = "", processing_peer_id: str = "",
+                                    trace_id: str = "", traffic_type: str = "",
+                                    producer_surface: str = ""):
+    """v2.4.18: generic surface finished processing (see emit_surface_execution_start)."""
+    return emit("surface_execution_completed_event", {
+        "execution_surface": execution_surface,
+        "session_id": session_id,
+        "episode_id": episode_id or session_id,
+        "turn_id": turn_id,
+        "task_id": task_id,
+        "tool_call_id": tool_call_id,
+        "retrieval_event_id": retrieval_event_id,
+        "requester_peer_id": requester_peer_id,
+        "processing_peer_id": processing_peer_id,
+        "trace_id": trace_id,
+        "traffic_type": traffic_type,
+        "producer_surface": producer_surface,
+        "outcome": outcome,
+        "duration_ms": round(duration_ms, 2),
+        "error_preview": redact_preview(error, 200) if error else None,
     })
 
 def emit_alternate_execution(tool_name: str, args_preview: str = "",

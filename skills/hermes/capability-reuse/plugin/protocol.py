@@ -32,7 +32,7 @@ from datetime import datetime, timezone
 from dataclasses import dataclass, field
 from typing import Optional
 
-VERSION = "2.4.17"
+VERSION = "2.4.18"
 
 # ── Constants ──
 DEFAULT_FALLBACK_TTL_SECONDS = 300  # 5 minutes

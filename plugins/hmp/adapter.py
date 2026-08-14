@@ -38,8 +38,8 @@ try:
     from event_store import (  # type: ignore
         emit_retrieval,
         emit_observation,
-        emit_execute_code_start,
-        emit_execute_code_complete,
+        emit_surface_execution_start,
+        emit_surface_execution_complete,
     )
     HAS_EVENT_STORE = True
 except Exception:
@@ -323,11 +323,12 @@ class HMPAdapter(BasePlatformAdapter):
                 message_id=message_id,
             )
             # ── LIVE-SHADOW (dual-plane parity): emit retrieval chain ──
-            ec_id = None
+            surf_id = None
             _t0 = time.monotonic()
             if HAS_EVENT_STORE:
                 try:
                     requester_peer = str(from_peer or "").strip()
+                    trace_id = chat_id or ""
                     emit_retrieval(
                         session_id=chat_id,
                         user_message_preview=text[:200],
@@ -346,13 +347,27 @@ class HMPAdapter(BasePlatformAdapter):
                             "requester_peer_id": requester_peer,
                             "processing_peer_id": self.node_id,
                         } if requester_peer else None,
+                        # v2.4.18 envelope
+                        trace_id=trace_id,
+                        requester_peer_id=requester_peer,
+                        processing_peer_id=self.node_id,
+                        producer_surface="hmp_ingress",
                     )
-                    ec_id = emit_execute_code_start(
-                        code_preview="hmp-plugin: %s" % text[:100],
+                    # v2.4.18: surface_execution_* replaces execute_code_* for
+                    # generic HMP processing (execute_code_* is reserved for
+                    # real execute_code only).
+                    surf_id = emit_surface_execution_start(
+                        execution_surface="hmp_plugin",
+                        surface_preview=text[:100],
                         session_id=chat_id,
+                        requester_peer_id=requester_peer,
+                        processing_peer_id=self.node_id,
+                        trace_id=trace_id,
+                        traffic_type="organic_peer" if requester_peer else "unknown",
+                        producer_surface="hmp_ingress",
                     )
                 except Exception:
-                    ec_id = None
+                    surf_id = None
             try:
                 await self.handle_message(event)
                 outcome, err = "success", None
@@ -362,13 +377,19 @@ class HMPAdapter(BasePlatformAdapter):
             except Exception as exc:
                 self.store.fail(message_id, "handle_message failed: %s" % exc)
                 outcome, err = "failure", str(exc)
-            if HAS_EVENT_STORE and ec_id:
+            if HAS_EVENT_STORE and surf_id:
                 try:
-                    emit_execute_code_complete(
-                        code_hash=ec_id,
+                    emit_surface_execution_complete(
+                        execution_surface="hmp_plugin",
                         outcome=outcome,
                         duration_ms=(time.monotonic() - _t0) * 1000.0,
                         error=err,
+                        session_id=chat_id,
+                        requester_peer_id=requester_peer,
+                        processing_peer_id=self.node_id,
+                        trace_id=chat_id or "",
+                        traffic_type="organic_peer" if requester_peer else "unknown",
+                        producer_surface="hmp_ingress",
                     )
                     emit_observation(
                         capability_id="hmp",

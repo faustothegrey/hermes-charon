@@ -208,6 +208,14 @@ def analyze(events_path, outdir, cursor_path, peer_id='unknown', now=None):
     return stats
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="v2.4.18 cohort-filtered reuse analyzer")
+    parser.add_argument("--plugin-version", default=None, help="Only analyze events with this plugin_version")
+    parser.add_argument("--deployment-id", default=None, help="Only analyze events with this deployment_id")
+    parser.add_argument("--exclude-traffic", nargs="*", default=None,
+                        help="Exclude these traffic classes (e.g. registry_sync cron)")
+    args = parser.parse_args()
+
     evs,bad=load_events(); now=datetime.now(timezone.utc); labels=load_labels()
     rows=[(e,payload(e),etype(e),ev_time(e)) for e in evs]
     recent=[r for r in rows if (now-r[3]).total_seconds()<3600]
@@ -215,10 +223,36 @@ def main():
     current_dep=cohort.get("deployment_id")
     expected_version=cohort.get("plugin_version")
     expected_hash=cohort.get("plugin_artifact_hash")
-    expected_schema=cohort.get("schema_version", "1.2")
-    clean=[r for r in rows if r[1].get("deployment_id")==current_dep and r[1].get("plugin_version")==expected_version and r[1].get("plugin_artifact_hash")==expected_hash and (r[1].get("schema_version") or r[0].get("schema_version"))==expected_schema]
+    expected_schema=cohort.get("schema_version", "1.3")
+
+    # v2.4.18: cohort-specific filtering (--plugin-version / --deployment-id)
+    # plus optional traffic-class exclusion. Defaults to the active cohort.
+    filter_version = args.plugin_version or expected_version
+    filter_dep = args.deployment_id or current_dep
+    excluded_traffic = set(args.exclude_traffic or [])
+
+    clean=[r for r in rows
+           if r[1].get("deployment_id")==filter_dep
+           and r[1].get("plugin_version")==filter_version
+           and (not expected_hash or r[1].get("plugin_artifact_hash")==expected_hash)
+           and (r[1].get("schema_version") or r[0].get("schema_version"))==expected_schema
+           and (not excluded_traffic or r[1].get("traffic_type") not in excluded_traffic)]
     legacy=[r for r in rows if r not in clean]
     clean_retr=[r for r in clean if r[2]=="retrieval_event"]
+
+    # v2.4.18: excluded breakdown (legacy versions / traffic classes / producers)
+    excluded_by_version=Counter((r[1].get("plugin_version") or "missing") for r in legacy)
+    excluded_by_traffic=Counter((r[1].get("traffic_type") or "missing") for r in legacy)
+    excluded_by_producer=Counter(((r[1].get("producer") or {}).get("surface") or "missing") for r in legacy)
+
+    # v2.4.18: event-log fingerprint so consumers reject stale reports.
+    import hashlib
+    log_bytes = Path.home().joinpath(".hermes/data/reuse-observer/events.jsonl").read_bytes()
+    log_sha256 = hashlib.sha256(log_bytes).hexdigest()
+    all_ts = [r[3] for r in rows]
+    input_min = min(all_ts).strftime("%Y-%m-%dT%H:%M:%SZ") if all_ts else None
+    input_max = max(all_ts).strftime("%Y-%m-%dT%H:%M:%SZ") if all_ts else None
+
     ro=[r for r in clean_retr if str(r[1].get("request_effect") or r[1].get("effect_stream") or r[1].get("effect_class") or "").startswith("read")]
     mu=[r for r in clean_retr if str(r[1].get("request_effect") or r[1].get("effect_stream") or r[1].get("effect_class") or "").startswith("mutat")]
     # chain errors for clean cohort. Capability invocations and execute_code chains are separate:
@@ -251,10 +285,26 @@ def main():
     by_cap=Counter((d.get("top_capability") or (d.get("candidates") or [{}])[0].get("capability") or "<missing>") for _,d,_,_ in clean_retr)
     summary={
         "generated_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "generated_by": "batch-reuse-analyzer v2.4.16",
+        "generated_by": "batch-reuse-analyzer v2.4.18",
         "bad_json_lines": bad,
         "total_events": len(evs),
         "events_last_1h_event_time": len(recent),
+        # v2.4.18: input fingerprint so consumers reject stale reports.
+        "input_event_log_sha256": log_sha256,
+        "input_event_count": len(evs),
+        "input_min_timestamp": input_min,
+        "input_max_timestamp": input_max,
+        "analyzer_version": "2.4.18",
+        "cohort_filter": {
+            "plugin_version": filter_version,
+            "deployment_id": filter_dep,
+            "excluded_traffic_classes": sorted(excluded_traffic),
+            "included_events": len(clean),
+            "excluded_legacy_events": len(legacy),
+            "excluded_by_version": dict(excluded_by_version),
+            "excluded_by_traffic": dict(excluded_by_traffic),
+            "excluded_by_producer_surface": dict(excluded_by_producer),
+        },
         "cohort": {"current_deployment_id": current_dep, "expected_plugin_version": expected_version, "expected_plugin_artifact_hash": expected_hash, "current_clean_events": len(clean), "legacy_or_pre_events": len(legacy), "current_clean_retrievals": len(clean_retr)},
         "streams": {"read_only_retrievals": len(ro), "mutating_retrievals": len(mu), "mutating_in_read_only": sum(1 for _,d,_,_ in ro if str(d.get("effect_class","")).startswith("mutat"))},
         "recurrence": {"raw_occurrences": len(clean_retr), "independent_occurrences": independent, "by_top_capability": dict(by_cap)},
@@ -266,7 +316,7 @@ def main():
         },
         "chain_correlation": {"errors": len(chain_errors), "sample": chain_errors[:5]},
         "durable_labels": len(labels),
-        "version": "2.4.16",
+        "version": "2.4.18",
         "shadow_mode": True,
         "active_scope": "hmp-healthcheck@1.0.0",
     }

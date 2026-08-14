@@ -48,7 +48,10 @@ def candidate_label(candidate: dict) -> str:
     ver = candidate.get("capability_version") or candidate.get("version") or ""
     return (str(cid) + "@" + str(ver)) if cid and ver else str(cid or "")
 
-EVENT_DIR = Path.home() / ".hermes" / "data" / "reuse-observer"
+# Test isolation: tests redirect the event log via env var so the live
+# reuse-observer/events.jsonl is never written/unlinked by the suite.
+EVENT_DIR = Path(os.environ.get(
+    "CAPABILITY_REUSE_EVENT_DIR", str(Path.home() / ".hermes" / "data" / "reuse-observer")))
 EVENT_LOG = EVENT_DIR / "events.jsonl"
 SESSION_LOG = EVENT_DIR / "session-context.jsonl"
 
@@ -82,6 +85,32 @@ VALID_SURFACES = {
     "hermes_cli", "gateway", "hmp_ingress", "execute_code_hook",
     "delegated_agent", "unknown",
 }
+
+# ── Emitting surface (v2.4.18, spec 2) ────────────────────────────────
+# Hook-emitted events run inside the Hermes runtime; the hooks stamp the
+# surface they execute under (gateway / execute_code_hook) via a
+# thread-local, because hook kwargs are raw and cannot carry producer
+# metadata reliably. Explicit data/context values always win over it.
+import threading as _threading
+_surface_stack = _threading.local()
+
+def push_surface(surface: str) -> None:
+    """Stamp the emitting surface for the current thread (hook boundary)."""
+    if surface not in VALID_SURFACES or surface == "unknown":
+        return
+    stack = getattr(_surface_stack, "stack", None)
+    if stack is None:
+        stack = _surface_stack.stack = []
+    stack.append(surface)
+
+def pop_surface() -> None:
+    stack = getattr(_surface_stack, "stack", None)
+    if stack:
+        stack.pop()
+
+def current_surface() -> str:
+    stack = getattr(_surface_stack, "stack", None)
+    return stack[-1] if stack else ""
 
 # ── v2.4.18 traffic taxonomy ─────────────────────────────────────────
 # Explicit categories so protocol traffic (registry sync, health pings)
@@ -318,7 +347,8 @@ def emit(event_type: str, data: dict, context: dict | None = None) -> Optional[s
     # v2.4.18: producer identity — every event states which component emitted it.
     producer = data.get("producer")
     if not isinstance(producer, dict):
-        surface = (context or {}).get("producer_surface", "") or data.get("producer_surface", "") or ""
+        surface = ((context or {}).get("producer_surface", "") or data.get("producer_surface", "")
+                   or current_surface() or "")
         if surface not in VALID_SURFACES:
             surface = "unknown"
         producer = {
@@ -352,6 +382,10 @@ def emit(event_type: str, data: dict, context: dict | None = None) -> Optional[s
                 "schema_version": SCHEMA_VERSION,
                 "timestamp": _now(),
                 "seq": _next_seq_unlocked(),
+                # v2.4.18 (spec 4): top-level trace_id for trivial joins across
+                # the whole chain — consumers never reconstruct IDs from
+                # timestamps.
+                "trace_id": data.get("trace_id", ""),
                 "data": data,
             }
             with open(EVENT_LOG, "a") as f:
@@ -403,7 +437,7 @@ def emit_retrieval(session_id: str, user_message_preview: str,
                    second_score: float = 0.0, score_margin: float = 0.0,
                    intervention_threshold: float = 0.0, minimum_margin: float = 0.0,
                    request_effect: str = "", capability_effect: str = "",
-                   whole_request_covered: bool = True, eligibility: str = "",
+                   whole_request_covered: bool | None = None, eligibility: str = "",
                    eligibility_reason: str = "", dispatch: str = "none",
                    trace_id: str = "", requester_peer_id: str = "",
                    processing_peer_id: str = "", target_peer_id: str = "",
@@ -412,7 +446,8 @@ def emit_retrieval(session_id: str, user_message_preview: str,
                    retriever_version: str = "", registry_version: str = "",
                    retrieval_threshold: float = 0.0, candidate_count: int | None = None,
                    filter_rejection_reasons: list | None = None,
-                   retrieval_stages: dict | None = None):
+                   retrieval_stages: dict | None = None,
+                   candidate_relationship: str = ""):
     """Retrieval attempt result (shadow or active), with labelable candidate evidence."""
     safe_candidates = []
     for c in candidates[:10]:
@@ -442,7 +477,22 @@ def emit_retrieval(session_id: str, user_message_preview: str,
         "registry_version": registry_version,
         "retrieval_threshold": retrieval_threshold,
         "filter_rejection_reasons": filter_rejection_reasons or [],
-        "retrieval_stages": retrieval_stages or {},
+        # v2.4.18 (spec 5): explicit stage semantics. When the caller does not
+        # supply stages (observer path), default to honest non-evaluation:
+        # coverage/eligibility are NOT evaluated and never default to values
+        # that imply a successful evaluation. Zero candidates after a real
+        # retrieval → eligibility = not_applicable, never False/True.
+        "retrieval_stages": retrieval_stages or {
+            "retrieval": {"executed": retriever_executed is True, "candidate_count": len(candidates)},
+            "coverage": {
+                "evaluated": bool(candidates),
+                "whole_request_covered": whole_request_covered if candidates else None,
+            },
+            "eligibility": {
+                "evaluated": bool(candidates),
+                "eligible": (eligibility == "accepted") if candidates else ("not_applicable" if retriever_executed is True else None),
+            },
+        },
         "producer_surface": producer_surface,
         "top_capability": (candidate_label(safe_candidates[0]) if safe_candidates else ""),
         "candidate_count": len(candidates) if candidate_count is None else candidate_count,
@@ -454,7 +504,14 @@ def emit_retrieval(session_id: str, user_message_preview: str,
         "minimum_margin": round(minimum_margin, 4),
         "request_effect": request_effect or "unknown",
         "capability_effect": capability_effect or "unknown",
-        "whole_request_covered": bool(whole_request_covered),
+        # v2.4.18 (spec 5): never claim coverage with zero candidates —
+        # whole_request_covered is null when nothing was evaluated.
+        "whole_request_covered": whole_request_covered if candidates else None,
+        # v2.4.18 (spec 7): explicit candidate relationship — partial_match for
+        # composite/mutating requests over a read-only capability.
+        "candidate_relationship": candidate_relationship or (
+            "partial_match" if whole_request_covered is False else
+            ("exact_match" if candidates else "")),
         "eligibility": eligibility or ("accepted" if intervened else "rejected"),
         "eligibility_reason": eligibility_reason,
         "dispatch": dispatch,

@@ -30,16 +30,19 @@ class V249Peer58ScopeTests(unittest.TestCase):
         self.assertEqual(plan["endpoint"], "http://192.168.178.58:18643/hmp/health")
         self.assertIn("GET http://192.168.178.58:18643/hmp/health", plan["command_preview"])
 
-    def test_version_surfaces_are_v2414_and_formal_eligibility_uses_v2414(self):
-        self.assertEqual(v244_metadata.PLUGIN_VERSION, "2.4.16")
-        event = {"schema_version": "1.2"}
+    def test_version_surfaces_are_v2418_and_formal_eligibility_uses_v2418(self):
+        self.assertEqual(v244_metadata.PLUGIN_VERSION, "2.4.18")
+        event = {"schema_version": "1.3"}
         data = {
-            "plugin_version": "2.4.16",
-            "deployment_id": "dep-v2414-live",
+            "plugin_version": "2.4.18",
+            "deployment_id": "dep-v2418-live",
             "plugin_artifact_hash": "sha256:abc",
-            "cohort_label": "v2.4.16_peer58_peer106",
+            "cohort_label": "v2.4.18_live",
             "provenance": {"stream": "organic_live", "valid": True},
             "traffic_type": "organic_peer",
+            "requester_peer_id": "peer58",
+            "trace_id": "trace-v2418-peer58",
+            "producer_surface": "hmp_ingress",
         }
         requester = {"requester_type": "hmp_peer", "processing_peer_id": "peer106"}
         ok, reasons = review_queue.formal_holdout_validation(event, data, requester)

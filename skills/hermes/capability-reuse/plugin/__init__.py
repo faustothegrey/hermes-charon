@@ -12,16 +12,27 @@ Plugin lifecycle:
 Exact callback kwargs and block return contract are accepted only
 after the pinned-runtime conformance suite passes.
 """
-import json, os
+import contextlib, json, os
 from pathlib import Path
 
 # Local controller module (can be imported from skill dir or bundled)
 # In production, these would be in ~/.hermes/plugins/capability-reuse/
 from . import protocol as ctrl
+from . import event_store as events
 
 
 def _mode() -> str:
     return os.environ.get("CAPABILITY_REUSE_MODE", "shadow").strip().lower() or "shadow"
+
+
+@contextlib.contextmanager
+def _surface(name: str):
+    """Stamp the emitting surface (spec 2) for the duration of the hook call."""
+    events.push_surface(name)
+    try:
+        yield
+    finally:
+        events.pop_surface()
 
 
 def register(ctx):
@@ -53,16 +64,18 @@ def on_pre_llm_call(session_id="", user_message="", **kwargs):
     Returns:
       None (below threshold) or {"context": str} (injection into user message).
     """
-    decision = ctrl.retrieve(
-        session_id=session_id,
-        user_message=user_message,
-        hook_context=kwargs,
-    )
-    if decision is None:
-        return None
+    surface = "gateway"
+    with _surface(surface):
+        decision = ctrl.retrieve(
+            session_id=session_id,
+            user_message=user_message,
+            hook_context=kwargs,
+        )
+        if decision is None:
+            return None
 
-    ctrl.persist_intervention(decision)
-    return {"context": ctrl.render_injection(decision)}
+        ctrl.persist_intervention(decision)
+        return {"context": ctrl.render_injection(decision)}
 
 
 def on_pre_tool_call(tool_name, args, task_id="", **kwargs):
@@ -72,23 +85,25 @@ def on_pre_tool_call(tool_name, args, task_id="", **kwargs):
     For execute_code: validates bypass or allows.
     For other tools: observes for alternate execution tracking.
     """
-    if tool_name != "execute_code":
-        ctrl.observe_alternate_tool_if_relevant(
-            tool_name=tool_name,
+    surface = "execute_code_hook" if tool_name == "execute_code" else "gateway"
+    with _surface(surface):
+        if tool_name != "execute_code":
+            ctrl.observe_alternate_tool_if_relevant(
+                tool_name=tool_name,
+                args=args,
+                task_id=task_id,
+                hook_context=kwargs,
+            )
+            return None
+
+        verdict = ctrl.authorize_execute_code(
             args=args,
             task_id=task_id,
             hook_context=kwargs,
         )
-        return None
-
-    verdict = ctrl.authorize_execute_code(
-        args=args,
-        task_id=task_id,
-        hook_context=kwargs,
-    )
-    if verdict.allowed:
-        return None
-    return {"action": "block", "message": verdict.message}
+        if verdict.allowed:
+            return None
+        return {"action": "block", "message": verdict.message}
 
 
 def handle_invoke_capability(params, **kwargs):
@@ -98,7 +113,8 @@ def handle_invoke_capability(params, **kwargs):
 
     Returns JSON string (Hermes tool convention).
     """
-    result = ctrl.invoke_capability(params=params, hook_context=kwargs)
+    with _surface("gateway"):
+        result = ctrl.invoke_capability(params=params, hook_context=kwargs)
     return json.dumps(result, ensure_ascii=False)
 
 
@@ -114,11 +130,13 @@ def on_post_tool_call(
     Called after each tool call completes (success, failure, or blocked).
     Records outcomes, latency, and observation signals.
     """
-    ctrl.record_tool_outcome(
-        tool_name=tool_name,
-        args=args,
-        result=result,
-        task_id=task_id,
-        duration_ms=duration_ms,
-        hook_context=kwargs,
-    )
+    surface = "execute_code_hook" if tool_name == "execute_code" else "gateway"
+    with _surface(surface):
+        ctrl.record_tool_outcome(
+            tool_name=tool_name,
+            args=args,
+            result=result,
+            task_id=task_id,
+            duration_ms=duration_ms,
+            hook_context=kwargs,
+        )

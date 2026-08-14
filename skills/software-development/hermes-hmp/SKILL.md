@@ -8,7 +8,14 @@ version: 1.26.0
 # Hermes HMP — Skill & Tooling
 
 HMP (Hermes Message Protocol) è il protocollo peer-to-peer per comunicare con
-gli altri Hermes agent della rete. Usa HTTP + JSON su porta **18643**.
+gli altri Hermes agent della rete. Usa HTTP+JSON su porta **18643**.
+
+Ops pitfalls: `references/hmp-peer-ops-pitfalls-2026-08-14.md`
+
+> **Cross-peer version probe**: come ottenere la versione Hermes core di ogni
+> peer (API :8642 → HMP send_and_wait → SSH fallback) e le peculiarità per
+> peer58/106/138/141 — vedi `references/peer-version-probe.md`. Nota:
+> `agent-card.version` è la versione del plugin HMP, NON quella del core.
 
 ## ⚠️ DUAL-PLANE :18644 RITIRATO (2026-08-13)
 

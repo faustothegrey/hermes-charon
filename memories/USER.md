@@ -6,7 +6,7 @@ Risposte concise, evidenze concrete, niente teoria. Distinguere tooling da valid
 §
 Peer58 preferisce minimal protocol. Solo OK o JSON. No extra tool call durante registry sync.
 §
-Peer upgrade: canary-first (peer58), poi idle, coordinator last. Chiedi volontario via HMP, lascia autonomo. Intervieni solo su fallimento. Verifica: HMP bidir, plugin, config, gateway.
+Peer upgrade: canary scelto da Fausto (ago-2026: peer141 Stella; prima peer58), poi idle, coordinator last. Fausto fa l'upgrade lui, agente verifica dopo suo OK. Intervieni solo su fallimento. Verifica: HMP bidir, plugin, config, gateway.
 §
 Registry sync: heartbeat-only changes (solo last_seen) = "OK" diretto, nessun tool call né JSON. Solo cambiamenti strutturali (nuovi peer, skill/plugin modificati) meritano risposta con compact JSON.
 §

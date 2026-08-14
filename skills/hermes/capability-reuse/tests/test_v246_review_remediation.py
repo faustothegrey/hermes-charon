@@ -43,26 +43,29 @@ class V246ReviewRemediationTests(unittest.TestCase):
         data = {
             "event_id": "evt-inner-should-not-win",
             "session_id": "sess", "turn_id": "turn", "task_id": "task",
+            "trace_id": "trace-v2418-caseA",
             "traffic_type": "organic_peer",
             "provenance": {"stream": "organic_live", "valid": True, "source": "hook_context.provenance"},
             "requester": {
                 "actor_type": "agent", "actor_id": "hmp:peer106", "request_channel": "hmp",
                 "requester_peer_id": "peer106", "processing_peer_id": "peer70",
             },
+            "requester_peer_id": "peer106",
+            "producer_surface": "hmp_ingress",
             "validated_inputs": {"peer_list": ["peer128"], "timeout_seconds": 5},
             "candidates": [
                 {"capability": "hmp-healthcheck@1.0.0", "score": 0.91, "effect_class": "read_only", "eligible_for_intervention": False, "ineligibility_reasons": ["permissions_unknown", "availability_unknown"]},
                 {"capability": "peer-heartbeat@1.0.0", "score": 0.4, "effect_class": "read_only"},
             ],
             "top_score": 0.91,
-            "deployment_id": "dep-v2414-peer58-peer106",
-            "plugin_version": "2.4.16",
+            "deployment_id": "dep-v2418-peer58-peer106",
+            "plugin_version": "2.4.18",
             "plugin_artifact_hash": "abc123",
-            "cohort_label": "v2.4.16_peer58_peer106",
+            "cohort_label": "v2.4.18_live",
             "peer_id": "peer70",
         }
         data.update(overrides)
-        return {"event_id": "evt-outer-authoritative", "event_type": "retrieval_event", "schema_version": "1.2", "timestamp": "2026-08-01T00:00:00Z", "data": data}
+        return {"event_id": "evt-outer-authoritative", "event_type": "retrieval_event", "schema_version": "1.3", "timestamp": "2026-08-01T00:00:00Z", "data": data}
 
     def test_authoritative_retrieval_id_uses_outer_event_id(self):
         rec = review_queue.build_review_record(self.organic_event(), candidate_rank=1)

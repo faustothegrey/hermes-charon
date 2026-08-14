@@ -287,15 +287,38 @@ def _extract_requester(hook_context: dict | None) -> dict:
     }
 
 
-def _extract_traffic_type(hook_context: dict | None) -> str:
+def _extract_traffic_type(hook_context: dict | None, user_message: str = "") -> str:
+    """v2.4.18 full traffic taxonomy (spec point 8).
+
+    Categories: organic_user, organic_peer, scheduled_protocol, registry_sync,
+    cron, retry, test, acceptance, calibration, unknown.
+    Registry-sync and test/acceptance/calibration traffic must be classifiable
+    so recurrence/precision analysis can exclude them (29 repeated sync
+    messages dominated the v2.4.16 dataset).
+    """
     ctx = hook_context or {}
     explicit = ctx.get("traffic_type") or ctx.get("capability_reuse_traffic_type")
     if explicit:
         return str(explicit)
     platform = str(ctx.get("platform") or "").lower()
     channel = str(ctx.get("request_channel") or platform or "").lower()
-    if ctx.get("is_test") or ctx.get("acceptance_test"):
-        return "acceptance_test"
+    msg = (user_message or "").lower()
+    # v2.4.18: test/acceptance/calibration/retry/registry_sync/scheduled
+    # protocol must be distinguishable from organic traffic.
+    if ctx.get("is_calibration") or ctx.get("calibration") or msg.startswith("calibration"):
+        return "calibration"
+    if ctx.get("is_test") or ctx.get("test_mode") or channel == "test":
+        return "test"
+    if ctx.get("acceptance_test") or ctx.get("is_acceptance") or channel == "acceptance":
+        return "acceptance"
+    if ctx.get("is_retry") or ctx.get("retry_of"):
+        return "retry"
+    proto = str(ctx.get("protocol_type") or ctx.get("message_type") or "").lower()
+    if (ctx.get("is_registry_sync") or "registry_sync" in proto or "registry_publish" in proto
+            or "registry sync" in msg or msg.startswith("registry_publish")):
+        return "registry_sync"
+    if ctx.get("is_scheduled") or ctx.get("periodic") or ctx.get("scheduled"):
+        return "scheduled_protocol"
     if ctx.get("is_cron") or ctx.get("schedule_id") or channel == "cron":
         return "cron"
     if channel == "hmp" or ctx.get("source_peer_id") or ctx.get("requester_peer_id"):
@@ -368,7 +391,9 @@ def _collect_filter_rejections(candidates: list[dict]) -> list[str]:
     """
     reasons: list[str] = []
     for c in candidates or []:
-        cap_name = str(c.get("capability") or c.get("name") or "?")
+        cap_name = str(c.get("capability") or "")
+        if not cap_name:
+            cap_name = str(c.get("capability_id") or c.get("name") or "?")
         inelig = c.get("ineligibility_reasons") or c.get("filter_rejection_reasons")
         if isinstance(inelig, list) and inelig:
             for r in inelig:
@@ -497,6 +522,15 @@ def retrieve(session_id: str = "",
     )
     
     latency = (time.monotonic() - start) * 1000
+
+    # v2.4.18 (spec 4): one trace_id for the whole chain. The HMP adapter
+    # correlates on chat_id (= sender peer id for DMs); the plugin hook must
+    # join on the same value or the chain splits. Fall back to session_id.
+    _hc = hook_context or {}
+    _trace = _hc.get("trace_id") or _hc.get("chat_id") or ""
+    if not _trace and str(_hc.get("platform") or "").lower() == "hmp":
+        _trace = str(_hc.get("sender_id") or "")
+    trace_id = _trace or session_id
     
     # 8. Emit retrieval event with full candidate evidence for retrospective labeling
     candidates_info = candidate_records[:10]
@@ -522,7 +556,7 @@ def retrieve(session_id: str = "",
         provenance_source=provenance_source,
         requester=_extract_requester(hook_context),
         validated_inputs=_extract_validated_inputs(user_message, top_cap),
-        traffic_type=_extract_traffic_type(hook_context),
+        traffic_type=_extract_traffic_type(hook_context, user_message),
         second_score=second_score,
         score_margin=margin,
         intervention_threshold=intervention_threshold,
@@ -540,6 +574,11 @@ def retrieve(session_id: str = "",
         retrieval_threshold=retrieval_threshold,
         candidate_count=len(candidates_info),
         filter_rejection_reasons=_collect_filter_rejections(candidates_info) if candidates_info else [],
+        # v2.4.18 (spec 7): composite-rejection semantics — partial_match.
+        candidate_relationship="partial_match" if not top_whole_request_covered else "exact_match",
+        # v2.4.18 (spec 4): explicit trace_id so the plugin chain joins the
+        # HMP adapter observer events (chat_id = sender peer id).
+        trace_id=trace_id,
         # v2.4.18: explicit stage semantics — never default booleans that
         # imply a successful evaluation when no candidate was evaluated.
         retrieval_stages={

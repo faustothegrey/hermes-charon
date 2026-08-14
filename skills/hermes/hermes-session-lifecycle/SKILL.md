@@ -148,6 +148,20 @@ hermes sessions prune --older-than 7 --yes
 
 ## Pitfalls
 
+- **Stale "typing" indicator on Telegram ≠ session too big.** A user
+  reporting "still typing for minutes" looks like the classic oversized-
+  session symptom, but check `last_prompt_tokens` (sessions.json) FIRST and
+  the gateway log response times. If responses ARE delivered on time, the
+  indicator is a rendering artifact: custom progress bubbles (e.g.
+  capability-reuse's 🔍 `tool.considered` events) make the progress consumer
+  call `adapter.send_typing()` after EVERY bubble edit, and Telegram has no
+  stop-typing API — the ~5s timer keeps getting re-armed, so the bubble
+  lingers as long as the queue drains (minutes of stale "typing" after the
+  reply was already delivered). Fix (gateway/run.py, commit `5bb34a7`):
+  guard BOTH restore-typing call sites with
+  `_run_still_current() and not progress_queue.empty()` so the timer expires
+  once the turn's bubbles are drained. Verification: `grep "response ready"`
+  in gateway.log shows normal per-turn times the whole time.
 - **Cron `script` field is a bare filename**, not a path: it must exist
   in `~/.hermes/scripts/`. Passing `/home/fausto/.hermes/scripts/foo.py`
   is rejected by `cronjob(action=create)` — use `foo.py`.
@@ -166,3 +180,63 @@ hermes sessions prune --older-than 7 --yes
   answer is compression (already on) + watchdog for the pre-warning;
   don't propose changing auxiliary provider config unless the auxiliary
   section actually exists and is broken.
+- **"Still typing…" on Telegram for minutes = stale typing re-arm, NOT a
+  session-size problem.** Symptom: user reports the typing indicator lingers
+  long after the reply arrived (gateway.log shows "response ready … Sending
+  response" while the user still sees typing). First rule out size via
+  `last_prompt_tokens` from sessions.json (this is almost always fine), then
+  suspect the gateway progress consumer: it re-arms Telegram's ~5s typing
+  timer via `adapter.send_typing` after EVERY progress-bubble edit, including
+  the last one of a turn — and Telegram exposes no stop-typing API (issue
+  #48678), so nothing cancels the indicator. The custom 🔍 `tool.considered`
+  bubbles (capability-reuse harness feedback) emit one event per tool call,
+  keeping the progress queue non-empty and the indicator alive for minutes
+  after the final answer. Fix (gateway/run.py, 2026-08-14): guard both
+  restore-typing call sites with `_run_still_current() and not
+  progress_queue.empty()` so the timer naturally expires once the turn's
+  bubbles are drained. During diagnosis, a long `send_and_wait` to a peer
+  (~30s) also keeps the indicator on for the whole wait — that's normal
+  turn duration, not a block.
+
+## Pitfall: Telegram stuck "typing…" indicator — NOT a session problem
+
+**Symptom:** user reports the bot shows "typing…" for minutes (even
+>2 min) and worries the session file is too big / stuck (it was a real
+session problem once — 243K tokens with silently-broken compression).
+This time it is almost always a **cosmetic Telegram platform bug**, and
+responses ARE being delivered.
+
+**Root cause (verified 2026-08-14, v0.17.0):** Hermes runs a
+`_keep_typing` refresh loop (`gateway/platforms/base.py` ~line 3526)
+that re-sends `sendChatAction(typing)` every ~2s because Telegram's
+typing bubble self-expires after ~5s. At end of turn the gateway calls
+`adapter.stop_typing(chat_id)` (`gateway/run.py` ~line 10363), but
+`BasePlatformAdapter.stop_typing` (`base.py` ~line 2985) is a **no-op**
+(`pass` — "Override in subclasses that start background typing loops").
+Discord/Slack/Matrix/Google Chat/Photon all override it; **the Telegram
+adapter (`plugins/platforms/telegram/adapter.py`) does NOT** — so the
+loop keeps re-arming Telegram's ~5s timer and the bubble never dies.
+Code comments reference upstream issue #48678; the adapter explicitly
+avoids re-triggering typing on the final reply (`metadata["notify"]`)
+for exactly this reason.
+
+**Diagnosis order (rule out session first, cheap → deep):**
+1. `~/.hermes/sessions/sessions.json` → `last_prompt_tokens` for the
+   session key vs model window (compression 50%, watchdog 70%). ~10%
+   of window = session fine, stop blaming the session.
+2. `tail ~/.hermes/logs/gateway.log` → look for
+   `response ready: platform=telegram ... time=..s` lines. If responses
+   are being sent, nothing is blocked — it's the bubble only.
+3. Confirm the code path: grep `def stop_typing` in
+   `plugins/platforms/telegram/adapter.py` → absent = confirmed.
+
+**Fix location (if ever implemented):** add
+`async def stop_typing(self, chat_id)` to `TelegramAdapter` that cancels
+the `_keep_typing` task, mirroring the `_typing_tasks` dict pattern in
+`plugins/platforms/discord/adapter.py` (~line 784, 3382-3422).
+
+**Do NOT** restart the gateway for this — restart is manual (per
+operating memory) and doesn't fix the no-op. Also note: a slow
+`/hmp/send_and_wait` to a peer (30s+ response) legitimately keeps the
+typing bubble on for the whole wait — that's normal turn time, not a
+hang.

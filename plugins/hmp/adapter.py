@@ -329,6 +329,12 @@ class HMPAdapter(BasePlatformAdapter):
                 try:
                     requester_peer = str(from_peer or "").strip()
                     trace_id = chat_id or ""
+                    # v2.4.18 (spec 8): registry-sync protocol traffic is not
+                    # organic — classify explicitly so recurrence/precision
+                    # analysis can exclude it.
+                    _msg = (text or "").lower()
+                    traffic = ("registry_sync" if (text or "").startswith("REGISTRY_PUBLISH") or "registry sync" in _msg
+                               else ("organic_peer" if requester_peer else "unknown"))
                     emit_retrieval(
                         session_id=chat_id,
                         user_message_preview=text[:200],
@@ -336,7 +342,7 @@ class HMPAdapter(BasePlatformAdapter):
                         top_score=0.0,
                         intervened=False,
                         latency_ms=0.0,
-                        traffic_type="organic_peer" if requester_peer else "unknown",
+                        traffic_type=traffic,
                         provenance="organic_live" if requester_peer else None,
                         provenance_source="hmp_plugin.consumer_loop",
                         provenance_detail="from_peer",
@@ -352,6 +358,18 @@ class HMPAdapter(BasePlatformAdapter):
                         requester_peer_id=requester_peer,
                         processing_peer_id=self.node_id,
                         producer_surface="hmp_ingress",
+                        # v2.4.18 (spec 5/6): observer-only — the real retriever
+                        # did NOT run here. Never emit a fake zero-score
+                        # retrieval: mark retriever_executed=False and explicit
+                        # non-evaluated stages (no whole_request_covered=True
+                        # with zero candidates).
+                        retriever_executed=False,
+                        whole_request_covered=None,
+                        retrieval_stages={
+                            "retrieval": {"executed": False, "candidate_count": 0},
+                            "coverage": {"evaluated": False, "whole_request_covered": None},
+                            "eligibility": {"evaluated": False, "eligible": None},
+                        },
                     )
                     # v2.4.18: surface_execution_* replaces execute_code_* for
                     # generic HMP processing (execute_code_* is reserved for
@@ -363,7 +381,7 @@ class HMPAdapter(BasePlatformAdapter):
                         requester_peer_id=requester_peer,
                         processing_peer_id=self.node_id,
                         trace_id=trace_id,
-                        traffic_type="organic_peer" if requester_peer else "unknown",
+                        traffic_type=traffic,
                         producer_surface="hmp_ingress",
                     )
                 except Exception:
@@ -388,7 +406,7 @@ class HMPAdapter(BasePlatformAdapter):
                         requester_peer_id=requester_peer,
                         processing_peer_id=self.node_id,
                         trace_id=chat_id or "",
-                        traffic_type="organic_peer" if requester_peer else "unknown",
+                        traffic_type=traffic,
                         producer_surface="hmp_ingress",
                     )
                     emit_observation(

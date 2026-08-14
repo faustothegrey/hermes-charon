@@ -246,6 +246,22 @@ regenerate the bundle with the fixed scripts (few KB) and recommit.
 | `scripts/restore-hermes.sh` | Restore procedure from backup (copies files back + decrypt secrets) |
 | `hermes-config-backup-nightly.sh` | Cron wrapper: cd repo → run backup-hermes.sh (lives in ~/.hermes/scripts/) |
 
+## ⚠️ Pitfall: nightly cron paused = backups silently become manual
+
+The nightly job can be **paused** (e.g. a mass pause of ~20 cron jobs, as happened
+on peer70 2026-08-02) while the repo still looks healthy. Result: no automated
+backups for weeks, only manual ones (`git log` shows sparse commits), **no alert
+to the user** — `deliver=local` hides everything.
+
+**Check when backups seem sparse:** `cronjob action=list` → the
+"Nightly Hermes configuration backup" job must show `state: scheduled` /
+`enabled: true` with a future `next_run_at`. If `state: paused`, resume:
+`cronjob action=resume job_id=<id>`.
+
+**Manual fallback** (always safe): `cd ~/Backups/hermes-config && bash scripts/backup-hermes.sh`
+— regenerates snapshot, encrypts secrets, commits, pushes. Confirmed working
+2026-08-14 (push `106c3c1..6fe0181 main -> main`, secrets bundle ~10 KB).
+
 ## Cron setup
 
 ```bash
@@ -279,6 +295,28 @@ git remote add origin git@github.com:<user>/hermes-config-peer70.git
 # Run first backup manually: bash scripts/backup-hermes.sh
 # Then set up cron
 ```
+
+## ⚠️ Pitfall: recent git log ≠ nightly cron actually running
+
+A fresh commit in the backup repo does NOT mean the nightly cron is active —
+manual `backup-hermes.sh` runs also commit. On peer70 the nightly job
+(`Nightly Hermes configuration backup`) sat **paused since 2026-08-02** while
+`git log` showed commits from Aug 13 (manual runs); backups had silently
+become manual-only. Diagnostic trap: `cronjob action=list` shows
+`state: paused` with a stale `last_status: ok` from the last pre-pause run —
+the ok status hides the pause.
+
+**Check the cron state, not the git log**, when asked whether backups are
+automated:
+```bash
+# 1. Is the job enabled and scheduled?
+cronjob action=list   # look for state: scheduled (NOT paused) on the backup job
+# 2. Is the last run actually recent? (paused job keeps old last_run_at)
+# 3. Repo health: git log -1 + secrets/*.enc size (healthy = KB)
+```
+If paused: `cronjob action=resume` — and note that the pause may be
+deliberate (a mass-pause of jobs happened 2026-08-02); confirm with the user
+before resuming.
 
 ## ⚠️ Pitfall: state.db must NEVER go into the secrets bundle
 

@@ -174,7 +174,9 @@ def formal_holdout_validation(event: dict[str, Any], data: dict[str, Any], reque
     # v2.4.18: complete trace envelope required.
     if not data.get("trace_id"): reasons.append("missing_trace_id")
     if data.get("producer_surface") in (None, "", "unknown"):
-        reasons.append("missing_producer_surface")
+        _producer = data.get("producer") if isinstance(data.get("producer"), dict) else {}
+        if _producer.get("surface") in (None, "", "unknown"):
+            reasons.append("missing_producer_surface")
     return (len(reasons) == 0), reasons
 
 

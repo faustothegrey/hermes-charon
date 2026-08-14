@@ -2,6 +2,7 @@ import importlib
 import json
 import os
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -16,18 +17,19 @@ class ExternalReviewBlockerTests(unittest.TestCase):
         os.environ["CAPABILITY_REUSE_ACTIVE_CAPABILITIES"] = "hmp-healthcheck"
         os.environ["CAPABILITY_REUSE_PERMISSIONS"] = "hmp.network.read"
         os.environ["CAPABILITY_REUSE_AVAILABLE_CAPABILITIES"] = "hmp_client_installed"
+        # Isolate the event log: NEVER unlink/write the live events.jsonl.
+        self._tmp_log = tempfile.TemporaryDirectory()
+        os.environ["CAPABILITY_REUSE_EVENT_DIR"] = self._tmp_log.name
         self.protocol = importlib.reload(importlib.import_module("plugin.protocol"))
         self.dispatcher = importlib.reload(importlib.import_module("plugin.dispatcher"))
         self.retriever = importlib.reload(importlib.import_module("plugin.retriever"))
         self.registry = importlib.reload(importlib.import_module("plugin.registry"))
         self.events = importlib.reload(importlib.import_module("plugin.event_store"))
         self.protocol._store = self.protocol.InterventionStore()
-        try:
-            self.events.EVENT_LOG.unlink()
-        except FileNotFoundError:
-            pass
 
     def tearDown(self):
+        os.environ.pop("CAPABILITY_REUSE_EVENT_DIR", None)
+        self._tmp_log.cleanup()
         for key in ["CAPABILITY_REUSE_MODE", "CAPABILITY_REUSE_ACTIVE_CAPABILITIES", "CAPABILITY_REUSE_PERMISSIONS", "CAPABILITY_REUSE_AVAILABLE_CAPABILITIES"]:
             os.environ.pop(key, None)
 

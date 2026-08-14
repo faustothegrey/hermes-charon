@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """v2.4.6 batch-reuse-analyzer: event-time windows, stream separation, cohort split, nested event payload aware."""
 from __future__ import annotations
-import json, os, csv
+import json, os, csv, hashlib
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from collections import Counter, defaultdict
@@ -207,6 +207,73 @@ def analyze(events_path, outdir, cursor_path, peer_id='unknown', now=None):
     _write_rollups(outdir, stats, parse_utc(now))
     return stats
 
+def cohort_filter(rows, filter_version, filter_dep, expected_hash, expected_schema, excluded_traffic=None):
+    """v2.4.18 (spec 14): cohort-specific analyzer filtering.
+
+    rows: list of (event, payload_dict, event_type, timestamp).
+    Returns (clean, legacy, excluded_by_version, excluded_by_traffic, excluded_by_producer).
+    Clean = events matching deployment_id + plugin_version + artifact hash +
+    schema, minus excluded traffic classes. Everything else is legacy.
+    """
+    excluded_traffic = set(excluded_traffic or [])
+    clean = [r for r in rows
+             if r[1].get("deployment_id") == filter_dep
+             and r[1].get("plugin_version") == filter_version
+             and (not expected_hash or r[1].get("plugin_artifact_hash") == expected_hash)
+             and (r[1].get("schema_version") or r[0].get("schema_version")) == expected_schema
+             and (not excluded_traffic or r[1].get("traffic_type") not in excluded_traffic)]
+    legacy = [r for r in rows if r not in clean]
+    excluded_by_version = Counter((r[1].get("plugin_version") or "missing") for r in legacy)
+    excluded_by_traffic = Counter((r[1].get("traffic_type") or "missing") for r in legacy)
+    excluded_by_producer = Counter(((r[1].get("producer") or {}).get("surface") or "missing") for r in legacy)
+    return clean, legacy, excluded_by_version, excluded_by_traffic, excluded_by_producer
+
+
+def validate_report(report, events_path):
+    """v2.4.18 (spec 13): consumers reject stale analyzer reports.
+
+    A report must carry input_event_log_sha256, input_event_count,
+    input_min_timestamp, input_max_timestamp, analyzer_version, generated_at.
+    Rejection when:
+      - the fingerprint hash != current event-log hash, or
+      - the covered timestamp range excludes the latest event in the log.
+    Returns (ok: bool, reasons: list[str]).
+    """
+    reasons = []
+    if not isinstance(report, dict):
+        return False, ["report_not_object"]
+    fp = report.get("input_event_log_sha256")
+    if not fp:
+        reasons.append("missing_input_fingerprint")
+    if not report.get("input_event_count"):
+        reasons.append("missing_input_event_count")
+    if not report.get("analyzer_version"):
+        reasons.append("missing_analyzer_version")
+    if not report.get("generated_at"):
+        reasons.append("missing_generated_at")
+    if not report.get("input_min_timestamp") or not report.get("input_max_timestamp"):
+        reasons.append("missing_input_time_range")
+    elif report["input_min_timestamp"] > report["input_max_timestamp"]:
+        reasons.append("inverted_time_range")
+    try:
+        log_bytes = Path(events_path).read_bytes()
+    except FileNotFoundError:
+        return False, reasons + ["event_log_missing"]
+    cur = hashlib.sha256(log_bytes).hexdigest()
+    if fp and fp != cur:
+        reasons.append("event_log_hash_mismatch")
+    lines = [l for l in log_bytes.decode("utf-8", "replace").splitlines() if l.strip()]
+    if lines and report.get("input_max_timestamp"):
+        try:
+            last = json.loads(lines[-1])
+            last_ts = last.get("timestamp") or (last.get("data") or {}).get("timestamp") or ""
+            if last_ts and report["input_max_timestamp"] < last_ts:
+                reasons.append("range_excludes_latest_event")
+        except Exception:
+            pass
+    return (len(reasons) == 0), reasons
+
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="v2.4.18 cohort-filtered reuse analyzer")
@@ -231,22 +298,11 @@ def main():
     filter_dep = args.deployment_id or current_dep
     excluded_traffic = set(args.exclude_traffic or [])
 
-    clean=[r for r in rows
-           if r[1].get("deployment_id")==filter_dep
-           and r[1].get("plugin_version")==filter_version
-           and (not expected_hash or r[1].get("plugin_artifact_hash")==expected_hash)
-           and (r[1].get("schema_version") or r[0].get("schema_version"))==expected_schema
-           and (not excluded_traffic or r[1].get("traffic_type") not in excluded_traffic)]
-    legacy=[r for r in rows if r not in clean]
+    clean, legacy, excluded_by_version, excluded_by_traffic, excluded_by_producer = cohort_filter(
+        rows, filter_version, filter_dep, expected_hash, expected_schema, excluded_traffic)
     clean_retr=[r for r in clean if r[2]=="retrieval_event"]
 
-    # v2.4.18: excluded breakdown (legacy versions / traffic classes / producers)
-    excluded_by_version=Counter((r[1].get("plugin_version") or "missing") for r in legacy)
-    excluded_by_traffic=Counter((r[1].get("traffic_type") or "missing") for r in legacy)
-    excluded_by_producer=Counter(((r[1].get("producer") or {}).get("surface") or "missing") for r in legacy)
-
     # v2.4.18: event-log fingerprint so consumers reject stale reports.
-    import hashlib
     log_bytes = Path.home().joinpath(".hermes/data/reuse-observer/events.jsonl").read_bytes()
     log_sha256 = hashlib.sha256(log_bytes).hexdigest()
     all_ts = [r[3] for r in rows]

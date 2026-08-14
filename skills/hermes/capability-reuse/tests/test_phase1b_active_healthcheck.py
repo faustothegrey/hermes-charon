@@ -2,6 +2,7 @@ import importlib
 import json
 import os
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -20,14 +21,15 @@ class Phase1BActiveHealthcheckTests(unittest.TestCase):
         os.environ["CAPABILITY_REUSE_MINIMUM_MARGIN"] = "0.10"
         self.protocol = importlib.reload(importlib.import_module("plugin.protocol"))
         self.dispatcher = importlib.reload(importlib.import_module("plugin.dispatcher"))
+        # Isolate the event log: NEVER unlink/write the live events.jsonl.
+        self._tmp_log = tempfile.TemporaryDirectory()
+        os.environ["CAPABILITY_REUSE_EVENT_DIR"] = self._tmp_log.name
         self.events = importlib.reload(importlib.import_module("plugin.event_store"))
         self.protocol._store = self.protocol.InterventionStore()
-        try:
-            self.events.EVENT_LOG.unlink()
-        except FileNotFoundError:
-            pass
 
     def tearDown(self):
+        os.environ.pop("CAPABILITY_REUSE_EVENT_DIR", None)
+        self._tmp_log.cleanup()
         for key in ["CAPABILITY_REUSE_MODE", "CAPABILITY_REUSE_ACTIVE_CAPABILITIES", "CAPABILITY_REUSE_PERMISSIONS", "CAPABILITY_REUSE_AVAILABLE_CAPABILITIES", "CAPABILITY_REUSE_INTERVENTION_THRESHOLD", "CAPABILITY_REUSE_MINIMUM_MARGIN"]:
             os.environ.pop(key, None)
 
@@ -240,7 +242,7 @@ class Phase1BActiveHealthcheckTests(unittest.TestCase):
         )
         self.assertIsInstance(decision, dict)
         retrieval = next(e for e in self._events() if e["event_type"] == "retrieval_event")
-        self.assertEqual("1.2", retrieval["schema_version"])
+        self.assertEqual("1.3", retrieval["schema_version"])
         self.assertEqual("operator_seeded", retrieval["data"]["provenance"]["stream"])
         self.assertEqual("hook_context.capability_reuse_provenance", retrieval["data"]["provenance"]["source"])
 

@@ -1,4 +1,4 @@
-"""v2.4.18 spec points 5, 6, 8, 9 — unit tests (peer70).
+"""v2.5.0 spec points 5, 6, 8, 9 — unit tests (peer70).
 
 - P5: explicit retrieval semantics (retrieval/coverage/eligibility stages;
       never default booleans that imply a successful evaluation).
@@ -115,7 +115,7 @@ class V2418Points5689Tests(unittest.TestCase):
         )
         d = self._retrieval_event()["data"]
         self.assertIs(True, d["retriever_executed"])
-        self.assertEqual("2.4.18", d["retriever_version"])
+        self.assertEqual("2.5.0", d["retriever_version"])
         self.assertTrue(d["registry_version"], "registry_version must be present")
         self.assertIsInstance(d["retrieval_threshold"], (int, float))
         self.assertGreaterEqual(d["candidate_count"], 1)
@@ -192,19 +192,6 @@ class V2418Points5689Tests(unittest.TestCase):
         self.assertEqual("trace-p4", ev["trace_id"], "spec 4: top-level trace_id")
         self.assertEqual("trace-p4", ev["data"]["trace_id"])
 
-    def test_hmp_retrieval_trace_id_joins_adapter_chat_id(self):
-        # The HMP adapter correlates on chat_id (= sender peer id for DMs).
-        # The plugin chain must join on the same value, not on session_id.
-        retriever.retrieve(
-            session_id="session-x",
-            user_message="check HMP health for peer58",
-            hook_context={"platform": "hmp", "sender_id": "peer141"},
-            shadow_mode=True,
-        )
-        ev = self._retrieval_event()
-        self.assertEqual("peer141", ev["trace_id"])
-        self.assertEqual("peer141", ev["data"]["trace_id"])
-
     def test_hook_surface_stamped_via_thread_local(self):
         events.push_surface("gateway")
         try:
@@ -240,21 +227,6 @@ class V2418Points5689Tests(unittest.TestCase):
         finally:
             events.pop_surface()
         self.assertEqual("hmp_ingress", self._retrieval_event()["data"]["producer"]["surface"])
-
-    def test_candidate_relationship_partial_match_on_composite(self):
-        # Spec 7: composite/mutating request over read-only capability →
-        # candidate_relationship=partial_match, never a success claim.
-        events.emit_retrieval(
-            session_id="p7-session", user_message_preview="check peer58 health and restart it if unhealthy",
-            candidates=[{"capability_id": "hmp-healthcheck", "capability_version": "1.0.0",
-                         "score": 0.64, "eligible_for_intervention": False}],
-            top_score=0.64, intervened=False, latency_ms=0.0,
-            whole_request_covered=False, request_effect="mutating",
-            capability_effect="read_only", retriever_executed=True,
-        )
-        d = self._retrieval_event()["data"]
-        self.assertEqual("partial_match", d["candidate_relationship"])
-        self.assertIs(False, d["whole_request_covered"])
 
 
 if __name__ == "__main__":

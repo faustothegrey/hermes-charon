@@ -148,7 +148,8 @@ hermes sessions prune --older-than 7 --yes
 
 ## Pitfalls
 
-- **Stale "typing" indicator on Telegram ≠ session too big.** A user
+- **Stuck HMP peer session (turn hung on LLM call, message stuck in "delivering")**: a peer-to-peer session can wedge at 200K+ tokens with a turn that never returns (e.g. a long Case B / e2e task that times out client-side). Symptoms: `sessions.json` shows high `last_prompt_tokens` for `agent:main:hmp:dm:<peer>`, the peer reports the message stuck in `delivering`, and the local HMP message DB (`~/.hermes/data/hmp/agent_messages.db`, table `messages`) shows the row with `status='delivering'`/`'working'`. **Resolution: restart the gateway** — the hung turn dies with the process, the message row is cleaned up, and the peer can re-send. Verify afterwards: `SELECT count(*) FROM messages WHERE status IN ('delivering','working')` → 0, and `:18643/health` UP. Do NOT try to kill just the session — the turn runs inside the gateway process. (Observed 2026-08-14: peer141's Case B wedged peer70's HMP session at 216K; gateway restart cleared it; peer re-ran the task successfully.)
+- **Cron `script` field is a bare filename**, not a path: it must exist
   reporting "still typing for minutes" looks like the classic oversized-
   session symptom, but check `last_prompt_tokens` (sessions.json) FIRST and
   the gateway log response times. If responses ARE delivered on time, the
@@ -176,6 +177,14 @@ hermes sessions prune --older-than 7 --yes
 - **Compression threshold is relative to the model window**, not to
   "90 turns" or message count — a 70% watchdog threshold + 50%
   compression threshold means compression always fires first.
+- **Hung HMP turn / messaggio stuck in "delivering"**: un turno HMP appeso su
+  una chiamata LLM (visto a 216–245K token) lascia il messaggio inbound senza
+  `response ready` e il peer lo vede "in delivering". Il turno vive nel
+  processo del gateway → un restart da shell esterna lo uccide; dopo il
+  restart verificare coda HMP pulita (`agent_messages.db` senza status
+  delivering/working) + health :18643 OK, poi il peer può rilanciare. Nota:
+  216K su window 1M NON è la causa (compressione a 500K) — non comprimere per
+  questo, basta il restart.
 - User preference: when asked "can we auto-clean the session", the
   answer is compression (already on) + watchdog for the pre-warning;
   don't propose changing auxiliary provider config unless the auxiliary

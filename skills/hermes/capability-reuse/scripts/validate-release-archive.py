@@ -131,6 +131,23 @@ def main(argv=None):
         if nested:
             raise AssertionError("nested duplicate skill entries found: %d" % len(nested))
 
+        # HARD SAFETY RULE (2026-08-15): core patches MUST NOT ship inside
+        # the skill archive. A general skill sync (zip/rsync/scp) that
+        # carries patches/ risks applying the wrong core patch (or copying
+        # it over core files) and corrupting the Hermes agent itself.
+        # Core patches travel ONLY via apply-core-patch.sh (sha256 +
+        # reverse-check + version match) or a pointed scp to a staging dir.
+        core_patch_entries = [
+            n for n in names
+            if n.startswith("capability-reuse/patches/") and not n.endswith("/")
+        ]
+        if core_patch_entries:
+            raise AssertionError(
+                "core patches must NOT be inside the skill archive (%d entries, "
+                "e.g. %s) — ship patches/ separately via apply-core-patch.sh"
+                % (len(core_patch_entries), core_patch_entries[0])
+            )
+
         skill = read_text(zf, "capability-reuse/SKILL.md")
         plugin_yaml = read_text(zf, "capability-reuse/plugin/plugin.yaml")
         protocol = read_text(zf, "capability-reuse/plugin/protocol.py")

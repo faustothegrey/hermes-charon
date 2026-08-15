@@ -31,13 +31,13 @@ class V249Peer58ScopeTests(unittest.TestCase):
         self.assertIn("GET http://192.168.178.58:18643/hmp/health", plan["command_preview"])
 
     def test_version_surfaces_are_v2418_and_formal_eligibility_uses_v2418(self):
-        self.assertEqual(v244_metadata.PLUGIN_VERSION, "2.4.18")
+        self.assertEqual(v244_metadata.PLUGIN_VERSION, "2.5.0")
         event = {"schema_version": "1.3"}
         data = {
-            "plugin_version": "2.4.18",
+            "plugin_version": "2.5.0",
             "deployment_id": "dep-v2418-live",
             "plugin_artifact_hash": "sha256:abc",
-            "cohort_label": "v2.4.18_live",
+            "cohort_label": "v2.5.0_live",
             "provenance": {"stream": "organic_live", "valid": True},
             "traffic_type": "organic_peer",
             "requester_peer_id": "peer58",

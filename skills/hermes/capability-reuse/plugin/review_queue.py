@@ -27,8 +27,8 @@ EXCLUDED_TRAFFIC_TYPES = {"acceptance_test", "calibration_probe", "operator_seed
 ACTOR_TYPES = {"human", "agent", "scheduler", "service", "unknown"}
 REQUEST_CHANNELS = {"telegram", "hmp", "cron", "local", "api", "gateway", "unknown"}
 LABELS = {"ACCEPT", "REJECT", "UNSURE"}
-EXPECTED_PLUGIN_VERSION = "2.4.18"
-EXPECTED_COHORT_LABEL = "v2.4.18_live"
+EXPECTED_PLUGIN_VERSION = "2.5.0"
+EXPECTED_COHORT_LABEL = "v2.5.0_live"
 
 REASON_CODES = {
     "exact_match", "partial_coverage", "wrong_capability", "wrong_target", "effect_mismatch",
@@ -153,7 +153,7 @@ def _validated_inputs(d: dict[str, Any]) -> dict[str, Any]:
 def formal_holdout_validation(event: dict[str, Any], data: dict[str, Any], requester: dict[str, Any]) -> tuple[bool, list[str]]:
     provenance = data.get("provenance") if isinstance(data.get("provenance"), dict) else {}
     reasons: list[str] = []
-    # v2.4.18: schema 1.3 required.
+    # v2.5.0: schema 1.3 required.
     if event.get("schema_version") != "1.3": reasons.append("schema_version_not_1_3")
     if data.get("plugin_version") != EXPECTED_PLUGIN_VERSION: reasons.append("plugin_version_not_%s" % EXPECTED_PLUGIN_VERSION.replace(".", "_"))
     if not data.get("deployment_id"): reasons.append("missing_deployment_id")
@@ -163,7 +163,7 @@ def formal_holdout_validation(event: dict[str, Any], data: dict[str, Any], reque
     if provenance.get("stream") != "organic_live": reasons.append("not_organic_live_provenance")
     if provenance.get("valid") is not True:
         reasons.append(provenance.get("reason") or "invalid_provenance")
-    # v2.4.18: traffic taxonomy — registry_sync/test/acceptance/calibration
+    # v2.5.0: traffic taxonomy — registry_sync/test/acceptance/calibration
     # must automatically evaluate to false.
     if data.get("traffic_type") not in ORGANIC_TRAFFIC_TYPES: reasons.append("non_organic_traffic_type")
     if data.get("traffic_type") in {"registry_sync", "test", "acceptance", "calibration", "cron", "retry"}:
@@ -171,12 +171,17 @@ def formal_holdout_validation(event: dict[str, Any], data: dict[str, Any], reque
     if requester.get("requester_type") == "unknown": reasons.append("unknown_requester")
     if not (requester.get("processing_peer_id") or data.get("peer_id")): reasons.append("missing_processing_peer_id")
     if not data.get("requester_peer_id"): reasons.append("missing_requester_peer_id")
-    # v2.4.18: complete trace envelope required.
+    # v2.5.0: complete trace envelope required.
     if not data.get("trace_id"): reasons.append("missing_trace_id")
-    if data.get("producer_surface") in (None, "", "unknown"):
-        _producer = data.get("producer") if isinstance(data.get("producer"), dict) else {}
-        if _producer.get("surface") in (None, "", "unknown"):
-            reasons.append("missing_producer_surface")
+    # v2.5.0 spec 2: canonical producer identity is producer.surface
+    # (the flat producer_surface key is a legacy secondary field). Read the
+    # canonical object first; fall back to the legacy key only if absent.
+    _producer = data.get("producer")
+    _surface = _producer.get("surface") if isinstance(_producer, dict) else None
+    if _surface in (None, "", "unknown"):
+        _surface = data.get("producer_surface")
+    if _surface in (None, "", "unknown"):
+        reasons.append("missing_producer_surface")
     return (len(reasons) == 0), reasons
 
 
@@ -261,7 +266,7 @@ def build_review_record(event: dict[str, Any], candidate_rank: int = 1, latest_l
         "intended_execution": plan,
         "formal_holdout_eligible": formal_ok,
         "formal_holdout_rejection_reasons": formal_reasons,
-        # v2.4.18: review row linked to the same trace — trivial joins.
+        # v2.5.0: review row linked to the same trace — trivial joins.
         "trace_id": d.get("trace_id") or d.get("session_id") or "",
         "retrieval_event_id_ref": retrieval_event_id,
         "human_review": human,

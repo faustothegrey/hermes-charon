@@ -64,18 +64,19 @@ def on_pre_llm_call(session_id="", user_message="", **kwargs):
     Returns:
       None (below threshold) or {"context": str} (injection into user message).
     """
-    surface = "gateway"
-    with _surface(surface):
+    # v2.5.0 spec 2: the retrieval event emitted here must carry an explicit
+    # producer surface — pre_llm_call is a gateway turn, not an HMP ingress.
+    with _surface("gateway"):
         decision = ctrl.retrieve(
             session_id=session_id,
             user_message=user_message,
             hook_context=kwargs,
         )
-        if decision is None:
-            return None
+    if decision is None:
+        return None
 
-        ctrl.persist_intervention(decision)
-        return {"context": ctrl.render_injection(decision)}
+    ctrl.persist_intervention(decision)
+    return {"context": ctrl.render_injection(decision)}
 
 
 def on_pre_tool_call(tool_name, args, task_id="", **kwargs):
@@ -94,6 +95,19 @@ def on_pre_tool_call(tool_name, args, task_id="", **kwargs):
                 task_id=task_id,
                 hook_context=kwargs,
             )
+            # v2.5.0: capability-reuse usa il canale observe (bubble 🔍) —
+            # se c'e' un retrieval attivo nello STESSO turno, emette la
+            # bubble con capability top · score. observe non blocca/approva
+            # mai: il gate consegna il feedback e prosegue. Single-fire per
+            # envelope (consume-on-observe). Fail-open: se il feedback non
+            # e' costruibile ritorna None come prima.
+            feedback = ctrl.consume_retrieval_observe(
+                session_id=kwargs.get("session_id", ""),
+                episode_id=kwargs.get("episode_id", ""),
+                turn_id=kwargs.get("turn_id", ""),
+            )
+            if feedback is not None:
+                return {"action": "observe", "feedback": feedback}
             return None
 
         verdict = ctrl.authorize_execute_code(

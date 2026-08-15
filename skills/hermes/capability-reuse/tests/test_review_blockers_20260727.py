@@ -2,7 +2,6 @@ import importlib
 import json
 import os
 import sys
-import tempfile
 import unittest
 from pathlib import Path
 
@@ -17,18 +16,17 @@ class ReviewBlockerRegressionTests(unittest.TestCase):
         os.environ.pop("CAPABILITY_REUSE_AVAILABLE_CAPABILITIES", None)
         os.environ["CAPABILITY_REUSE_INTERVENTION_THRESHOLD"] = "0.65"
         os.environ["CAPABILITY_REUSE_MINIMUM_MARGIN"] = "0.10"
-        # Isolate the event log: NEVER unlink/write the live events.jsonl.
-        self._tmp_log = tempfile.TemporaryDirectory()
-        os.environ["CAPABILITY_REUSE_EVENT_DIR"] = self._tmp_log.name
         self.protocol = importlib.reload(importlib.import_module("plugin.protocol"))
         self.retriever = importlib.reload(importlib.import_module("plugin.retriever"))
         self.dispatcher = importlib.reload(importlib.import_module("plugin.dispatcher"))
         self.events = importlib.reload(importlib.import_module("plugin.event_store"))
         self.protocol._store = self.protocol.InterventionStore()
+        try:
+            self.events.EVENT_LOG.unlink()
+        except FileNotFoundError:
+            pass
 
     def tearDown(self):
-        os.environ.pop("CAPABILITY_REUSE_EVENT_DIR", None)
-        self._tmp_log.cleanup()
         for key in [
             "CAPABILITY_REUSE_MODE",
             "CAPABILITY_REUSE_ACTIVE_CAPABILITIES",

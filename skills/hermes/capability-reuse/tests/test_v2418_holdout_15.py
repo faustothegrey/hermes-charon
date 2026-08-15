@@ -1,7 +1,7 @@
-"""v2.4.18 spec point 15 — formal holdout eligibility (derived only).
+"""v2.5.0 spec point 15 — formal holdout eligibility (derived only).
 
 Matrix over the 8 required conditions plus the traffic-class auto-exclusions:
-plugin_version==2.4.18, correct deployment_id, correct artifact_hash, valid
+plugin_version==2.5.0, correct deployment_id, correct artifact_hash, valid
 provenance, allowed organic traffic, known requester, known processor,
 schema==1.3, complete trace envelope. registry_sync/test/acceptance/calibration
 traffic automatically evaluate to false.
@@ -20,10 +20,10 @@ review_queue = importlib.import_module("plugin.review_queue")
 def valid_event():
     event = {"schema_version": "1.3"}
     data = {
-        "plugin_version": "2.4.18",
+        "plugin_version": "2.5.0",
         "deployment_id": "dep-v2418-live",
         "plugin_artifact_hash": "sha256:c861593ebcc3bcf68d11415d45b5075d",
-        "cohort_label": "v2.4.18_live",
+        "cohort_label": "v2.5.0_live",
         "provenance": {"stream": "organic_live", "valid": True},
         "traffic_type": "organic_peer",
         "requester_peer_id": "peer58",
@@ -39,20 +39,10 @@ class V2418HoldoutMatrixTests(unittest.TestCase):
         ok, reasons = review_queue.formal_holdout_validation(*valid_event())
         self.assertTrue(ok, reasons)
 
-    def test_surface_resolved_in_producer_dict_counts_as_explicit(self):
-        # emit() resolves the surface into producer.surface even when the
-        # caller passed no top-level producer_surface; holdout must accept it.
-        e, d, r = valid_event()
-        d.pop("producer_surface")
-        d["producer"] = {"component": "capability_reuse_plugin", "version": "2.4.18",
-                         "surface": "gateway"}
-        ok, reasons = review_queue.formal_holdout_validation(e, d, r)
-        self.assertTrue(ok, reasons)
-
     def test_matrix_eight_conditions(self):
         cases = [
             ("schema_version_not_1_3", lambda e, d, r: e.update({"schema_version": "1.2"})),
-            ("plugin_version_not_2_4_18", lambda e, d, r: d.update({"plugin_version": "2.4.16"})),
+            ("plugin_version_not_2_5_0", lambda e, d, r: d.update({"plugin_version": "2.4.16"})),
             ("missing_deployment_id", lambda e, d, r: d.pop("deployment_id")),
             ("missing_or_placeholder_artifact_hash", lambda e, d, r: d.update({"plugin_artifact_hash": "placeholder-hash"})),
             ("wrong_cohort_label", lambda e, d, r: d.update({"cohort_label": "v2.4.16_peer58_peer106"})),

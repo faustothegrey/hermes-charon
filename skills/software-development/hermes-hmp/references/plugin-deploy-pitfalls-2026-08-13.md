@@ -21,6 +21,66 @@ peer58 → peer106 → peer138, ritiro :18644).
 - `hmp-deploy.sh` ha PEER_MAP vecchia (84/105/106/128) — per 138/141 usare
   deploy manuale.
 
+## 0bis. plugins.enabled: lista YAML, MAI stringa JSON (2026-08-14)
+
+Durante il deploy 0.1.4 su peer141, il peer ha scritto in config.yaml:
+
+```yaml
+plugins:
+  enabled: '["hmp", "harness-feedback"]'   # ❌ stringa JSON
+```
+
+Il parser NON la riconosce come lista → **nessun plugin platform caricato**:
+sintomo `Skipping invalid routing entry ... 'hmp' is not a valid Platform`
+nel log, HMP :18643 DOWN, API :8642 UP (l'api_server è core, non plugin).
+Fix: formato lista YAML come su peer70:
+
+```yaml
+plugins:
+  enabled:
+    - hmp
+    - harness-feedback
+```
+
+Verifica dopo ogni modifica ai plugin: `hermes plugins list` deve mostrare
+`enabled` per tutti i plugin attesi, e `:18643/health` UP dopo il restart.
+
+## 0ter. Core patch per-version management (capability-reuse 2.4.19, 2026-08-15)
+
+Il canale observe 🔍 richiede una **patch core che cambia per versione di
+Hermes** (0.17.0 vs 0.20.1 differiscono in `plugins.py`, `tool_executor.py`,
+`gateway/run.py`, `model_tools.py`). Modello condiviso con peer141:
+
+- **Una skill per tutti i peer, una patch per versione core**: patch in
+  `~/.hermes/patches-core/core-<versione>-observe.patch` (FUORI dalla skill).
+- **REGOLA DURA**: `patches/` NON viaggia nel sync della skill (zip/rsync) —
+  il validator rifiuta archivi con `capability-reuse/patches/*`. Le patch
+  viaggiano SOLO via `apply-core-patch.sh` (sha256 pinning + reverse-check +
+  version-prefix match, es. `0.20` matcha `0.20.1.post1`) o scp a staging.
+- **Dopo ogni `hermes update`**: riapplicare la patch e verificare con
+  `apply-core-patch.sh --check` (0=applied, 2=pronta, 3=conflitto) e `--smoke`
+  (canale observe funzionante, rc=4 se rotto). `--gate` = check+smoke.
+- **Pitfall formato feedback**: la patch 0.17.0 di peer70 è string-only
+  (`isinstance(fb, str)`), ma `--smoke` v0.17.1 richiede ENTRAMBI i formati
+  (stringa + dict con `text`) → su core string-only il caso dict fallisce
+  rc=4 → `--gate` bloccato. Quando si porta la patch su un'altra versione
+  core, portare anche la semantica dict e rigenerare lo sha nel manifest.
+- **Mai creare cron restart-gateway ripetuti per caricare patch** (causa del
+  kill-loop del 14/08) — restart manuale da shell esterna.
+
+## 0quater. send_and_wait timeout: il messaggio passa, la risposta si perde
+
+`/hmp/send_and_wait` con timeout X: se il peer impiega più di X (implementazioni,
+restart, smoke lunghi), il messaggio È consegnato ma la risposta va persa →
+`timeout/errore` dal client. Pattern di recupero:
+
+1. Non ri-inviare il task: il peer sta già lavorando (verificare con SSH:
+   `git status` nel repo, file modificati, plugin creati).
+2. Chiedere il report in formato COMPATTO con un nuovo send_and_wait
+   (`max 600-700 caratteri`, formato esplicito `CAUSA: | FIX: | ESITO:`).
+3. In alternativa verificare direttamente via SSH (log gateway, marker nel
+   codice, `hermes plugins list`) e usare HMP solo per la conferma finale.
+
 ### ⚠️ Pitfall: `plugins.enabled` come stringa JSON rompe la registrazione platform
 
 Su peer141 (0.20.1) dopo l'implementazione del canale observe, il config

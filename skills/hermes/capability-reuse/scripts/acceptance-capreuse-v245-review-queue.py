@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-"""v2.4.6 reviewer-facing queue deterministic/live smoke acceptance."""
+"""v2.4.19 reviewer-facing queue deterministic/live smoke acceptance.
+
+Updated for the v2.4.19 release: events are emitted with schema 1.3,
+plugin_version 2.4.19, cohort v2.4.19_live (reviewer blocker B8: the old
+script was pinned to v2.4.6/2.4.16/schema 1.2 and failed its own checks).
+"""
 import csv
 import json
 import os
@@ -13,7 +18,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 
 SOURCE_ROOT = Path(os.environ.get("CAPABILITY_REUSE_SOURCE_ROOT", Path(__file__).resolve().parents[1]))
-ACCEPTANCE_HOME = Path(os.environ.get("CAPABILITY_REUSE_ACCEPTANCE_HOME", tempfile.mkdtemp(prefix="capreuse-v246-acceptance-"))).resolve()
+ACCEPTANCE_HOME = Path(os.environ.get("CAPABILITY_REUSE_ACCEPTANCE_HOME", tempfile.mkdtemp(prefix="capreuse-v2418-acceptance-"))).resolve()
 os.environ["HOME"] = str(ACCEPTANCE_HOME)
 HOME = ACCEPTANCE_HOME
 PLUGIN_DIR = SOURCE_ROOT / "plugin"
@@ -36,14 +41,14 @@ def now():
 
 
 def set_cohort():
-    dep = "dep-v246-review-" + hex(int(time.time()))[2:]
+    dep = "dep-v2418-review-" + hex(int(time.time()))[2:]
     data = {
         "deployment_id": dep,
         "deployment_timestamp": now(),
-        "plugin_version": "2.4.16",
-        "plugin_artifact_hash": "v2416-reviewer-queue-local",
-        "schema_version": "1.2",
-        "cohort_label": "v2.4.16_review_queue",
+        "plugin_version": "2.4.19",
+        "plugin_artifact_hash": "v2418-reviewer-queue-local",
+        "schema_version": "1.3",
+        "cohort_label": "v2.4.19_live",
     }
     COHORT.parent.mkdir(parents=True, exist_ok=True)
     COHORT.write_text(json.dumps(data, indent=2), encoding="utf-8")
@@ -56,7 +61,7 @@ def requester_for(kind, i):
     if kind == "telegram":
         return {"actor_type": "human", "actor_id": "telegram_user:sha256:test", "request_channel": "telegram", "requester_peer_id": "", "processing_peer_id": "peer70"}
     if kind == "cron":
-        return {"actor_type": "scheduler", "actor_id": "cron:v246-smoke", "request_channel": "cron", "requester_peer_id": "", "processing_peer_id": "peer70"}
+        return {"actor_type": "scheduler", "actor_id": "cron:v2418-smoke", "request_channel": "cron", "requester_peer_id": "", "processing_peer_id": "peer70"}
     return {"actor_type": "unknown", "actor_id": "unknown", "request_channel": "unknown", "requester_peer_id": "", "processing_peer_id": "peer70"}
 
 
@@ -66,12 +71,12 @@ def emit_case(i, kind="hmp", target="peer128", traffic_type="acceptance_test", t
         {"capability": "hmp-healthcheck@1.0.0", "score": 0.88, "effect_class": "read_only"},
         {"capability": "peer-heartbeat@1.0.0", "score": 0.41, "effect_class": "read_only"},
     ]
-    sid = "v246-smoke-sess-%02d" % i
-    eid = "v246-smoke-ep-%02d" % i
-    tid = "v246-smoke-turn-%02d" % i
-    task = "v246-smoke-task-%02d" % i
-    tool = "v246-smoke-tool-%02d" % i
-    code_hash = "v246-smoke-code-%02d" % i
+    sid = "v2418-smoke-sess-%02d" % i
+    eid = "v2418-smoke-ep-%02d" % i
+    tid = "v2418-smoke-turn-%02d" % i
+    task = "v2418-smoke-task-%02d" % i
+    tool = "v2418-smoke-tool-%02d" % i
+    code_hash = "v2418-smoke-code-%02d" % i
     ret_outer = event_store.emit_retrieval(
         session_id=sid,
         user_message_preview=text,
@@ -85,7 +90,7 @@ def emit_case(i, kind="hmp", target="peer128", traffic_type="acceptance_test", t
         tool_call_id=tool,
         shadow_mode=True,
         provenance="organic_live" if traffic_type in ("organic_peer", "organic_user") else "calibration_probe",
-        provenance_detail="v2.4.6 reviewer queue smoke",
+        provenance_detail="v2.4.19 reviewer queue smoke",
         provenance_source="hmp" if kind == "hmp" else kind,
         requester=requester_for(kind, i),
         validated_inputs={"peer_list": [target], "timeout_seconds": 5},
@@ -115,7 +120,7 @@ def validate():
         for col in required:
             if row.get(col) in (None, ""):
                 errors.append("row %d missing %s" % (idx, col))
-        if row.get("event_schema_version") != "1.2": errors.append("row %d not schema 1.2" % idx)
+        if row.get("event_schema_version") != "1.3": errors.append("row %d not schema 1.3" % idx)
         if "token=SECRET" in json.dumps(row): errors.append("row %d leaked raw secret" % idx)
         if row.get("credentials_exposed_in_preview") != "False": errors.append("row %d credential preview flag not false" % idx)
         if row.get("target_peer_id") == "peer999" and row.get("preview_status") != "unsupported": errors.append("unsupported peer executable-looking row %d" % idx)

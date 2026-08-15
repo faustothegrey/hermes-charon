@@ -1,0 +1,17 @@
+{
+  "artifact": "hmp-adapter-capability-reuse-v2.4.18-integration",
+  "component": "plugins/hmp/adapter.py (Hermes HMP gateway plugin)",
+  "purpose": "v2.4.18 spec point 3: replace fake execute_code_* events for generic HMP processing with surface_execution_started/completed (execution_surface=hmp_plugin). Lives in the HMP plugin, NOT inside the capability-reuse skill bundle, so it is packaged here as a separate runtime integration artifact.",
+  "deployment_path": "/home/fausto/.hermes/plugins/hmp/adapter.py",
+  "source_sha256": "26ae03b6110ea7bec6bfc2313e49f3bfcad1115e8bbc57715824da7817664d8d",
+  "verified_lines": {
+    "imports": "emit_surface_execution_start, emit_surface_execution_complete (lines 41-42)",
+    "consumer_loop_usage": "surface_execution_started_event + surface_execution_completed_event replace execute_code_* for HMP message processing (lines 356-382)",
+    "execution_surface": "hmp_plugin",
+    "producer_surface": "hmp_ingress"
+  },
+  "runtime_evidence": "peer70 e2e Case A (2026-08-14): adapter observer emitted surface_execution_started/completed with execution_surface=hmp_plugin, zero fake execute_code_* events on an HMP-processed request",
+  "related_event_store_functions": "event_store.emit_surface_execution_start / emit_surface_execution_complete (packaged in capability-reuse plugin/)",
+  "verification_command": "grep -n 'emit_surface_execution' ~/.hermes/plugins/hmp/adapter.py && sha256sum ~/.hermes/plugins/hmp/adapter.py",
+  "generated_at": "2026-08-14T22:35:00Z"
+}

@@ -1,6 +1,6 @@
 ---
 name: hermes-hmp
-description: "HMP (Hermes Message Protocol) - protocollo peer-to-peer per la rete Hermes. v2.0.0 server-side dual-plane: ogni peer espone :18644 e gestisce sessioni API Hermes internamente. Versione light per Pi Agent. Zero dipendenze extra. Il client fa 1 chiamata."
+description: "HMP (Hermes Message Protocol) - protocollo peer-to-peer per la rete Hermes. Canale unico plugin :18643 (dual-plane :18644 ritirato 13/08). Pitfall task remoti lunghi e config plugins: references/peer-task-delegation-pitfalls-2026-08-15.md"
 type: custom
 version: 1.26.0
 ---

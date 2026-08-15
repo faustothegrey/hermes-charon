@@ -48,10 +48,7 @@ def candidate_label(candidate: dict) -> str:
     ver = candidate.get("capability_version") or candidate.get("version") or ""
     return (str(cid) + "@" + str(ver)) if cid and ver else str(cid or "")
 
-# Test isolation: tests redirect the event log via env var so the live
-# reuse-observer/events.jsonl is never written/unlinked by the suite.
-EVENT_DIR = Path(os.environ.get(
-    "CAPABILITY_REUSE_EVENT_DIR", str(Path.home() / ".hermes" / "data" / "reuse-observer")))
+EVENT_DIR = Path.home() / ".hermes" / "data" / "reuse-observer"
 EVENT_LOG = EVENT_DIR / "events.jsonl"
 SESSION_LOG = EVENT_DIR / "session-context.jsonl"
 
@@ -63,7 +60,7 @@ _CHAIN_CONTEXT_BY_INTERVENTION: dict[str, dict] = {}
 # ── Schema version ──
 SCHEMA_VERSION = "1.3"
 
-# ── v2.4.18 correlation envelope ──────────────────────────────────────
+# ── v2.5.0 correlation envelope ──────────────────────────────────────
 # One immutable envelope propagated through the entire chain:
 # retrieval → decision → invocation → completion → review.
 # Consumers join on trace_id (top-level), never reconstruct from timestamps.
@@ -77,7 +74,7 @@ ENVELOPE_KEYS = (
 # Producer identity: exactly which component emitted the event.
 DEFAULT_PRODUCER = {
     "component": "capability_reuse_plugin",
-    "version": "2.4.18",
+    "version": "2.5.0",
     "surface": "unknown",
 }
 
@@ -86,7 +83,7 @@ VALID_SURFACES = {
     "delegated_agent", "unknown",
 }
 
-# ── Emitting surface (v2.4.18, spec 2) ────────────────────────────────
+# ── Emitting surface (v2.5.0, spec 2) ────────────────────────────────
 # Hook-emitted events run inside the Hermes runtime; the hooks stamp the
 # surface they execute under (gateway / execute_code_hook) via a
 # thread-local, because hook kwargs are raw and cannot carry producer
@@ -112,7 +109,7 @@ def current_surface() -> str:
     stack = getattr(_surface_stack, "stack", None)
     return stack[-1] if stack else ""
 
-# ── v2.4.18 traffic taxonomy ─────────────────────────────────────────
+# ── v2.5.0 traffic taxonomy ─────────────────────────────────────────
 # Explicit categories so protocol traffic (registry sync, health pings)
 # never contaminates ordinary organic reuse statistics.
 VALID_TRAFFIC_TYPES = {
@@ -237,7 +234,7 @@ def normalize_provenance(stream: str | None = None, detail: str = "", source: st
 
 def classify_traffic_type(text: str = "", channel: str = "", is_cron: bool = False,
                           is_test: bool = False, requester_peer: str = "") -> str:
-    """v2.4.18: classify request traffic into the explicit taxonomy.
+    """v2.5.0: classify request traffic into the explicit taxonomy.
 
     Registry-sync / protocol phrases are detected BEFORE generic
     organic_peer classification so repeated sync messages never dominate
@@ -278,17 +275,15 @@ def _context_for_retrieval_id(retrieval_event_id: str) -> dict:
                 continue
             data = event.get("data") if isinstance(event.get("data"), dict) else {}
             if data.get("retrieval_event_id") == retrieval_event_id or data.get("event_id") == retrieval_event_id or event.get("event_id") == retrieval_event_id:
-                return {
-                    "provenance": data.get("provenance"),
-                    "requester": data.get("requester"),
-                    "traffic_type": data.get("traffic_type"),
-                    "session_id": data.get("session_id", ""),
-                    "episode_id": data.get("episode_id", ""),
-                    "turn_id": data.get("turn_id", ""),
-                    "task_id": data.get("task_id", ""),
-                    "tool_call_id": data.get("tool_call_id", ""),
-                    "retrieval_event_id": data.get("retrieval_event_id") or retrieval_event_id,
-                }
+                # v2.5.0 B4: propagate the FULL envelope, not a subset.
+                # retrieval_event_id is injected by emit() for retrieval events.
+                ctx = {_k: data.get(_k, "") for _k in ENVELOPE_KEYS}
+                ctx["provenance"] = data.get("provenance")
+                ctx["requester"] = data.get("requester")
+                ctx["retrieval_event_id"] = (
+                    data.get("retrieval_event_id") or retrieval_event_id
+                )
+                return ctx
     except Exception:
         return {}
     return {}
@@ -316,17 +311,14 @@ def _remember_chain_context(event_type: str, data: dict) -> None:
     if not iid:
         return
     if event_type == "intervention_event" and data.get("retrieval_event_id"):
-        _CHAIN_CONTEXT_BY_INTERVENTION[iid] = {
-            "provenance": data.get("provenance"),
-            "requester": data.get("requester"),
-            "traffic_type": data.get("traffic_type"),
-            "session_id": data.get("session_id", ""),
-            "episode_id": data.get("episode_id", ""),
-            "turn_id": data.get("turn_id", ""),
-            "task_id": data.get("task_id", ""),
-            "tool_call_id": data.get("tool_call_id", ""),
-            "retrieval_event_id": data.get("retrieval_event_id", ""),
-        }
+        # v2.5.0 B4: remember the FULL envelope for downstream events
+        # (invocation/completion/outcome), not a subset. requester stays as
+        # the nested object; the flat peer ids are part of the envelope.
+        ctx = {_k: data.get(_k, "") for _k in ENVELOPE_KEYS}
+        ctx["provenance"] = data.get("provenance")
+        ctx["requester"] = data.get("requester")
+        ctx["retrieval_event_id"] = data.get("retrieval_event_id", "")
+        _CHAIN_CONTEXT_BY_INTERVENTION[iid] = ctx
 
 # ── Core emit ──
 
@@ -344,7 +336,7 @@ def emit(event_type: str, data: dict, context: dict | None = None) -> Optional[s
                     data[_k] = context.get(_k, {})
             elif _k not in data or not data.get(_k):
                 data[_k] = context.get(_k, "")
-    # v2.4.18: producer identity — every event states which component emitted it.
+    # v2.5.0: producer identity — every event states which component emitted it.
     producer = data.get("producer")
     if not isinstance(producer, dict):
         surface = ((context or {}).get("producer_surface", "") or data.get("producer_surface", "")
@@ -353,11 +345,11 @@ def emit(event_type: str, data: dict, context: dict | None = None) -> Optional[s
             surface = "unknown"
         producer = {
             "component": "capability_reuse_plugin",
-            "version": "2.4.18",
+            "version": "2.5.0",
             "surface": surface,
         }
         data["producer"] = producer
-    # v2.4.18: top-level trace_id for trivial joins across the chain.
+    # v2.5.0: top-level trace_id for trivial joins across the chain.
     if not data.get("trace_id"):
         trace_id = (context or {}).get("trace_id", "")
         if not trace_id:
@@ -382,7 +374,7 @@ def emit(event_type: str, data: dict, context: dict | None = None) -> Optional[s
                 "schema_version": SCHEMA_VERSION,
                 "timestamp": _now(),
                 "seq": _next_seq_unlocked(),
-                # v2.4.18 (spec 4): top-level trace_id for trivial joins across
+                # v2.5.0 (spec 4): top-level trace_id for trivial joins across
                 # the whole chain — consumers never reconstruct IDs from
                 # timestamps.
                 "trace_id": data.get("trace_id", ""),
@@ -446,8 +438,7 @@ def emit_retrieval(session_id: str, user_message_preview: str,
                    retriever_version: str = "", registry_version: str = "",
                    retrieval_threshold: float = 0.0, candidate_count: int | None = None,
                    filter_rejection_reasons: list | None = None,
-                   retrieval_stages: dict | None = None,
-                   candidate_relationship: str = ""):
+                   retrieval_stages: dict | None = None):
     """Retrieval attempt result (shadow or active), with labelable candidate evidence."""
     safe_candidates = []
     for c in candidates[:10]:
@@ -477,7 +468,7 @@ def emit_retrieval(session_id: str, user_message_preview: str,
         "registry_version": registry_version,
         "retrieval_threshold": retrieval_threshold,
         "filter_rejection_reasons": filter_rejection_reasons or [],
-        # v2.4.18 (spec 5): explicit stage semantics. When the caller does not
+        # v2.5.0 (spec 5): explicit stage semantics. When the caller does not
         # supply stages (observer path), default to honest non-evaluation:
         # coverage/eligibility are NOT evaluated and never default to values
         # that imply a successful evaluation. Zero candidates after a real
@@ -504,14 +495,9 @@ def emit_retrieval(session_id: str, user_message_preview: str,
         "minimum_margin": round(minimum_margin, 4),
         "request_effect": request_effect or "unknown",
         "capability_effect": capability_effect or "unknown",
-        # v2.4.18 (spec 5): never claim coverage with zero candidates —
+        # v2.5.0 (spec 5): never claim coverage with zero candidates —
         # whole_request_covered is null when nothing was evaluated.
         "whole_request_covered": whole_request_covered if candidates else None,
-        # v2.4.18 (spec 7): explicit candidate relationship — partial_match for
-        # composite/mutating requests over a read-only capability.
-        "candidate_relationship": candidate_relationship or (
-            "partial_match" if whole_request_covered is False else
-            ("exact_match" if candidates else "")),
         "eligibility": eligibility or ("accepted" if intervened else "rejected"),
         "eligibility_reason": eligibility_reason,
         "dispatch": dispatch,
@@ -676,7 +662,7 @@ def emit_surface_execution_start(execution_surface: str = "hmp_plugin",
                                  requester_peer_id: str = "", processing_peer_id: str = "",
                                  trace_id: str = "", traffic_type: str = "",
                                  producer_surface: str = ""):
-    """v2.4.18: generic surface (HMP ingress, gateway, etc.) started processing.
+    """v2.5.0: generic surface (HMP ingress, gateway, etc.) started processing.
 
     NOT execute_code — reserved exclusively for real execute_code calls.
     Replaces the v2.4.16 misuse of execute_code_started_event for HMP
@@ -708,7 +694,7 @@ def emit_surface_execution_complete(execution_surface: str = "hmp_plugin",
                                     requester_peer_id: str = "", processing_peer_id: str = "",
                                     trace_id: str = "", traffic_type: str = "",
                                     producer_surface: str = ""):
-    """v2.4.18: generic surface finished processing (see emit_surface_execution_start)."""
+    """v2.5.0: generic surface finished processing (see emit_surface_execution_start)."""
     return emit("surface_execution_completed_event", {
         "execution_surface": execution_surface,
         "session_id": session_id,

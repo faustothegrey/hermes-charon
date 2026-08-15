@@ -186,6 +186,31 @@ skill loader scans every subdir.
 `🔍 azione considerata · harness ... (dummy)` bubble on Telegram. For 2.4.18:
 replace the dummy rule with real capability-reuse retrieval decisions.
 
+## Pitfall 4 — 0.20.1: the gateway does NOT load `~/.hermes/.env` into os.environ
+
+The peer70 0.17.0 dummy gate `HARNESS_FEEDBACK_MODE=dummy` (env var) works on
+peer70 but is INVISIBLE on a 0.20.1 core: verified via
+`tr '\0' '\n' < /proc/<gwpid>/environ` — no `.env` variable (not even
+`TELEGRAM_BOT_TOKEN`) reaches the gateway process env; adapters read
+config.yaml (HMP `gateway.platforms.hmp.*`) or the secrets store instead.
+Consequence: `os.environ.get("HARNESS_FEEDBACK_MODE")` is always None in the
+gateway → `_enabled()` False → the plugin returns None → NO observe dict →
+NO bubble, with zero errors in the log. Symptom: plugin listed as enabled,
+gateway on new code, but no 🔍 bubble.
+
+Fix (v0.1.1): the plugin reads its mode from
+`plugins.entries.harness-feedback.settings.mode` in config.yaml via
+`ctx.get_config("mode", ...)` (PluginContext method, hermes_cli/plugins.py
+~1422; set with `hermes config set plugins.entries.harness-feedback.settings.mode dummy`),
+keeps the env var only as a legacy fallback, and defaults to ON when unset
+(being in `plugins.enabled` IS the opt-in). Capture `_CTX = ctx` at
+`register()` time — hook callbacks receive no ctx in their kwargs.
+
+Also on 0.20.1: `hermes config set plugins.enabled '["hmp", ...]'` writes a
+JSON STRING, not a YAML list — the gateway then ignores it. Correct the
+`plugins.enabled` block by hand to a real YAML list (peer70 fixed this
+2026-08-14). Prefer `hermes config set` for scalar/leaf values only.
+
 ## Why this is the right place
 
 - The "consideration" Hermes does before acting IS the `pre_tool_call` hook

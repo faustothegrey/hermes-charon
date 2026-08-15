@@ -1,4 +1,4 @@
-"""v2.4.18 spec points 13 & 14 — analyzer integration tests (peer70).
+"""v2.4.19 spec points 13 & 14 — analyzer integration tests (peer70).
 
 - P13: consumers reject stale analyzer reports automatically (fingerprint
        hash mismatch, time range excluding the latest event).
@@ -20,11 +20,11 @@ spec.loader.exec_module(analyzer)
 ARTIFACT_HASH = "c861593ebcc3bcf68d11415d45b5075df0cf1f399f0092fd5b635c9572c7e36b"
 
 
-def row(dep="dep-v2418-1", ver="2.4.18", schema="1.3", traffic="organic_peer", ts="2026-08-14T10:00:00Z"):
+def row(dep="dep-v2418-1", ver="2.4.19", schema="1.3", traffic="organic_peer", ts="2026-08-14T10:00:00Z"):
     payload = {
         "deployment_id": dep, "plugin_version": ver, "plugin_artifact_hash": ARTIFACT_HASH,
         "schema_version": schema, "traffic_type": traffic,
-        "producer": {"component": "capability_reuse_plugin", "version": "2.4.18", "surface": "hmp_ingress"},
+        "producer": {"component": "capability_reuse_plugin", "version": "2.4.19", "surface": "hmp_ingress"},
     }
     event = {"event_id": "evt-%s" % (dep + ver + traffic), "event_type": "retrieval_event",
              "schema_version": schema, "timestamp": ts, "data": payload}
@@ -32,16 +32,86 @@ def row(dep="dep-v2418-1", ver="2.4.18", schema="1.3", traffic="organic_peer", t
 
 
 class V2418AnalyzerCohortFilterTests(unittest.TestCase):
+    def test_real_emit_enters_v2418_cohort_schema_13(self):
+        """B2 regression: a REAL emitted retrieval event (through
+        event_store.emit + v244_metadata enrichment) must carry inner
+        schema_version == outer == 1.3 and pass cohort_filter(schema=1.3).
+
+        This reproduces the reviewer blocker: v244_metadata.SCHEMA_VERSION
+        was 1.2, so real events had outer 1.3 / inner 1.2 and the analyzer
+        classified genuine v2.4.19 events as legacy.
+        """
+        import importlib.util as _ilu
+        plugin_dir = SKILL_DIR / "plugin"
+        es_spec = _ilu.spec_from_file_location("event_store", str(plugin_dir / "event_store.py"))
+        es = _ilu.module_from_spec(es_spec)
+        assert es_spec.loader is not None
+        es_spec.loader.exec_module(es)
+
+        with tempfile.TemporaryDirectory() as td:
+            es._ensure_dir = lambda: None
+            es.EVENT_LOG = str(Path(td) / "events.jsonl")
+            es._CHAIN_CONTEXT_BY_INTERVENTION.clear()
+
+            # The enrichment reads cohort.json for deployment/artifact fields;
+            # a REAL deployment has it, so create one to reproduce the live
+            # path (without it events are correctly "uncohortable").
+            cohort_dir = Path.home() / ".hermes" / "data" / "reuse-observer"
+            cohort_dir.mkdir(parents=True, exist_ok=True)
+            cohort_path = cohort_dir / "cohort.json"
+            cohort_backup = cohort_path.read_text() if cohort_path.exists() else None
+            cohort_path.write_text(json.dumps({
+                "deployment_id": "dep-v2418-b2",
+                "deployment_timestamp": "2026-08-14T10:00:00Z",
+                "plugin_version": "2.4.19",
+                "plugin_artifact_hash": ARTIFACT_HASH,
+                "schema_version": "1.3",
+                "cohort_label": "v2.4.19_live",
+            }))
+            try:
+                eid = es.emit("retrieval_event", {
+                    "session_id": "sess-b2", "trace_id": "trace-b2",
+                    "plugin_version": "2.4.19",
+                    "deployment_id": "dep-v2418-b2",
+                    "cohort_label": "v2.4.19_live",
+                    "traffic_type": "organic_peer",
+                    "requester_peer_id": "peer106",
+                    "processing_peer_id": "peer70",
+                }, context={"trace_id": "trace-b2"})
+            finally:
+                if cohort_backup is None:
+                    cohort_path.unlink(missing_ok=True)
+                else:
+                    cohort_path.write_text(cohort_backup)
+            self.assertIsNotNone(eid)
+
+            raw = Path(es.EVENT_LOG).read_text()
+            ev = json.loads(raw.splitlines()[-1])
+            # outer schema from event_store
+            self.assertEqual("1.3", ev.get("schema_version"))
+            # inner schema from v244_metadata enrichment (the B2 fix)
+            self.assertEqual("1.3", ev["data"].get("schema_version"),
+                             "inner schema_version must be 1.3 (v244_metadata)")
+
+            rows = [(
+                ev, ev["data"], ev["event_type"],
+                __import__("datetime").datetime.fromisoformat(ev["timestamp"].replace("Z", "+00:00")),
+            )]
+            clean, legacy, _, _, _ = analyzer.cohort_filter(
+                rows, "2.4.19", "dep-v2418-b2", ARTIFACT_HASH, "1.3")
+            self.assertEqual(1, len(clean), "real v2.4.19 event must be clean")
+            self.assertEqual(0, len(legacy))
+
     def test_cohort_filter_partitions_and_breakdowns(self):
         rows = [
             row(dep="dep-v2418-1"),
             row(dep="dep-v2418-1", ver="2.4.6"),        # legacy version
-            row(dep="dep-v2414-x", ver="2.4.18"),       # legacy deployment
+            row(dep="dep-v2414-x", ver="2.4.19"),       # legacy deployment
             row(dep="dep-v2418-1", schema="1.2"),       # legacy schema
             row(dep="dep-v2418-1", traffic="registry_sync"),  # traffic legacy
         ]
         clean, legacy, by_ver, by_traffic, by_producer = analyzer.cohort_filter(
-            rows, "2.4.18", "dep-v2418-1", ARTIFACT_HASH, "1.3")
+            rows, "2.4.19", "dep-v2418-1", ARTIFACT_HASH, "1.3")
         # clean = base + registry_sync (no traffic exclusion here); legacy =
         # wrong version + wrong deployment + wrong schema.
         self.assertEqual(2, len(clean))
@@ -53,7 +123,7 @@ class V2418AnalyzerCohortFilterTests(unittest.TestCase):
     def test_exclude_traffic_moves_clean_event_to_legacy(self):
         rows = [row(traffic="registry_sync"), row()]
         clean, legacy, _, by_traffic, _ = analyzer.cohort_filter(
-            rows, "2.4.18", "dep-v2418-1", ARTIFACT_HASH, "1.3",
+            rows, "2.4.19", "dep-v2418-1", ARTIFACT_HASH, "1.3",
             excluded_traffic=["registry_sync"])
         self.assertEqual(1, len(clean))
         self.assertEqual(1, len(legacy))
@@ -62,7 +132,7 @@ class V2418AnalyzerCohortFilterTests(unittest.TestCase):
     def test_plugin_version_and_deployment_filters_default_to_cohort(self):
         rows = [row(dep="dep-v2418-1"), row(dep="dep-v2418-2", ver="2.4.16")]
         clean, legacy, _, _, _ = analyzer.cohort_filter(
-            rows, "2.4.18", "dep-v2418-1", ARTIFACT_HASH, "1.3")
+            rows, "2.4.19", "dep-v2418-1", ARTIFACT_HASH, "1.3")
         self.assertEqual(1, len(clean))
         self.assertEqual("dep-v2418-1", clean[0][1]["deployment_id"])
 
@@ -90,7 +160,7 @@ class V2418AnalyzerReportValidationTests(unittest.TestCase):
             "input_event_count": 2,
             "input_min_timestamp": min_ts,
             "input_max_timestamp": max_ts,
-            "analyzer_version": "2.4.18",
+            "analyzer_version": "2.4.19",
             "generated_at": "2026-08-14T10:05:00Z",
         }
 

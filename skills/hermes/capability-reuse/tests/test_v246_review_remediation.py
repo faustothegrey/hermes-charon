@@ -59,9 +59,9 @@ class V246ReviewRemediationTests(unittest.TestCase):
             ],
             "top_score": 0.91,
             "deployment_id": "dep-v2418-peer58-peer106",
-            "plugin_version": "2.4.18",
+            "plugin_version": "2.5.0",
             "plugin_artifact_hash": "abc123",
-            "cohort_label": "v2.4.18_live",
+            "cohort_label": "v2.5.0_live",
             "peer_id": "peer70",
         }
         data.update(overrides)

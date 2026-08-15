@@ -32,7 +32,7 @@ from datetime import datetime, timezone
 from dataclasses import dataclass, field
 from typing import Optional
 
-VERSION = "2.4.18"
+VERSION = "2.5.0"
 
 # ── Constants ──
 DEFAULT_FALLBACK_TTL_SECONDS = 300  # 5 minutes
@@ -506,6 +506,16 @@ def _remember_retrieval(result) -> None:
         "session_id": data.get("session_id", ""),
         "episode_id": data.get("episode_id", ""),
         "turn_id": data.get("turn_id", ""),
+        # v2.5.0: campi per la bubble observe (canale 🔍) — capability top,
+        # score e latenza del retrieval, come da RetrievalResult.
+        "capability_id": data.get("capability_id", ""),
+        "capability_version": data.get("capability_version", ""),
+        "retrieval_score": float(data.get("retrieval_score") or 0.0),
+        "latency_ms": float(data.get("latency_ms") or 0.0),
+        "intervened": bool(data.get("intervened", False)),
+        # consume-on-observe: settato SOLO quando l'hook ha davvero ritornato
+        # action=observe per questo envelope (single-fire bubble, v2.5.0).
+        "observe_shown": False,
         "remembered_at": _now(),
     }
     session_id = data.get("session_id", "")
@@ -533,6 +543,43 @@ def _latest_retrieval_envelope(session_id: str = "", episode_id: str = "", turn_
         if key in _latest_retrieval_by_scope:
             return dict(_latest_retrieval_by_scope[key])
     return {}
+
+
+def consume_retrieval_observe(session_id: str = "", episode_id: str = "", turn_id: str = "") -> dict | None:
+    """v2.5.0 — capability-reuse produce una bubble observe 🔍 (canale
+    tool.considered) quando c'e' un retrieval ATTIVO nello STESSO turno.
+
+    Vincoli del review gate:
+      - same session + same turn: match FORTE su (session_id, turn_id),
+        nessun fallback a scope piu' largo (niente bubble stale)
+      - single observe per envelope: consume-on-observe — `observe_shown`
+        viene settato SOLO qui, quando l'hook ritorna davvero action=observe
+      - fail-open: se mancano capability_id/score valido o il feedback non e'
+        costruibile -> ritorna None SENZA consumare l'envelope
+      - observe non blocca/approva: ritorna solo feedback; la decisione
+        block/approve del gate resta invariata
+    """
+    if not session_id or not turn_id:
+        return None
+    key = _scope(session_id, episode_id, turn_id)
+    envelope = _latest_retrieval_by_scope.get(key)
+    if not envelope:
+        return None
+    if envelope.get("observe_shown"):
+        return None
+    capability = envelope.get("capability_id", "")
+    score = envelope.get("retrieval_score", 0.0)
+    if not capability or not isinstance(score, (int, float)) or score <= 0.0:
+        # fail-open: feedback non costruibile -> nessun observe, envelope
+        # NON consumato (un futuro retrieval valido sullo stesso scope puo'
+        # ancora emettere la bubble)
+        return None
+    envelope["observe_shown"] = True
+    return {
+        "kind": "retrieval",
+        "text": f"{capability} · score {score:.2f}",
+        "duration_ms": float(envelope.get("latency_ms") or 0.0),
+    }
 
 
 def _cleanup_latest_retrievals(max_age_seconds: int = DEFAULT_RETRIEVAL_ENVELOPE_TTL_SECONDS) -> int:

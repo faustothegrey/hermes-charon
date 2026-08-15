@@ -208,7 +208,7 @@ def analyze(events_path, outdir, cursor_path, peer_id='unknown', now=None):
     return stats
 
 def cohort_filter(rows, filter_version, filter_dep, expected_hash, expected_schema, excluded_traffic=None):
-    """v2.4.18 (spec 14): cohort-specific analyzer filtering.
+    """v2.4.19 (spec 14): cohort-specific analyzer filtering.
 
     rows: list of (event, payload_dict, event_type, timestamp).
     Returns (clean, legacy, excluded_by_version, excluded_by_traffic, excluded_by_producer).
@@ -230,7 +230,7 @@ def cohort_filter(rows, filter_version, filter_dep, expected_hash, expected_sche
 
 
 def validate_report(report, events_path):
-    """v2.4.18 (spec 13): consumers reject stale analyzer reports.
+    """v2.4.19 (spec 13): consumers reject stale analyzer reports.
 
     A report must carry input_event_log_sha256, input_event_count,
     input_min_timestamp, input_max_timestamp, analyzer_version, generated_at.
@@ -276,7 +276,7 @@ def validate_report(report, events_path):
 
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description="v2.4.18 cohort-filtered reuse analyzer")
+    parser = argparse.ArgumentParser(description="v2.4.19 cohort-filtered reuse analyzer")
     parser.add_argument("--plugin-version", default=None, help="Only analyze events with this plugin_version")
     parser.add_argument("--deployment-id", default=None, help="Only analyze events with this deployment_id")
     parser.add_argument("--exclude-traffic", nargs="*", default=None,
@@ -292,7 +292,7 @@ def main():
     expected_hash=cohort.get("plugin_artifact_hash")
     expected_schema=cohort.get("schema_version", "1.3")
 
-    # v2.4.18: cohort-specific filtering (--plugin-version / --deployment-id)
+    # v2.4.19: cohort-specific filtering (--plugin-version / --deployment-id)
     # plus optional traffic-class exclusion. Defaults to the active cohort.
     filter_version = args.plugin_version or expected_version
     filter_dep = args.deployment_id or current_dep
@@ -302,7 +302,7 @@ def main():
         rows, filter_version, filter_dep, expected_hash, expected_schema, excluded_traffic)
     clean_retr=[r for r in clean if r[2]=="retrieval_event"]
 
-    # v2.4.18: event-log fingerprint so consumers reject stale reports.
+    # v2.4.19: event-log fingerprint so consumers reject stale reports.
     log_bytes = Path.home().joinpath(".hermes/data/reuse-observer/events.jsonl").read_bytes()
     log_sha256 = hashlib.sha256(log_bytes).hexdigest()
     all_ts = [r[3] for r in rows]
@@ -341,16 +341,16 @@ def main():
     by_cap=Counter((d.get("top_capability") or (d.get("candidates") or [{}])[0].get("capability") or "<missing>") for _,d,_,_ in clean_retr)
     summary={
         "generated_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "generated_by": "batch-reuse-analyzer v2.4.18",
+        "generated_by": "batch-reuse-analyzer v2.4.19",
         "bad_json_lines": bad,
         "total_events": len(evs),
         "events_last_1h_event_time": len(recent),
-        # v2.4.18: input fingerprint so consumers reject stale reports.
+        # v2.4.19: input fingerprint so consumers reject stale reports.
         "input_event_log_sha256": log_sha256,
         "input_event_count": len(evs),
         "input_min_timestamp": input_min,
         "input_max_timestamp": input_max,
-        "analyzer_version": "2.4.18",
+        "analyzer_version": "2.4.19",
         "cohort_filter": {
             "plugin_version": filter_version,
             "deployment_id": filter_dep,
@@ -372,7 +372,7 @@ def main():
         },
         "chain_correlation": {"errors": len(chain_errors), "sample": chain_errors[:5]},
         "durable_labels": len(labels),
-        "version": "2.4.18",
+        "version": "2.4.19",
         "shadow_mode": True,
         "active_scope": "hmp-healthcheck@1.0.0",
     }

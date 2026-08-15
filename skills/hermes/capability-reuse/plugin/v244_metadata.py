@@ -8,8 +8,8 @@ import json, os, re, uuid, socket, hashlib
 from pathlib import Path
 from datetime import datetime, timezone
 
-PLUGIN_VERSION = "2.4.18"
-SCHEMA_VERSION = "1.2"
+PLUGIN_VERSION = "2.5.0"
+SCHEMA_VERSION = "1.3"
 
 def peer_id() -> str:
     """Resolve peer_id from config/registry, never from env."""

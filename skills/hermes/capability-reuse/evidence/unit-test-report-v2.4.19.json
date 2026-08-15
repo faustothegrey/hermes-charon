@@ -1,0 +1,8 @@
+{
+  "suite": "capability-reuse tests/ (full unittest discovery)",
+  "version": "2.4.19",
+  "tests_run": 100,
+  "failing_files": 0,
+  "generated_at": "2026-08-15T06:55:59Z",
+  "verdict": "PASS"
+}

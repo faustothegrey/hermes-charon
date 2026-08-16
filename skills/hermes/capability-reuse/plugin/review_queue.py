@@ -27,8 +27,8 @@ EXCLUDED_TRAFFIC_TYPES = {"acceptance_test", "calibration_probe", "operator_seed
 ACTOR_TYPES = {"human", "agent", "scheduler", "service", "unknown"}
 REQUEST_CHANNELS = {"telegram", "hmp", "cron", "local", "api", "gateway", "unknown"}
 LABELS = {"ACCEPT", "REJECT", "UNSURE"}
-EXPECTED_PLUGIN_VERSION = "2.5.0"
-EXPECTED_COHORT_LABEL = "v2.5.0_live"
+EXPECTED_PLUGIN_VERSION = "2.6.0"
+EXPECTED_COHORT_LABEL = os.environ.get("CAPABILITY_REUSE_EXPECTED_COHORT_LABEL", "v2.5.0_live")
 
 REASON_CODES = {
     "exact_match", "partial_coverage", "wrong_capability", "wrong_target", "effect_mismatch",
@@ -163,6 +163,25 @@ def formal_holdout_validation(event: dict[str, Any], data: dict[str, Any], reque
     if provenance.get("stream") != "organic_live": reasons.append("not_organic_live_provenance")
     if provenance.get("valid") is not True:
         reasons.append(provenance.get("reason") or "invalid_provenance")
+    # P0-1 / P0-1-r2 (reviewer 2026-08-16): provenance source must be an
+    # EXACT allowlist — startswith("hook_context") is too loose: a string
+    # like "hook_context.platform" is request-scoped but is NOT a provenance
+    # declaration (it was the source of the original contamination).
+    # Only these two are trusted request-scoped provenance declarations;
+    # "request" is accepted only for an explicitly-defined producer path.
+    _psrc = str(provenance.get("source") or "").strip()
+    _TRUSTED_PROVENANCE_SOURCES = {
+        "hook_context.capability_reuse_provenance",
+        "hook_context.provenance",
+    }
+    if _psrc in ("process_env", "missing", ""):
+        reasons.append("provenance_source_not_request_scoped")
+    elif _psrc == "request":
+        pass  # explicitly-defined producer request-scoped provenance
+    elif _psrc in _TRUSTED_PROVENANCE_SOURCES:
+        pass  # exact request-scoped declarations
+    else:
+        reasons.append("provenance_source_not_request_scoped")
     # v2.5.0: traffic taxonomy — registry_sync/test/acceptance/calibration
     # must automatically evaluate to false.
     if data.get("traffic_type") not in ORGANIC_TRAFFIC_TYPES: reasons.append("non_organic_traffic_type")
@@ -182,6 +201,25 @@ def formal_holdout_validation(event: dict[str, Any], data: dict[str, Any], reque
         _surface = data.get("producer_surface")
     if _surface in (None, "", "unknown"):
         reasons.append("missing_producer_surface")
+    # P0-11 / P0-2 (reviewer 2026-08-16): a clean-cohort envelope must carry
+    # BOTH timestamps; a missing event or deployment timestamp is a rejection
+    # reason, and only then is the ordering check applied.
+    _ev_ts = event.get("timestamp") or data.get("timestamp") or ""
+    _dep_ts = data.get("deployment_timestamp") or ""
+    if not _ev_ts:
+        reasons.append("missing_event_timestamp")
+    if not _dep_ts:
+        reasons.append("missing_deployment_timestamp")
+    if _ev_ts and _dep_ts:
+        try:
+            from datetime import datetime
+            _fmt = "%Y-%m-%dT%H:%M:%S%z"
+            _ev_dt = datetime.strptime(_ev_ts, _fmt)
+            _dep_dt = datetime.strptime(_dep_ts, _fmt)
+            if _ev_dt < _dep_dt:
+                reasons.append("event_before_deployment")
+        except (ValueError, TypeError):
+            reasons.append("invalid_timestamp")
     return (len(reasons) == 0), reasons
 
 

@@ -1,16 +1,18 @@
 ---
 name: capability-reuse
 type: custom
-version: 2.5.0
+version: 2.6.0
 phase: "0+1"
 spec_version: "1.6"
-description: Capability Retrieval & Reuse Control Loop — v1.6; Phase 0 tooling/corpus complete; empirical labeling and independent validation pending
+description: Capability Retrieval & Reuse Control Loop — v1.6; **2.6.0 ACCEPT (reviewer 2026-08-16, baseline reviewata)**; Phase 0 tooling/corpus complete; empirical closure NOT YET; Phase 1a in corso (G0 aperto)
 author: peer70 (coordination), Fausto
 status: active
 dependencies:
   - hermes-hmp (HMP protocol)
 changelog:
-  - "2.4.6 — reviewer-queue release hardening: live hook metadata propagation, isolated acceptance HOME, strict formal holdout eligibility with rejection..."
+  - "2.6.0-ACCEPT — reviewer ACCEPT 2026-08-16 (Capability Reuse 2.6.0 = nuova skill baseline reviewata; artifact sha 8524b0da…, plugin-tree 90e9d21f…, 199/199 checksum, 148/148 unit peer141, 15/15 conformance local-controller, validator fail-closed confermato con negative test). G0 resta aperto fuori skill: nuovo HMP adapter.py source-review + request-unique trace_id live + cohort label phase0_p141_p70 + UTC deployment boundary. Shadow collection GO; sealed Phase 1a holdout NO-GO finché G0; Formal Phase 0 empirical closure NOT YET."
+  - "2.6.0 — Phase 0 closure attempt REJECTED dal reviewer (NOT YET); remediation P0-1..P0-11 + round 2/3/4: provenance fail-closed (exclusion markers vincono, no platform inference, process_env rejected, exact source allowlist), operator_solicited in PROVENANCE_STREAMS, producer.version 2.6.0, timestamp gate completo (mancanti rejected, event_before_deployment), validator hardenizzato (sidecar+manifest+bytes, plugin_tree_hash, status/verdict, conformance identity + negative tests), snapshot quarantena rejected-phase0-closure, suite 148/148."
+  - "2.5.0 — observe channel 🔍: bubble reale da retrieval (consume_retrieval_observe, single-fire, fail-open, fallback candidates[0] in shadow); 117/117 unit; ACCEPT review esterna 2026-08-15."
   - "2.4.6 — reviewer-queue release hardening: live hook metadata propagation, isolated acceptance HOME, strict formal holdout eligibility with rejection reasons, authoritative retrieval event IDs, full multi-peer batch previews, candidate evidence preservation, label/reason validation, requester pseudonyms, stronger CSV neutralization, restored analyzer API, schema 1.2 conformance."
   - "2.4.5 — reviewer-facing human-label queue: schema 1.2 requester metadata, canonical execution plan preview for hmp-healthcheck@1.0.0, stable review IDs, append-only labels, and synthetic/organic queue split."
   - "2.4.4 — data-collection tightening per Fausto review 2026-07-31: request-scoped mandatory provenance (legacy_unclassified/unknown bucketing), peer_id on every event, clean cohort boundary (deployment_id/timestamp/plugin_artifact_hash/schema), chain correlation (session/episode/turn/task/tool_call/retrieval_event_id/code_hash), traffic_type+dedupe (organic_user/cron/test/retry/calibration), durable append-only review labels, event-time windows, read-only/mutating stream separation, CSV formula neutralization. Acceptance test 25 fresh events PASS (25/25 all criteria, 0 chain errors, 0 legacy in clean, 0 labels lost)."
@@ -30,7 +32,20 @@ changelog:
 
 ## Overview
 
-Implementa la **Capability Retrieval & Reuse Control Loop** spec v1.6. Stato ufficiale dopo review esterna del bundle v2.1.0: Phase 0 tooling complete, corpus acquisition sufficient, implementation tests pass, but empirical validation is incomplete. Passive live-shadow collection è GO. Formal Phase 0 closure is **not yet** accepted; formal active Phase 1B remains **not authorized**. Active enforcement remains conservative and review-gated: only `hmp-healthcheck@1.0.0` is allowed for engineering active path; `hmp-send` remains mutating/unsafe/not active. The rejected closure evidence remains useful as corpus/tooling evidence, but C4/C5/C6/C7/C8/C10 need independent human-labeling, actual retriever evaluation, real runtime conformance, and threshold calibration before formal closure.
+Implementa la **Capability Retrieval & Reuse Control Loop** spec v1.6. Stato
+ufficiale (2026-08-16): **Capability Reuse 2.6.0 = ACCEPT** (reviewer
+esterno — nuova skill baseline reviewata). Formal Phase 0 empirical
+closure: **NOT YET** — il tentativo di closure del 16/08 (coorte
+peer141↔peer70, holdout 3/3) è stato REJECTED: i 3 casi erano
+operator_solicited, non organic holdout; n=3 non è calibrazione. **Phase 1a
+in corso**: raccolta organic_live spontaneo verso sealed organic holdout
+(G1 ≥60) + threshold sweep solo su tuning set. **G0 pre-seal aperto** (fuori
+skill): nuovo HMP adapter.py source-review + request-unique trace_id live +
+cohort label phase0_p141_p70 + UTC deployment boundary. Shadow collection
+è GO. Sealed Phase 1a formal holdout: **NO-GO finché G0**. Formal active
+Phase 1B remains **not authorized**. Active enforcement remains conservative
+and review-gated: only `hmp-healthcheck@1.0.0` is allowed for engineering
+active path; `hmp-send` remains mutating/unsafe/not active.
 
 **Principio:** Hermes retrieves versioned operational capabilities from the user's request immediately before it would otherwise generate code. When a high-confidence, hard-compatible, trusted match exists, that capability becomes the default. Deterministic safety enforcement remains separate and authoritative.
 
@@ -59,6 +74,7 @@ Detailed reusable checklist: `references/post-review-remediation-pattern-2026-07
 ```
 capability-reuse/
 ├── SKILL.md                    ← this file (v2.4.3, spec v1.6)
+├── analysis/                   ← topology study v1.1 (UNDERPOWERED, 16/08): inventory.py, corpus-audit.py, topology-study-report.md, manifest.json, test_g0_adapter.py (30/30 PASS)
 ├── scripts/
 │   ├── recurrence-audit.py      ← Phase 0.0 — Historical execute_code analysis
 │   ├── init-registry.py         ← Phase 0.1 — Create registry schema + storage
@@ -71,9 +87,10 @@ capability-reuse/
 ├── tests/                       ← 57 source tests after v2.4.3 provenance/review/rollup blocker remediation
 
 Operational references:
+- `references/topology-study-v1.1-outcome-2026-08-16.md` — topology study v1.1 verdict UNDERPOWERED + prerequisite gap: recurrence-audit.py NON emette confidence tiers {low, medium, high} (blocca §5 stratificazione e minimo §7 high-conf); corpus reale 79 started/63 transitions; sparsity attribuita a esecuzioni+schema+risoluzione+frammentazione.
 - `references/v2.4.16-clean-cohort-live-metadata-gates-2026-08-02.md` — v2.4.16 clean-cohort/live-metadata gate order: exact running artifact identity, reviewed archive+hash selection, clean deployment boundary, organic-hook metadata proof, retrieval/chain disposition accounting, fail-closed formal eligibility, remote restart verification, and peer58/peer106 scope statement.
 - `references/harness-feedback-progress-plumbing-2026-08-14.md` — architecture map of Hermes tool-progress streaming (`progress_callback`, `progress_queue`, `display.tool_progress`) AND the IMPLEMENTED non-blocking `pre_tool_call` return `{"action": "observe", "feedback": ...}`. Final wiring: `feedback_sink` param on `get_pre_tool_call_block_message()` (single-fire — never invoke the hook twice), sink closure at the real dispatch gate in `agent/tool_executor.py` (~line 958, NOT the concurrent branch), rendering via `tool.considered` in `gateway/run.py`. Pitfalls: (1) new plugins MUST be added to `plugins.enabled` in config.yaml or discovery won't load them; (2) `*.bak-*` skill dirs inside `skills/hermes/` collide as skill names — keep backups outside the skills tree. Dummy plugin `~/.hermes/plugins/harness-feedback/` shows `🔍 azione considerata · harness ... (dummy)` bubbles; replace dummy rule with real retrieval decisions for 2.5.0.
-- `references/v2.5.0-telemetry-correlation-spec-2026-08-14.md` — THE v2.5.0 specification (external reviewer, adopted by Fausto): telemetry/correlation correctness release, schema 1.2→1.3, correlation envelope with top-level trace_id, producer identity, `surface_execution_*` replacing fake `execute_code_*` for HMP, explicit retrieval stages + retriever proof, composite-rejection semantics (Case B), traffic taxonomy (registry_sync excluded from recurrence), requester/processor/target separation, 3 functional cases, review-from-trace, label persistence, analyzer event-log-hash staleness rejection, cohort filtering, 10-item release gate, and current implementation status on peer70 (points 1-4 done: schema 1.3 + envelope + producer + surface_execution_* in `event_store.py` and `plugins/hmp/adapter.py`).
+- `references/v2.4.18-telemetry-correlation-spec-2026-08-14.md` — v2.4.18 telemetry/correlation correctness specification (external reviewer, adopted by Fausto): schema 1.2→1.3, correlation envelope with top-level trace_id, producer identity, `surface_execution_*` replacing fake `execute_code_*` for HMP, explicit retrieval stages + retriever proof, composite-rejection semantics (Case B), traffic taxonomy (registry_sync excluded from recurrence), requester/processor/target separation, 3 functional cases, review-from-trace, label persistence, analyzer event-log-hash staleness rejection, cohort filtering, 10-item release gate, and implementation status on peer70 (points 1-4 done: schema 1.3 + envelope + producer + surface_execution_* in `event_store.py` and `plugins/hmp/adapter.py`).
 - `references/v2.4.5-reviewer-facing-queue-implementation-2026-08-01.md` — v2.4.5 implementation notes: reviewer-facing queue for `hmp-healthcheck@1.0.0`, schema 1.2 retrieval events, actor/channel separation, shared execution-plan preview/dispatch, stable review IDs, append-only labels, and separate acceptance/organic queue outputs.
 - `references/v2.4.4-implementation-acceptance-run-2026-07-31.md` — v2.4.4 peer70 implementation/acceptance notes: final clean deployment passed 25 fresh retrieval chains with 0 chain errors; includes pitfalls (false PASS with zero events, nested event.data payloads, current deployment_id filtering).
 - `references/point1-passive-harvest-stabilization-2026-07-30.md` — Point-1 passive harvesting stabilization: peer70 as canonical collector, per-peer analyzer cron with explicit `--peer-id`, shadow retrieval probes, fleet `latest.json`, offline-peer follow-up.
@@ -371,6 +388,14 @@ non_operational). Test directly with
 root, not from inside `plugin/`, to satisfy relative imports).
 
 ### Clean-cohort live metadata gate discipline (v2.4.16)
+
+> **R4 (review 2.6.0, 2026-08-16):** `review_queue.py` default
+> `EXPECTED_COHORT_LABEL = "v2.5.0_live"` (retrocompat). Per generare la
+> review queue della coorte Phase 0/1a chiusa
+> (`phase0_p141_p70`), impostare
+> `CAPABILITY_REUSE_EXPECTED_COHORT_LABEL=phase0_p141_p70` quando si esegue
+> `scripts/generate-review-queue-v245.py`. Il default resta per
+> compatibilità; il deployment della coorte corrente DEVE settare l'env.
 
 When a reviewer gates capability-reuse validation on live metadata, treat the order as mandatory: identify the exact running artifact, select/review the fixed release archive+hash, deploy a clean cohort, prove one genuine organic hook event carries complete metadata, and account for every retrieval/execution-chain disposition before running positive cases. A remote healthcheck response alone is not proof: the processing peer must emit a fresh retrieval/intervention/invocation chain from its own live hook path. Copying plugin files is also not proof of deployment; verify gateway PID/start time changed, hooks loaded, runtime tree hash matches the reviewed artifact, and a fresh post-restart event appears. Full reusable checklist: `references/v2.4.16-clean-cohort-live-metadata-gates-2026-08-02.md`.
 

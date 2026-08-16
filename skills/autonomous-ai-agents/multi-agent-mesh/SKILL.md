@@ -1369,6 +1369,22 @@ Skills are local to each peer. When the `multi-agent-mesh` skill is updated on t
 
 For routine procedural changes (like proactive reporting), only the orchestrator needs the update — other peers just need to respond to HMP messages as usual.
 
+### Publishing a new community skill (mesh registry)
+
+**"Global skill registry" = the HMP mesh registry, NOT `hermes skills publish`.**
+The public hub (GitHub PR / ClawHub) is a different target — when Fausto says
+"publish a skill so the community can use it", he means
+`~/.hermes/registry/registry.json` + `peers/<peer>.json` on peer70, the same
+place where capability-reuse and hmp live.
+
+To publish a versioned skill for the mesh: create it under
+`~/.hermes/skills/<category>/<name>/SKILL.md` with **`type: custom`** in the
+frontmatter (that is the filter `registry-publish.py` scans for), validate
+with `python3 ~/.hermes/registry/registry-publish.py --dry-run`, then on the
+coordinator update `peers/peer70.json` + `registry.json` directly (the script
+HMP-sends to itself on peer70). Full workflow, frontmatter requirements, and
+pitfalls: `references/mesh-registry-publish.md`.
+
 - `hermes-agent` skill (for general Hermes configuration)
 - Files at `~/.hermes/scripts/peer-monitor.py`, `~/.hermes/peer-network/`
 - `references/hmp-protocol.md` — HMP (Hermes Mesh Protocol): lightweight stdlib-only message-passing layer on port `:8643`...

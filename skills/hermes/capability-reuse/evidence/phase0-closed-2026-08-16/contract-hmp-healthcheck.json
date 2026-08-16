@@ -1,0 +1,87 @@
+{
+  "capability_id": "hmp-healthcheck",
+  "version": "1.0.0",
+  "executor": {
+    "kind": "python_callable",
+    "entrypoint": "hermes_harnesses.hmp:healthcheck",
+    "timeout_seconds": 30
+  },
+  "public_invocation_tool": "invoke_capability",
+  "input_schema": {
+    "type": "object",
+    "required": [
+      "peer_list"
+    ],
+    "properties": {
+      "peer_list": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "minItems": 1
+      },
+      "timeout_seconds": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 120,
+        "default": 10
+      }
+    }
+  },
+  "output_schema": {
+    "type": "array",
+    "items": {
+      "type": "object",
+      "required": [
+        "peer",
+        "status"
+      ],
+      "properties": {
+        "peer": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "latency_ms": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "error_schema": {
+    "clean_failure_codes": [
+      "invalid_input",
+      "unavailable",
+      "timeout",
+      "unsupported_target"
+    ],
+    "partial_effect_possible": false
+  },
+  "effect_class": "read_only",
+  "declared_effects": [
+    "network_read"
+  ],
+  "idempotency": "safe",
+  "required_permissions": [
+    "hmp.network.read"
+  ],
+  "availability_constraints": [
+    "hmp_client_installed"
+  ],
+  "fallback_policy": "allow_execute_code_after_clean_failure",
+  "trust_state": "trusted",
+  "trust_basis": "phase1b_read_only_canary_reviewed_local_harness",
+  "trust_owner": "fausto",
+  "trust_review_due": "2026-09-01",
+  "equivalence_policy_ref": "read_only_hmp_health_json_equivalence_v1"
+}

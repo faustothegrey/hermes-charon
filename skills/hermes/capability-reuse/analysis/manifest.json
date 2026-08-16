@@ -1,0 +1,43 @@
+{
+  "study": "topology-study-v1.1",
+  "prereg_version": "v1.1-FROZEN",
+  "executed_at": "2026-08-16T16:20:00Z",
+  "executor": "peer70",
+  "verdict": "UNDERPOWERED",
+  "data_sources": [
+    {"name": "bak-pre2416", "path": "~/.hermes/data/reuse-observer/events.jsonl.bak-pre2416", "events": 2801},
+    {"name": "live-v250", "path": "~/.hermes/data/reuse-observer/events.jsonl", "events": 91},
+    {"name": "raw-peer70", "path": "capreuse-central/raw/peer70/events.jsonl (backup tar)", "events": 102},
+    {"name": "raw-peer106", "path": "capreuse-central/raw/peer106/events.jsonl (backup tar)", "events": 35},
+    {"name": "peer138", "path": "~/.hermes/data/capreuse-backup-20260813-1735/peer138/events.jsonl", "events": 317, "note": "no event_type field; excluded from started/completed counts"}
+  ],
+  "total_events_dedup": 3352,
+  "execute_code_started": 79,
+  "execute_code_completed": 78,
+  "episodes_total": 16,
+  "episodes_excluded_lt2": 8,
+  "episodes_usable": 8,
+  "usable_transitions": 63,
+  "clusters": {
+    "count": 4,
+    "distribution": {"unknown/other": 71, "hmp_healthcheck": 6, "json_parse": 1, "cron_management": 1}
+  },
+  "cutoffs": {
+    "T1_50pct": "2026-08-13T16:15:25Z",
+    "T2_65pct": "2026-08-13T16:28:27Z",
+    "T3_80pct": "2026-08-13T19:21:45Z",
+    "transitions_per_cutoff": {"T1": 25, "T2": 26, "T3": 63}
+  },
+  "locked_minimums": {
+    "failure_slice_transitions_pooled": 300,
+    "high_confidence_tier_transitions": 100
+  },
+  "minimums_met": false,
+  "prerequisite_gap": "recurrence-audit.py v1.2 does not emit confidence tiers {low, medium, high}; tier stratification and §7 high-conf minimum not executable as preregistered",
+  "models_executed": "none (stopped at §7 per prereg)",
+  "frozen_artifacts": [
+    "analysis/inventory.py",
+    "analysis/topology-study-report.md",
+    "analysis/manifest.json"
+  ]
+}

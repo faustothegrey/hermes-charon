@@ -1,0 +1,46 @@
+{
+  "artifact": "capability-reuse-v2.5.0.zip",
+  "artifact_sha256": "external sidecar required; see /tmp/capability-reuse-v2.5.0.zip.sha256",
+  "generated_at": "2026-08-16T00:15:00Z",
+  "version": "2.5.0",
+  "skill_version": "2.5.0",
+  "plugin_version": "2.5.0",
+  "protocol_VERSION": "2.5.0",
+  "event_schema_version": "1.3",
+  "review_schema_version": "1.0",
+  "preview_schema_version": "1.0",
+  "source_plugin_tree_sha256": "667179d630e673add0845495c68468cf2c4c9e21d4a5bb2d5d0f9b01be521732",
+  "status": "v2.5.0_release_candidate_validated_source; observe channel usage implemented (APPROVE FOR IMPLEMENTATION, 8 gate constraints); peer70 close-up review PASS + 2 hardening re-reviewed; FULL RUNTIME INTEGRATION PASS: real agent/tool_executor dispatch (internal feedback_sink) → tool.considered → rendered 🔍 in one trace; formal scope peer58<->peer106 still PENDING (peers unavailable, DEFERRED)",
+  "release_decision": "v2.5.0 observe channel usage release — capability-reuse produces real observe DIRECTIVES in the live gateway (retrieval envelope → same session+turn → action=observe, single-fire per envelope); observe → tool.considered → bubble 🔍 proven in ONE runtime trace through the real agent/tool_executor dispatch (_run_agent_tool_execution_middleware internal _harness_feedback_sink → tool_progress_callback → _render_observed_bubble) — observe-channel-real-gateway-dispatch-proof.py; live HMP gateway request also documented (e2e-mesh, integration-only); zero core patch/event_store/registry changes; 117/117 unit (16 observe-channel tests); conformance 15/15; FORMAL vertical-slice evidence DEFERRED to peer58<->peer106 (required formal peers unavailable)",
+  "runtime_sync": {
+    "plugin": "~/.hermes/plugins/capability-reuse",
+    "skill": "~/.hermes/skills/hermes/capability-reuse"
+  },
+  "validation": {
+    "unit_test_report": "evidence/unit-test-report-v2.5.0.json",
+    "conformance_report": "evidence/conformance-report-v2.5.0.json",
+    "acceptance_log": "evidence/acceptance-v2.4.19-review-queue.log",
+    "runtime_proof_driver": "scripts/observe-channel-skill-runtime-proof.py",
+    "runtime_proof_evidence": "evidence/observe-channel-skill-runtime-proof-output.txt",
+    "e2e_mesh_evidence": "evidence/e2e-mesh-v250-peer70-requester.txt",
+    "real_gateway_dispatch_driver": "scripts/observe-channel-real-gateway-dispatch-proof.py",
+    "real_gateway_dispatch_evidence": "evidence/observe-channel-real-gateway-dispatch-proof-output.txt",
+    "commands": [
+      "python3 -m compileall -q plugin scripts tests",
+      "python3 -m unittest discover -s tests -v",
+      "HOME=/tmp/capreuse-v250-home python3 scripts/conformance-suite.py --profile full-required",
+      "python3 scripts/observe-channel-skill-runtime-proof.py",
+      "python3 scripts/validate-release-archive.py /tmp/capability-reuse-v2.5.0.zip --version 2.5.0 --sha256-file /tmp/capability-reuse-v2.5.0.zip.sha256"
+    ]
+  },
+  "core_patch_compat": {
+    "patchset": "observe-channel",
+    "patchset_version": "0.3.0",
+    "manifest": "~/.hermes/patches-core/patch-manifest.json",
+    "shipping_rule": "HARD RULE: patches never in skill sync/ZIP; validator rejects archives containing capability-reuse/patches/*; assets live in ~/.hermes/patches-core/ and are applied only via apply-core-patch.sh",
+    "requires": "observe-channel patchset >=0.3.0"
+  },
+  "protocol_version": "2.5.0",
+  "schema_version": "1.3",
+  "plugin_tree_hash": "667179d630e673add0845495c68468cf2c4c9e21d4a5bb2d5d0f9b01be521732"
+}

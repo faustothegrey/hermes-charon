@@ -100,12 +100,26 @@ def on_pre_tool_call(tool_name, args, task_id="", **kwargs):
             # bubble con capability top · score. observe non blocca/approva
             # mai: il gate consegna il feedback e prosegue. Single-fire per
             # envelope (consume-on-observe). Fail-open: se il feedback non
-            # e' costruibile ritorna None come prima.
-            feedback = ctrl.consume_retrieval_observe(
-                session_id=kwargs.get("session_id", ""),
-                episode_id=kwargs.get("episode_id", ""),
-                turn_id=kwargs.get("turn_id", ""),
-            )
+            # e' costruibile ritorna None come prima; try/except al livello
+            # hook (hardening close-up review peer70) — un envelope inatteso
+            # non deve MAI propagare e rompere il tool call. Il log in
+            # except evita che un errore di consume resti invisibile.
+            try:
+                feedback = ctrl.consume_retrieval_observe(
+                    session_id=kwargs.get("session_id", ""),
+                    episode_id=kwargs.get("episode_id", ""),
+                    turn_id=kwargs.get("turn_id", ""),
+                )
+            except Exception:
+                try:
+                    import logging
+                    logging.getLogger("capability-reuse").debug(
+                        "consume_retrieval_observe failed (fail-open)",
+                        exc_info=True,
+                    )
+                except Exception:
+                    pass
+                feedback = None
             if feedback is not None:
                 return {"action": "observe", "feedback": feedback}
             return None

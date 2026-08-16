@@ -44,6 +44,8 @@ STDOUT:
 │ hermes-memory-manageme… │ hermes               │ local   │ local   │ enabled │
 │ hermes-session-lifecyc… │ hermes               │ local   │ local   │ enabled │
 │ hmp-talkshow            │ hermes               │ local   │ local   │ enabled │
+│ nous-credits            │ hermes               │ local   │ local   │ enabled │
+│ nous-portal-api         │ hermes               │ local   │ local   │ enabled │
 │ gif-search              │ media                │ builtin │ builtin │ enabled │
 │ heartmula               │ media                │ builtin │ builtin │ enabled │
 │ songsee                 │ media                │ builtin │ builtin │ enabled │
@@ -93,7 +95,7 @@ STDOUT:
 │ raspberry-pi            │ sysadmin             │ local   │ local   │ enabled │
 │ wireguard-vpn           │ sysadmin             │ local   │ local   │ enabled │
 └─────────────────────────┴──────────────────────┴─────────┴─────────┴─────────┘
-0 hub-installed, 68 builtin, 18 local — 86 enabled, 0 disabled
+0 hub-installed, 68 builtin, 20 local — 88 enabled, 0 disabled
 
 
 

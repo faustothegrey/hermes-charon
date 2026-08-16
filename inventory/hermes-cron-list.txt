@@ -11,21 +11,48 @@ STDOUT:
     Name:      Nightly Hermes configuration backup (peer70)
     Schedule:  0 23 * * *
     Repeat:    ∞
-    Next run:  2026-08-16T23:00:00+02:00
+    Next run:  2026-08-17T23:00:00+02:00
     Deliver:   local
     Script:    hermes-config-backup-nightly.sh
     Mode:      no-agent (script stdout delivered directly)
-    Last run:  2026-08-14T23:00:43.509269+02:00  ok
+    Last run:  2026-08-15T23:01:10.163951+02:00  ok
 
   1813aa7164e5 [active]
     Name:      undervoltage-watchdog
     Schedule:  every 15m
     Repeat:    ∞
-    Next run:  2026-08-15T23:09:34.090793+02:00
+    Next run:  2026-08-16T23:15:50.347369+02:00
     Deliver:   origin
     Script:    undervoltage_watchdog.py
     Mode:      no-agent (script stdout delivered directly)
-    Last run:  2026-08-15T22:54:34.090793+02:00  ok
+    Last run:  2026-08-16T23:00:50.347369+02:00  ok
+
+  c9542280f63c [active]
+    Name:      g0-restart-local-gateway
+    Schedule:  once at 2026-08-16 20:30
+    Repeat:    0/1
+    Next run:  None
+    Deliver:   local
+    Script:    restart-local-gateway-g0.sh
+    Mode:      no-agent (script stdout delivered directly)
+
+  ceefaafc401e [active]
+    Name:      g0-restart-local-gateway-2
+    Schedule:  once at 2026-08-16 20:45
+    Repeat:    0/1
+    Next run:  None
+    Deliver:   local
+    Script:    restart-local-gateway-g0.sh
+    Mode:      no-agent (script stdout delivered directly)
+
+  95c6dd3019b3 [active]
+    Name:      g0-restart-local-gateway-3
+    Schedule:  once at 2026-08-16 21:05
+    Repeat:    0/1
+    Next run:  None
+    Deliver:   local
+    Script:    restart-local-gateway-g0.sh
+    Mode:      no-agent (script stdout delivered directly)
 
 
 

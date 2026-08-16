@@ -3,6 +3,7 @@ from pathlib import Path
 import json, subprocess, datetime, sys
 PEERS = {
     "peer70": ("local", "/home/fausto"),
+    "peer141": ("fausto@192.168.178.141", "/home/fausto"),
     "peer84": ("fausto@192.168.178.84", "/home/fausto"),
     "peer106": ("root@192.168.178.106", "/root"),
     "peer138": ("root@192.168.178.138", "/root"),

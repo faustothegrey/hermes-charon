@@ -1,5 +1,20 @@
 # Capability-reuse Phase 0 review handoff — 2026-07-27
 
+> **UPDATE 2026-08-16 — CAPABILITY REUSE 2.6.0 = ACCEPT.** Il reviewer
+> esterno ha ACCETTATO la release 2.6.0 (REBUILD-4 finale) come nuova skill
+> baseline reviewata: artifact sha `8524b0da…`, plugin-tree `90e9d21f…`,
+> 199/199 checksum, 148/148 unit (peer141), 15/15 conformance
+> local-controller, validator fail-closed confermato con negative test.
+> **Restano aperti (fuori skill, G0 pre-seal Phase 1a):** nuovo HMP
+> adapter.py source-review, request-unique trace_id live, cohort label
+> phase0_p141_p70, UTC deployment boundary. Shadow collection GO; sealed
+> Phase 1a holdout NO-GO finché G0; Formal Phase 0 empirical closure NOT YET.
+> reviewer esterno (v2.6.0 package REJECT). Stato canonico vigente:
+> **Formal Phase 0 empirical closure: NOT YET.** I 3 casi A/A-rev/B sono
+> evidence di engineering vertical-slice (operator_solicited/integration),
+> NON formal organic holdout. Il lavoro che chiude la parte empirica è
+> Phase 1a (sealed organic holdout + tuning-only threshold sweep).
+
 This is the durable restart point for later work.
 
 ## Official status after external review
@@ -232,6 +247,128 @@ Expected human workload: roughly 200–250 examples if doing both Dataset B and 
 - `SKILL.md`
 - this handoff file: `references/phase0-review-handoff-2026-07-27.md`
 
+---
+
+## UPDATE 2026-08-16 — Phase 0 CLOSED (SUPERSEDED — REJECTED BY REVIEWER)
+
+> ⚠️ **SUPERSEDED 2026-08-16 (v2.6.0 package REJECT):** questo record di
+> closure NON è stato accettato dal reviewer esterno. **Lo stato canonico
+> vigente è `Formal Phase 0 empirical closure: NOT YET`.** La sezione resta
+> come documentazione del tentativo e delle sue debolezze metodologiche
+> (provenance contaminata, n=3, timestamp incoerenti, trace non congelate).
+>
+> **Reclassificazione dei 3 casi (P0-1 reviewer):** A, A-rev e B sono
+> **operator_solicited / integration evidence** — eccellenti per provare il
+> vertical slice engineering, NON formal organic holdout. `synthetic_
+> contamination = 0` non era supportato.
+
+Chiusura formale della validazione empirica Phase 0, concordata da Fausto
+(operatore umano) sulla base del report `evidence/phase0-closure-review-2026-08-16.md`
+e della nota vault `fatti/phase0-scope-amendment-20260816.md`.
+
+> ⚠️ **Cautela conservata:** 3/3 chiude il criterio Phase 0 concordato, NON
+> dimostra production-grade precision generalizzabile. Nessun claim su fleet,
+> recurrence o precisione di produzione.
+
+```text
+PHASE 0 — CLOSED
+Date: 2026-08-16
+
+Validated cohort:
+  peer141 ↔ peer70
+  (sostituzione ufficiale della coorte prevista peer58 ↔ peer106 — scope
+  amendment: peer106 OFFLINE, peer58 senza patch observe)
+
+Runtime:
+  Hermes 0.20.1 (peer141) + 0.17.0 (peer70)
+  Observe path proven on real dispatch (dispatch → sink → tool.considered → 🔍)
+
+Capability:
+  hmp-healthcheck@1.0.0
+
+Cases:
+  A       PASS
+  A-rev   PASS
+  B       PASS — partial_coverage, no dispatch
+
+Trace integrity:          PASS
+collector_peer_id:        PASS
+single-fire pre_tool_call: PASS
+durable human labels:     PASS
+formal holdout:           3/3 eligible + correctly labeled
+threshold/margin criterion: PASS — 100% ≥ 85%
+synthetic contamination:  0
+
+Phase 0:                  CLOSED
+```
+
+### Dettagli artifact (baseline congelata)
+
+| Item | Valore |
+|---|---|
+| Deployment ID | `dep-v250-phase0-p141p70-20260816T100844Z` |
+| Cohort label | `phase0_p141_p70` |
+| Plugin version | 2.5.0 |
+| Plugin artifact hash | `edc5d080b66c3468cbcfcee1d51de381422f1e876baf2aa7acaa14def4e1b806` |
+| Patch observe 0.17.0 | `852cc71f` (peer70) |
+| Patch observe 0.20.1 | `0e97fc8b` (peer141) |
+| Review records | peer70: `review_3575fab7…` (A, ACCEPT), `review_41c0d0fb…` (B, REJECT) · peer141: `review_96610188…` (A-rev, ACCEPT) |
+| Closure report | `evidence/phase0-closure-review-2026-08-16.md` |
+| Label ledger | `~/.hermes/data/reuse-aggregati/review/human-labels.jsonl` (append-only) |
+| Snapshot immutabile | `evidence/phase0-closed-2026-08-16/` + `SHA256SUMS` |
+
+### Record canonico
+
+- Vecchio stato `REBAR_REVIEW_STATE.md` (Formal Phase 0 empirical closure:
+  NOT YET) → **STALE, sostituito da questo record.**
+- `PHASE_0_TOOLING_AND_CORPUS_COLLECTION_COMPLETE` +
+  `EMPIRICAL_LABELING_AND_INDEPENDENT_VALIDATION_PENDING` → ora
+  `PHASE_0_CLOSED_2026-08-16` (coorte peer141↔peer70).
+
+### Fuori scope Phase 0 (invariati)
+
+Nuova sintesi capability · hmp-send · esecuzione mutating · fleet rollout.
+
+### Prossima decisione (Phase 1)
+
+Scegliere intenzionalmente il runtime mode e il primo obiettivo Phase 1:
+ampliamento catalogo capability · recurrence evidence · synthesis/proposal
+generation. Non è più "finire Phase 0".
+
+### Post-Phase-0 runtime state (2026-08-16) — SHADOW
+
+```text
+Post-Phase-0 runtime state:
+  peer141 = shadow
+  peer70  = shadow
+
+Reason:
+  Phase 0 validation active-path complete.
+  No Phase 1 active rollout authorized.
+  Passive evidence collection resumes pending explicit Phase 1 objective.
+```
+
+- Active-mode systemd drop-in rimossi dall'activation path su entrambi i
+  nodi (daemon-reload + restart). Conservati come **reproducible acceptance
+  configuration** in `evidence/phase0-closed-2026-08-16/dropins/`
+  (`capreuse-active-peer141.conf`, `capreuse-active-peer70.conf` — in
+  SHA256SUMS). Rimossi dall'activation path, non persi come artifact.
+- Verificato post-restart: gateway healthy, plugin caricato, `mode=shadow`
+  (nessuna env CAPABILITY_REUSE nel processo), telemetria passiva attiva
+  (retrieval emesso con `shadow_mode=True`, `intervened=False`,
+  `dispatch=none`), nessun dispatch hmp-healthcheck da traffico organico
+  ordinario.
+- peer141 NON è lasciato active come canary: decisione separata quando si
+  definisce Phase 1 objective + evidence policy.
+
 ## Practical restart instruction
+
+> **AGGIORNATA 2026-08-16 (v2.6.0 REJECT):** il tentativo di chiusura Phase 0
+> è stato **rifiutato dal reviewer**. Stato vigente: **Formal Phase 0
+> empirical closure: NOT YET**; Phase 1a è il lavoro che chiude la parte
+> empirica (sealed organic holdout + tuning-only threshold sweep), non un
+> lavoro "dopo una Phase 0 chiusa". I 3 casi A/A-rev/B restano validi come
+> engineering vertical-slice evidence (operator_solicited), non come organic
+> holdout. Lo storico sotto è il record pre-closure originale.
 
 When resuming this work, do **not** claim Phase 0 closure. Start by preparing human-labeling artifacts for Dataset B and Dataset C, then evaluate the real retriever and perform threshold calibration only after labels are frozen.

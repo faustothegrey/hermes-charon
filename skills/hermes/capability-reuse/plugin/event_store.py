@@ -35,7 +35,7 @@ except Exception:
 from datetime import datetime, timezone
 from typing import Optional
 
-PROVENANCE_STREAMS = {"organic_live", "operator_seeded", "calibration_probe", "legacy_unclassified", "unknown"}
+PROVENANCE_STREAMS = {"organic_live", "operator_solicited", "operator_seeded", "calibration_probe", "legacy_unclassified", "unknown"}
 
 def candidate_label(candidate: dict) -> str:
     """Return capability@version for both canonical and legacy candidate shapes."""
@@ -74,7 +74,7 @@ ENVELOPE_KEYS = (
 # Producer identity: exactly which component emitted the event.
 DEFAULT_PRODUCER = {
     "component": "capability_reuse_plugin",
-    "version": "2.5.0",
+    "version": "2.6.0",
     "surface": "unknown",
 }
 
@@ -345,7 +345,7 @@ def emit(event_type: str, data: dict, context: dict | None = None) -> Optional[s
             surface = "unknown"
         producer = {
             "component": "capability_reuse_plugin",
-            "version": "2.5.0",
+            "version": "2.6.0",
             "surface": surface,
         }
         data["producer"] = producer

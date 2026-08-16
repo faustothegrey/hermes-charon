@@ -1,0 +1,44 @@
+{
+  "snapshot": "phase0-closed-2026-08-16",
+  "frozen_at": "2026-08-16T10:24:00Z",
+  "purpose": "Baseline immutabile Phase 0 CLOSED — coorte peer141↔peer70",
+  "immutable": true,
+  "cohort": {
+    "deployment_id": "dep-v250-phase0-p141p70-20260816T100844Z",
+    "cohort_label": "phase0_p141_p70",
+    "plugin_version": "2.5.0",
+    "plugin_artifact_hash": "edc5d080b66c3468cbcfcee1d51de381422f1e876baf2aa7acaa14def4e1b806"
+  },
+  "patches": {
+    "observe_channel_0.17.0_peer70": "852cc71f",
+    "observe_channel_0.20.1_peer141": "0e97fc8b"
+  },
+  "review_records": {
+    "peer70_case_A": "review_3575fab783ce5935b3bea500753ec038",
+    "peer70_case_B": "review_41c0d0fb54af49e24bd46f94032604f0",
+    "peer141_case_Arev": "review_96610188d34ebafdfbe2a292ae6cafac"
+  },
+  "holdout": {
+    "eligible": 3,
+    "labeled": 3,
+    "precision": 1.0,
+    "threshold": 0.65,
+    "min_margin": 0.05,
+    "criterion": "PASS (>= 0.85)"
+  },
+  "synthetic_contamination": 0,
+  "files": [
+    "SHA256SUMS",
+    "candidates-v245-peer141.jsonl",
+    "candidates-v245-peer70.jsonl",
+    "contract-hmp-healthcheck.json",
+    "human-labels-peer141.jsonl",
+    "human-labels-peer70.jsonl",
+    "phase0-closure-review-2026-08-16.md",
+    "phase0-review-handoff-UPDATED.md",
+    "phase0-scope-amendment-20260816.md",
+    "registry.json"
+  ],
+  "checksums": "SHA256SUMS (verify: sha256sum -c SHA256SUMS)",
+  "note": "3/3 chiude il criterio Phase 0 concordato, NON dimostra production-grade precision generalizzabile. Nessun claim su fleet/recurrence/precisione di produzione."
+}

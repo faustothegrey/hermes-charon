@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""v2.4.19 functional cases — TRUE end-to-end active controller tests (B6).
+"""v2.5.0 functional cases — TRUE end-to-end active controller tests (B6).
 
 Fixes the reviewer blocker: the old test only exercised the retriever in
 shadow mode and printed PASS without any intervention/invocation/dispatch/

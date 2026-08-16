@@ -296,124 +296,192 @@ class HMPAdapter(BasePlatformAdapter):
             "status": "queued",
         }, 202
 
+    def _classify_traffic(self, body_meta: Dict[str, Any], requester_peer: str):
+        """Fail-closed provenance classification (fix 2.6.0, P0).
+
+        Explicit automation markers win; declared traffic_type next; only an
+        explicit positive organic declaration (with no automation marker)
+        yields organic_peer. from_peer alone NEVER implies organic.
+        Returns (traffic_type, provenance, provenance_detail).
+        """
+        declared_traffic = str(body_meta.get("traffic_type") or body_meta.get("traffic") or "").strip().lower()
+        declared_prov = str(body_meta.get("provenance") or "").strip().lower()
+        is_sched = bool(body_meta.get("scheduled") or body_meta.get("is_scheduled") or body_meta.get("cron") or body_meta.get("is_cron") or "scheduled" in declared_traffic or "scheduled" in declared_prov)
+        is_calib = bool(body_meta.get("calibration") or body_meta.get("is_calibration") or "calibration" in declared_traffic or "calibration" in declared_prov)
+        is_test = bool(body_meta.get("test") or body_meta.get("is_test") or body_meta.get("acceptance") or "test" in declared_traffic or "acceptance" in declared_traffic)
+        is_solicited = bool(body_meta.get("operator_solicited") or body_meta.get("is_solicited") or body_meta.get("solicited") or "operator_solicited" in declared_traffic or "operator_solicited" in declared_prov)
+        is_seeded = bool(body_meta.get("operator_seeded") or body_meta.get("is_seeded") or body_meta.get("seeded") or "operator_seeded" in declared_traffic or "operator_seeded" in declared_prov)
+        is_retry = bool(body_meta.get("retry") or body_meta.get("is_retry") or body_meta.get("retry_of") or "retry" in declared_traffic)
+        if is_sched:
+            return "scheduled_protocol", "scheduled", "body.scheduled"
+        if is_calib:
+            return "calibration", "calibration_probe", "body.calibration"
+        if is_test:
+            return "test", "test", "body.test"
+        if is_solicited:
+            return "operator_solicited", "operator_solicited", "body.operator_solicited"
+        if is_seeded:
+            return "operator_seeded", "operator_seeded", "body.operator_seeded"
+        if is_retry:
+            return "retry", "retry", "body.retry"
+        if declared_traffic in ("organic_peer", "organic_user", "organic_live", "unknown", "cron", "registry_sync"):
+            return declared_traffic, declared_traffic, "body.traffic_type"
+        if declared_prov == "organic_live" and requester_peer:
+            return "organic_peer", "organic_live", "body.provenance"
+        if requester_peer:
+            # from_peer alone is INSUFFICIENT for organic (P0): missing
+            # explicit provenance → fail closed → unknown.
+            return "unknown", "unknown", "missing_provenance"
+        return "unknown", "unknown", "missing_provenance"
+
+    async def _process_item(self, item: Dict[str, Any]) -> Dict[str, Any]:
+        """Process one dequeued HMP message end-to-end (G0).
+
+        Returns {"trace_id", "outcome", "error", "traffic_type", "surf_id"}.
+        trace_id is a request-unique UUID v4 (P0-10): generated once per
+        request, propagated across the whole chain (retrieval → intervention →
+        invocation → feedback sink → tombstone). The retriever's
+        trace→chat→sender→requester→session fallback is never used for
+        holdout-eligible records because an explicit UUID is always supplied.
+        """
+        message_id = str(item.get("message_id"))
+        from_peer = str(item.get("from_peer") or item.get("chat_id") or "unknown")
+        chat_id = str(item.get("chat_id") or item.get("from_peer") or "unknown")
+        text = str(item.get("text") or "")
+        raw = item.get("raw") or {}
+        # G0 (P0-10): request-unique trace_id — UUID v4, generated BEFORE the
+        # MessageEvent so it can ride the event into the agent hook context.
+        trace_id = str(uuid.uuid4())
+        event = MessageEvent(
+            text=text,
+            message_type=MessageType.TEXT,
+            source=self.build_source(
+                chat_id=chat_id,
+                chat_name=chat_id,
+                chat_type="dm",
+                user_id=from_peer,
+                user_name=from_peer,
+                message_id=message_id,
+            ),
+            raw_message=raw,
+            message_id=message_id,
+            trace_id=trace_id,
+        )
+        # ── LIVE-SHADOW (dual-plane parity): emit retrieval chain ──
+        surf_id = None
+        _t0 = time.monotonic()
+        traffic_type = "unknown"
+        if HAS_EVENT_STORE:
+            try:
+                requester_peer = str(from_peer or "").strip()
+                # --- classify traffic from explicit body metadata (fail-closed) ---
+                body_meta = raw if isinstance(raw, dict) else {}
+                traffic_type, prov, prov_detail = self._classify_traffic(body_meta, requester_peer)
+                emit_retrieval(
+                    session_id=chat_id,
+                    user_message_preview=text[:200],
+                    candidates=[],
+                    top_score=0.0,
+                    intervened=False,
+                    latency_ms=0.0,
+                    traffic_type=traffic_type,
+                    provenance=prov,
+                    provenance_source="hmp_plugin.consumer_loop",
+                    provenance_detail=prov_detail,
+                    requester={
+                        "actor_type": "agent",
+                        "actor_id": "hmp:%s" % requester_peer if requester_peer else "unknown",
+                        "request_channel": "hmp",
+                        "requester_peer_id": requester_peer,
+                        "processing_peer_id": self.node_id,
+                    } if requester_peer else None,
+                    # v2.4.18 envelope
+                    trace_id=trace_id,
+                    requester_peer_id=requester_peer,
+                    processing_peer_id=self.node_id,
+                    collector_peer_id=self._extract_collector(raw),
+                    producer_surface="hmp_ingress",
+                )
+                # v2.4.18: surface_execution_* replaces execute_code_* for
+                # generic HMP processing (execute_code_* is reserved for
+                # real execute_code only).
+                surf_id = emit_surface_execution_start(
+                    execution_surface="hmp_plugin",
+                    surface_preview=text[:100],
+                    session_id=chat_id,
+                    requester_peer_id=requester_peer,
+                    processing_peer_id=self.node_id,
+                    trace_id=trace_id,
+                    traffic_type=traffic_type,
+                    producer_surface="hmp_ingress",
+                )
+            except Exception:
+                surf_id = None
+        try:
+            await self.handle_message(event)
+            outcome, err = "success", None
+        except asyncio.CancelledError:
+            self.store.mark_status(message_id, "queued")
+            raise
+        except Exception as exc:
+            self.store.fail(message_id, "handle_message failed: %s" % exc)
+            outcome, err = "failure", str(exc)
+        if HAS_EVENT_STORE and surf_id:
+            try:
+                emit_surface_execution_complete(
+                    execution_surface="hmp_plugin",
+                    outcome=outcome,
+                    duration_ms=(time.monotonic() - _t0) * 1000.0,
+                    error=err,
+                    session_id=chat_id,
+                    requester_peer_id=requester_peer,
+                    processing_peer_id=self.node_id,
+                    trace_id=trace_id,
+                    traffic_type=traffic_type,
+                    producer_surface="hmp_ingress",
+                )
+                emit_observation(
+                    capability_id="hmp",
+                    capability_version="0.1.4",
+                    effect_class="read_only",
+                )
+            except Exception:
+                pass
+        return {
+            "trace_id": trace_id,
+            "outcome": outcome,
+            "error": err,
+            "traffic_type": traffic_type,
+            "surf_id": surf_id,
+        }
+
+    def _extract_collector(self, raw: Dict[str, Any]) -> str:
+        """collector_peer_id propagation (envelope v2.4.18).
+
+        Priority: explicit body field > env var > empty (fail open, absent
+        is legal — the collector may be unknown on non-central peers).
+        """
+        if isinstance(raw, dict):
+            body_collector = raw.get("collector_peer_id") or raw.get("collector") or ""
+            if isinstance(body_collector, str) and body_collector.strip():
+                return body_collector.strip()
+        return os.environ.get("CAPABILITY_REUSE_COLLECTOR_PEER_ID", "")
+
     async def _consumer_loop(self) -> None:
         while True:
             item = self.store.dequeue()
             if not item:
                 await asyncio.sleep(2)
                 continue
-
-            message_id = str(item.get("message_id"))
-            from_peer = str(item.get("from_peer") or item.get("chat_id") or "unknown")
-            chat_id = str(item.get("chat_id") or item.get("from_peer") or "unknown")
-            text = str(item.get("text") or "")
-            raw = item.get("raw") or {}
-            event = MessageEvent(
-                text=text,
-                message_type=MessageType.TEXT,
-                source=self.build_source(
-                    chat_id=chat_id,
-                    chat_name=chat_id,
-                    chat_type="dm",
-                    user_id=from_peer,
-                    user_name=from_peer,
-                    message_id=message_id,
-                ),
-                raw_message=raw,
-                message_id=message_id,
-            )
-            # ── LIVE-SHADOW (dual-plane parity): emit retrieval chain ──
-            surf_id = None
-            _t0 = time.monotonic()
-            if HAS_EVENT_STORE:
-                try:
-                    requester_peer = str(from_peer or "").strip()
-                    trace_id = chat_id or ""
-                    # v2.4.18 (spec 8): registry-sync protocol traffic is not
-                    # organic — classify explicitly so recurrence/precision
-                    # analysis can exclude it.
-                    _msg = (text or "").lower()
-                    traffic = ("registry_sync" if (text or "").startswith("REGISTRY_PUBLISH") or "registry sync" in _msg
-                               else ("organic_peer" if requester_peer else "unknown"))
-                    emit_retrieval(
-                        session_id=chat_id,
-                        user_message_preview=text[:200],
-                        candidates=[],
-                        top_score=0.0,
-                        intervened=False,
-                        latency_ms=0.0,
-                        traffic_type=traffic,
-                        provenance="organic_live" if requester_peer else None,
-                        provenance_source="hmp_plugin.consumer_loop",
-                        provenance_detail="from_peer",
-                        requester={
-                            "actor_type": "agent",
-                            "actor_id": "hmp:%s" % requester_peer if requester_peer else "unknown",
-                            "request_channel": "hmp",
-                            "requester_peer_id": requester_peer,
-                            "processing_peer_id": self.node_id,
-                        } if requester_peer else None,
-                        # v2.4.18 envelope
-                        trace_id=trace_id,
-                        requester_peer_id=requester_peer,
-                        processing_peer_id=self.node_id,
-                        producer_surface="hmp_ingress",
-                        # v2.4.18 (spec 5/6): observer-only — the real retriever
-                        # did NOT run here. Never emit a fake zero-score
-                        # retrieval: mark retriever_executed=False and explicit
-                        # non-evaluated stages (no whole_request_covered=True
-                        # with zero candidates).
-                        retriever_executed=False,
-                        whole_request_covered=None,
-                        retrieval_stages={
-                            "retrieval": {"executed": False, "candidate_count": 0},
-                            "coverage": {"evaluated": False, "whole_request_covered": None},
-                            "eligibility": {"evaluated": False, "eligible": None},
-                        },
-                    )
-                    # v2.4.18: surface_execution_* replaces execute_code_* for
-                    # generic HMP processing (execute_code_* is reserved for
-                    # real execute_code only).
-                    surf_id = emit_surface_execution_start(
-                        execution_surface="hmp_plugin",
-                        surface_preview=text[:100],
-                        session_id=chat_id,
-                        requester_peer_id=requester_peer,
-                        processing_peer_id=self.node_id,
-                        trace_id=trace_id,
-                        traffic_type=traffic,
-                        producer_surface="hmp_ingress",
-                    )
-                except Exception:
-                    surf_id = None
             try:
-                await self.handle_message(event)
-                outcome, err = "success", None
+                await self._process_item(item)
             except asyncio.CancelledError:
-                self.store.mark_status(message_id, "queued")
                 raise
-            except Exception as exc:
-                self.store.fail(message_id, "handle_message failed: %s" % exc)
-                outcome, err = "failure", str(exc)
-            if HAS_EVENT_STORE and surf_id:
+            except Exception:
+                # _process_item handles per-message failures internally;
+                # this is a safety net so one bad message never kills the loop.
                 try:
-                    emit_surface_execution_complete(
-                        execution_surface="hmp_plugin",
-                        outcome=outcome,
-                        duration_ms=(time.monotonic() - _t0) * 1000.0,
-                        error=err,
-                        session_id=chat_id,
-                        requester_peer_id=requester_peer,
-                        processing_peer_id=self.node_id,
-                        trace_id=chat_id or "",
-                        traffic_type=traffic,
-                        producer_surface="hmp_ingress",
-                    )
-                    emit_observation(
-                        capability_id="hmp",
-                        capability_version="0.1.4",
-                        effect_class="read_only",
-                    )
+                    self.store.fail(str(item.get("message_id") or "?"), "consumer loop error")
                 except Exception:
                     pass
 

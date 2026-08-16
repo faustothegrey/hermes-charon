@@ -1,4 +1,4 @@
-"""v2.4.19 spec points 13 & 14 — analyzer integration tests (peer70).
+"""v2.5.0 spec points 13 & 14 — analyzer integration tests (peer70).
 
 - P13: consumers reject stale analyzer reports automatically (fingerprint
        hash mismatch, time range excluding the latest event).
@@ -20,11 +20,11 @@ spec.loader.exec_module(analyzer)
 ARTIFACT_HASH = "c861593ebcc3bcf68d11415d45b5075df0cf1f399f0092fd5b635c9572c7e36b"
 
 
-def row(dep="dep-v2418-1", ver="2.4.19", schema="1.3", traffic="organic_peer", ts="2026-08-14T10:00:00Z"):
+def row(dep="dep-v2418-1", ver="2.5.0", schema="1.3", traffic="organic_peer", ts="2026-08-14T10:00:00Z"):
     payload = {
         "deployment_id": dep, "plugin_version": ver, "plugin_artifact_hash": ARTIFACT_HASH,
         "schema_version": schema, "traffic_type": traffic,
-        "producer": {"component": "capability_reuse_plugin", "version": "2.4.19", "surface": "hmp_ingress"},
+        "producer": {"component": "capability_reuse_plugin", "version": "2.5.0", "surface": "hmp_ingress"},
     }
     event = {"event_id": "evt-%s" % (dep + ver + traffic), "event_type": "retrieval_event",
              "schema_version": schema, "timestamp": ts, "data": payload}
@@ -39,7 +39,7 @@ class V2418AnalyzerCohortFilterTests(unittest.TestCase):
 
         This reproduces the reviewer blocker: v244_metadata.SCHEMA_VERSION
         was 1.2, so real events had outer 1.3 / inner 1.2 and the analyzer
-        classified genuine v2.4.19 events as legacy.
+        classified genuine v2.5.0 events as legacy.
         """
         import importlib.util as _ilu
         plugin_dir = SKILL_DIR / "plugin"
@@ -63,17 +63,17 @@ class V2418AnalyzerCohortFilterTests(unittest.TestCase):
             cohort_path.write_text(json.dumps({
                 "deployment_id": "dep-v2418-b2",
                 "deployment_timestamp": "2026-08-14T10:00:00Z",
-                "plugin_version": "2.4.19",
+                "plugin_version": "2.5.0",
                 "plugin_artifact_hash": ARTIFACT_HASH,
                 "schema_version": "1.3",
-                "cohort_label": "v2.4.19_live",
+                "cohort_label": "v2.5.0_live",
             }))
             try:
                 eid = es.emit("retrieval_event", {
                     "session_id": "sess-b2", "trace_id": "trace-b2",
-                    "plugin_version": "2.4.19",
+                    "plugin_version": "2.5.0",
                     "deployment_id": "dep-v2418-b2",
-                    "cohort_label": "v2.4.19_live",
+                    "cohort_label": "v2.5.0_live",
                     "traffic_type": "organic_peer",
                     "requester_peer_id": "peer106",
                     "processing_peer_id": "peer70",
@@ -98,20 +98,20 @@ class V2418AnalyzerCohortFilterTests(unittest.TestCase):
                 __import__("datetime").datetime.fromisoformat(ev["timestamp"].replace("Z", "+00:00")),
             )]
             clean, legacy, _, _, _ = analyzer.cohort_filter(
-                rows, "2.4.19", "dep-v2418-b2", ARTIFACT_HASH, "1.3")
-            self.assertEqual(1, len(clean), "real v2.4.19 event must be clean")
+                rows, "2.5.0", "dep-v2418-b2", ARTIFACT_HASH, "1.3")
+            self.assertEqual(1, len(clean), "real v2.5.0 event must be clean")
             self.assertEqual(0, len(legacy))
 
     def test_cohort_filter_partitions_and_breakdowns(self):
         rows = [
             row(dep="dep-v2418-1"),
             row(dep="dep-v2418-1", ver="2.4.6"),        # legacy version
-            row(dep="dep-v2414-x", ver="2.4.19"),       # legacy deployment
+            row(dep="dep-v2414-x", ver="2.5.0"),       # legacy deployment
             row(dep="dep-v2418-1", schema="1.2"),       # legacy schema
             row(dep="dep-v2418-1", traffic="registry_sync"),  # traffic legacy
         ]
         clean, legacy, by_ver, by_traffic, by_producer = analyzer.cohort_filter(
-            rows, "2.4.19", "dep-v2418-1", ARTIFACT_HASH, "1.3")
+            rows, "2.5.0", "dep-v2418-1", ARTIFACT_HASH, "1.3")
         # clean = base + registry_sync (no traffic exclusion here); legacy =
         # wrong version + wrong deployment + wrong schema.
         self.assertEqual(2, len(clean))
@@ -123,7 +123,7 @@ class V2418AnalyzerCohortFilterTests(unittest.TestCase):
     def test_exclude_traffic_moves_clean_event_to_legacy(self):
         rows = [row(traffic="registry_sync"), row()]
         clean, legacy, _, by_traffic, _ = analyzer.cohort_filter(
-            rows, "2.4.19", "dep-v2418-1", ARTIFACT_HASH, "1.3",
+            rows, "2.5.0", "dep-v2418-1", ARTIFACT_HASH, "1.3",
             excluded_traffic=["registry_sync"])
         self.assertEqual(1, len(clean))
         self.assertEqual(1, len(legacy))
@@ -132,7 +132,7 @@ class V2418AnalyzerCohortFilterTests(unittest.TestCase):
     def test_plugin_version_and_deployment_filters_default_to_cohort(self):
         rows = [row(dep="dep-v2418-1"), row(dep="dep-v2418-2", ver="2.4.16")]
         clean, legacy, _, _, _ = analyzer.cohort_filter(
-            rows, "2.4.19", "dep-v2418-1", ARTIFACT_HASH, "1.3")
+            rows, "2.5.0", "dep-v2418-1", ARTIFACT_HASH, "1.3")
         self.assertEqual(1, len(clean))
         self.assertEqual("dep-v2418-1", clean[0][1]["deployment_id"])
 
@@ -160,7 +160,7 @@ class V2418AnalyzerReportValidationTests(unittest.TestCase):
             "input_event_count": 2,
             "input_min_timestamp": min_ts,
             "input_max_timestamp": max_ts,
-            "analyzer_version": "2.4.19",
+            "analyzer_version": "2.5.0",
             "generated_at": "2026-08-14T10:05:00Z",
         }
 

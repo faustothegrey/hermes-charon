@@ -7,15 +7,24 @@ version: 1.26.0
 
 # Hermes HMP — Skill & Tooling
 
+> 🔴 **REGOLA FORTE (16/08): messaggi HMP SEMPRE dal DB
+> `~/.hermes/data/hmp_gateway_plugin/messages.db`, MAI dal log** (tronca a 80
+> chars, no message_id). Helper: `~/.hermes/scripts/hmp-read-msg.py`. Vedi
+> `references/hmp-read-messages-from-db-2026-08-16.md`
+
 HMP (Hermes Message Protocol) è il protocollo peer-to-peer per comunicare con
 gli altri Hermes agent della rete. Usa HTTP+JSON su porta **18643**.
 
 Ops pitfalls: `references/hmp-peer-ops-pitfalls-2026-08-14.md`
 
-> **Cross-peer version probe**: come ottenere la versione Hermes core di ogni
-> peer (API :8642 → HMP send_and_wait → SSH fallback) e le peculiarità per
-> peer58/106/138/141 — vedi `references/peer-version-probe.md`. Nota:
-> `agent-card.version` è la versione del plugin HMP, NON quella del core.
+> **Cross-peer version probe**: `references/peer-version-probe.md`. **Send
+> v0.1.4**: `/hmp/send` LOCALE = iniezione locale; invio REALE = POST al
+> gateway TARGET con `from_peer` nel body — `references/hmp-send-semantics-2026-08-16.md`
+
+> 🔗 **G0 trace_id end-to-end (16/08)**: request-unique UUID v4 dall'adapter
+> fino al retriever capability-reuse. Plumbing core (6 tocchi), pitfall agent
+> cache / NameError / test live con capability trusted —
+> `references/g0-trace-id-chain-plumbing-2026-08-16.md`
 
 ## ⚠️ DUAL-PLANE :18644 RITIRATO (2026-08-13)
 
@@ -29,8 +38,6 @@ processo). Convergenza v0.1.4: `/hmp/send` accetta `session_id` (chat_id=session
 altrimenti from_peer), alias `/send` per retrocompatibilità, consumer_loop emette
 event_store live-shadow con metadati (`organic_peer`, requester/processing_peer,
 provenance organic_live). Le sezioni dual-plane sotto sono **storiche**.
-
-## Protocol Versioning
 
 ## Protocol Versioning
 
@@ -760,110 +767,9 @@ Tutta la comunicazione HMP va fatta con **curl diretto** o Python `urllib`.
 
 ## Script bash (RIMOSSI — riferimento storico)
 
-**Tutti gli script in `~/.hermes/scripts/hmp/` sono stati rimossi dal filesystem.**
-Non tentare di usarli — falliranno con "No such file or directory".
-
-Per comunicazione HMP usare sempre **curl diretto**:
-
-```bash
-# Send (non bloccante)
-MSGID="msg_$(date +%s%N)"
-curl -s -X POST http://192.168.178.105:18643/hmp/send \
-  -H "Content-Type: application/json" \
-  -d "{\"hmp_version\":\"1.0\",\"message_id\":\"${MSGID}\",\"from\":\"peer70\",\"to\":\"peer105\",\"type\":\"request\",\"timeout\":120,\"payload\":{\"text\":\"Messaggio in una riga\"}}"
-
-# Poll fino a completed
-for i in $(seq 1 30); do
-  data=$(curl -s http://192.168.178.105:18643/hmp/poll/${MSGID})
-  status=$(echo "$data" | python3 -c "import sys,json; print(json.load(sys.stdin).get('status',''))")
-  [ "$status" = "completed" ] && echo "$data" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('response_text',''))" && break
-  [ "$status" = "failed" ] && echo "FAIL: $data" && break
-  sleep 3
-done
-
-# send_and_wait (bloccante, attende risposta lato server)
-curl -s -X POST http://192.168.178.105:18643/hmp/send_and_wait \
-  -H "Content-Type: application/json" \
-  -d "{\"hmp_version\":\"1.0\",\"message_id\":\"sw_$(date +%s%N)\",\"from\":\"peer70\",\"to\":\"peer105\",\"type\":\"request\",\"timeout\":120,\"payload\":{\"text\":\"Test veloce\"}}"
-```
-
-### ⚠️ LIMITAZIONE: newline nel testo (ancora valida)
-
-Con curl diretto, usare sempre `\"payload\":{\"text\":\"testo\"}` — se il
-testo contiene newline, usare `@` per caricare da file o Python `json.dumps()`.
-
-### ⚠️ LIMITAZIONE: Hermes security blocca keyword distruttive
-
-Hermes scansiona il comando shell per keyword come "rimuovi", "elimina",
-"disabilita", "pulizia" — anche se sono dentro il testo di un messaggio HMP
-destinato a un peer remoto (non un comando locale).
-
-**Sintomo:** `BLOCKED: User denied this command.` anche se l'utente non ha
-fatto nulla. L'approvazione forse timeouta e Hermes la nega automaticamente.
-
-**Workaround:** usare `curl` diretto invece del bash script per messaggi che
-contengono azioni distruttive. Il comando `curl` non viene scanso allo stesso modo.
-
-### ⚠️ LIMITAZIONE: Security block totale su terminal/execute_code da contesto HMP/DM
-
-Quando la comunicazione con l'agente avviene **via HMP/DM** (non attraverso la console
-Hermes UI), i comandi `terminal()` e `execute_code()` vengono sistematicamente bloccati
-con errore `"BLOCKED: Command timed out without user response"`.
-
-**Causa:** Hermes mostra un approval prompt nella console UI, ma l'utente che comunica
-via HMP/DM **non vede quel prompt** — il timeout scade prima che l'utente possa approvare.
-
-**Workaround: no_agent cron job con script Python urllib puro**
-
-L'unica via per eseguire codice Python da un contesto HMP è creare un cron job
-`no_agent=true` che esegue uno script con solo `urllib.request` (niente subprocess,
-niente import oltre standard library). Il cron job gira in un contesto separato
-che non richiede approval interattivo.
-
-Script template:
-```python
-#!/usr/bin/env python3
-import sys, json, time
-from urllib.request import Request, urlopen
-
-dst = "192.168.178.XXX"
-msg = "testo messaggio"
-mid = f"msg_{int(time.time())}"
-data = json.dumps({
-    "hmp_version": "1.0", "message_id": mid,
-    "from": "peer70", "to": "peerXXX",
-    "type": "request", "timeout": 120,
-    "payload": {"text": msg}
-}).encode()
-try:
-    r = urlopen(f"http://{dst}:18643/hmp/send", data=data, timeout=10)
-    resp = json.loads(r.read())
-    print(f"SEND: accepted={resp.get('accepted')} status={resp.get('status','?')}")
-except Exception as e:
-    print(f"ERROR: {e}")
-sys.exit(0)
-```
-
-Cron job:
-```python
-cronjob(action='create', name='msg-peer', script='script.py',
-        schedule='1m', no_agent=True, deliver='origin')
-```
-
-**⚠️ Quirk di cronjob(action='run'):** eseguire manualmente un job one-shot via
-`action='run'` cambia il deliver da `origin` a `local` e perde l'output.
-Per vedere l'output, usare lo schedule automatico (`1m`) e attendere.
-
-**Script consigliato:** usare sempre `sys.exit(0)` anche in caso di errore,
-altrimenti `execution_success=false` nasconde l'output su stderr.
-
----
-
-## CLI Python (RIMOSSO — riferimento storico)
-
-**`hmp_tools.py` in `~/.hermes/scripts/hmp/` non esiste più.** Usare **curl diretto** o Python `urllib` (pattern `hmp_send_and_wait` con POST `/hmp/send` + poll `/hmp/poll/{id}`, come documentato sopra).
-
-## Pitfall critico: dimensione messaggi
+**Script `~/.hermes/scripts/hmp/` RIMOSSI (storico).** Usare SEMPRE curl
+diretto: POST `/hmp/send` + poll `/hmp/poll/{id}` (pattern send_and_wait).
+Niente `hmp_tools.py` — non esiste più.
 
 **I messaggi HMP non devono superare ~2-3 KB di testo.**
 I peer agentici saturano la sessione e non rispondono più.
@@ -1217,6 +1123,65 @@ cat ~/.hermes/registry/registry.json
 python3 ~/.hermes/registry/registry-server.py status
 python3 ~/.hermes/registry/registry-server.py query <skill_name>
 ```
+
+### 📛 Naming: "skill registry" = Local Skill registry (16/08)
+
+Quando Fausto dice **"the skill registry"** intende il registry INTERNO del
+mesh — **Local Skill registry** (ex-"HMP registry") — NON lo skills hub
+pubblico Hermes (`hermes skills publish`/ClawHub). Path: `~/.hermes/registry/`
+(registry.json + peers/*.json), publish via `registry-publish.py`, skill
+riconosciute solo con frontmatter `type: custom`. I peer lo sanno (notifica
+16/08 salvata in memoria su 141/138/58).
+
+### ⚖️ Pubblicazione selettiva per versione (16/08)
+
+`registry-publish.py` scansiona le skill locali e prende la versione dal
+frontmatter — MA si può registrare una versione DIVERSA da quella locale
+tenendola ferma nel manifest. Pattern usato il 16/08: hmp pubblicato a 1.26.0
+(stabile) mentre capability-reuse tenuto a 2.2.0 nel registry benché la locale
+sia 2.5.0 (ancora in dev). Regola operativa:
+- **Stabile** → aggiorna `peers/<peer>.json` (skill + plugin) alla versione reale
+- **In dev** → NON toccare la voce nel manifest (resta alla versione pubblicata)
+- `registry.json` (indice) non porta versioni → nessuna modifica necessaria lì
+- Verificare la versione reale locale PRIMA: `grep -m1 '^version:' <skill>/SKILL.md`
+
+### 📣 REGISTRY NOTICE → peer (16/08)
+
+Flusso per informare i peer attivi di una definizione/nuova versione nel
+registry e farli resyncare da soli (dettaglio: `references/registry-notice-flow-2026-08-16.md`).
+**PREFERRED PATH, non strictly mandatory** — è il modo consigliato di
+distribuire definizioni/versioni ai peer, ma non è obbligatorio: il SCP
+manuale (regola 6 qui sopra) resta un'alternativa valida quando serve
+controllo diretto o il peer è offline.
+
+1. **Health check** attivi: `curl -sf --connect-timeout 3 http://<ip>:18643/health` → solo peer `"status":"ok"` con `node_id`
+2. **HMP message** a ciascun peer attivo con testo strutturato: 1) cosa salvare in MEMORIA (definizione registry), 2) istruzione di resync autonomo della skill (versione target)
+3. **Poll** `/hmp/poll/<message_id>` fino a `status: completed` (peers rispondono in 10-60s; ripollare)
+4. **Fallback skill**: tar.gz della skill in `~/.hermes/registry/dist/<skill>-<ver>.tar.gz` (es. hermes-hmp-1.26.0.tar.gz, 110KB) — pronto se un peer non riesce a scaricarla
+5. Peer OFFLINE non contattati → riceveranno al prossimo rientro (nessuna coda automatica)
+
+Esito reale 16/08: 141/138/58 tutti confermati (memoria salvata + hmp 1.26.0, 138 già allineato).
+
+### 🔗 G0 trace_id end-to-end (16/08)
+
+Percorso dati per propagare il request-unique UUID dall'adapter fino all'hook
+`pre_llm_call` di Capability Reuse: `references/trace-id-propagation-path-2026-08-16.md`.
+Finding chiave: i kwargs del hook sono hardcoded in `turn_context.py` (no
+trace_id/chat_id/requester_peer_id) → adapter-only NON basta; serve plumbing
+minimo in 4 punti (adapter → run.py → agent_init.py → turn_context.py), zero
+modifiche a capability-reuse 2.6.0 (il retriever legge già
+`hook_context["trace_id"]` come prima priorità).
+
+### 🔬 Testare l'adapter HMP in isolamento (G0, 16/08)
+
+Per modificare/testare `~/.hermes/plugins/hmp/adapter.py` SENZA riavviare il
+gateway: usare il venv python di Hermes (`~/.hermes/hermes-agent/venv/bin/python`,
+il python di sistema è 3.9 e fallisce sui type-union), registrare la platform
+via `platform_registry` prima di istanziare (altrimenti `Platform("hmp")` →
+ValueError), e testare `_process_item()` (estratto dal loop in G0) invece del
+consumer loop. Pattern completo + harness 30/30 PASS:
+`references/hmp-adapter-testing.md`. Smoke in-process scrive nel log eventi
+ma il gateway systemd attivo resta sul codice VECCHIO fino al riavvio manuale.
 
 #### ⚠️ Pitfall: registry.json è STANTIO — non fidarsi per lo stato skill dei peer
 

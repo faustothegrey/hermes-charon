@@ -133,6 +133,81 @@ class ObserveChannelSkillTests(unittest.TestCase):
         self.assertIsNotNone(env)
         self.assertFalse(env.get("observe_shown"))
 
+    def test_shadow_mode_bubble_from_candidates(self):
+        """v2.5.0 fix (e2e): in shadow il result ha capability_id vuoto ma i
+        candidates sono popolati — la bubble observe deve emergere da
+        candidates[0] (feedback diagnostico, funziona in shadow E active)."""
+        r = _Result(capability="", score=0.0)  # capability_id vuoto
+        r.candidates = [{"capability_id": "hmp-healthcheck",
+                         "capability_version": "1.0.0",
+                         "score": 0.6818, "eligibility": "rejected"}]
+        self.proto._remember_retrieval(r)
+        fb = self.proto.consume_retrieval_observe(
+            session_id="s1", episode_id="ep1", turn_id="t1")
+        self.assertIsNotNone(fb)
+        self.assertEqual(fb["kind"], "retrieval")
+        self.assertIn("hmp-healthcheck", fb["text"])
+        self.assertIn("0.68", fb["text"])
+        # single-fire
+        self.assertIsNone(self.proto.consume_retrieval_observe(
+            session_id="s1", episode_id="ep1", turn_id="t1"))
+
+    def test_shadow_hook_returns_observe(self):
+        """L'hook completo (pre_tool_call) ritorna observe anche in shadow
+        quando l'envelope ha candidates."""
+        r = _Result(capability="", score=0.0)
+        r.candidates = [{"capability_id": "hmp-healthcheck",
+                         "capability_version": "1.0.0",
+                         "score": 0.6818, "eligibility": "rejected"}]
+        self.proto._remember_retrieval(r)
+        res = self.pkg.on_pre_tool_call(
+            "web_search", {"q": "x"}, task_id="t1",
+            session_id="s1", episode_id="ep1", turn_id="t1")
+        self.assertEqual(res["action"], "observe")
+        self.assertIn("hmp-healthcheck", res["feedback"]["text"])
+
+    # ── hardening close-up review peer70 ────────────────────────────────
+    def test_fallback_when_episode_missing_in_kwargs(self):
+        """Se l'episode_id manca nei kwargs del pre_tool_call, la key esatta
+        non matcherà — il fallback (session, '', turn) deve recuperare
+        l'envelope (match FORTE su session+turn conservato)."""
+        self.proto._remember_retrieval(_Result())  # episode=ep1
+        # consume con episode vuoto (come se i kwargs non lo portassero)
+        fb = self.proto.consume_retrieval_observe(
+            session_id="s1", episode_id="", turn_id="t1")
+        self.assertIsNotNone(fb)
+        self.assertIn("hmp-healthcheck", fb["text"])
+        # single-fire anche via fallback
+        self.assertIsNone(self.proto.consume_retrieval_observe(
+            session_id="s1", episode_id="", turn_id="t1"))
+
+    def test_hook_fail_open_on_corrupted_envelope(self):
+        """Un envelope corrotto (es. candidates con campo non numerico) non
+        deve MAI propagare: il hook ritorna None (fail-open), nessuna
+        eccezione."""
+        r = _Result(capability="", score=0.0)
+        r.candidates = [{"capability_id": "hmp-healthcheck",
+                         "capability_version": "1.0.0",
+                         "score": "not-a-number",  # score corrotto
+                         "eligibility": "rejected"}]
+        self.proto._remember_retrieval(r)
+        # consume diretto: score non numerico -> None senza crash
+        fb = self.proto.consume_retrieval_observe(
+            session_id="s1", episode_id="ep1", turn_id="t1")
+        self.assertIsNone(fb)
+        # hook: mai eccezione, sempre None
+        res = self.pkg.on_pre_tool_call(
+            "web_search", {"q": "x"}, task_id="t1",
+            session_id="s1", episode_id="ep1", turn_id="t1")
+        self.assertIsNone(res)
+
+    def test_hook_never_raises_on_bad_episode(self):
+        """Hook con kwargs anomali (episode non stringa) -> mai eccezione."""
+        res = self.pkg.on_pre_tool_call(
+            "web_search", {"q": "x"}, task_id="t1",
+            session_id="s1", episode_id=None, turn_id="t1")
+        self.assertIn(res, (None, {"action": "observe"}))
+
     def test_fail_open_hook_never_raises(self):
         # hook senza kwargs: nessun crash, None
         r = self.pkg.on_pre_tool_call("web_search", {"q": "x"}, task_id="")

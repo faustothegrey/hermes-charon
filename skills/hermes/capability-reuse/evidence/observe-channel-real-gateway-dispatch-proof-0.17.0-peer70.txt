@@ -1,0 +1,14 @@
+[0] plugin capability-reuse caricato (runtime installato)
+[1] envelope retrieval attivo (same session+turn, shadow)
+[2] hook pre_tool_call = plugin capability-reuse (delivery manager reale)
+[3] invio del dispatch reale (execute_tool_calls_sequential, core 0.17)...
+  📞 Tool 1: terminal(['command']) - {"command": "echo v250-gw-dispatch"}
+  ✅ Tool 1 completed in 7.28s - {"error": "noop"}
+[4] dispatch completato (sequential)
+[5] tool.considered n=1: tool='terminal' feedback={'kind': 'retrieval', 'text': 'hmp-healthcheck · score 0.68', 'duration_ms': 4.0}
+[6] bubble renderizzata (renderer REALE): '🔍 hmp-healthcheck · score 0.68 · 4ms'
+  📞 Tool 1: terminal(['command']) - {"command": "echo v250-gw-dispatch-2"}
+  ✅ Tool 1 completed in 0.08s - {"error": "noop"}
+[7] seconda tool call stesso turno: bubble 🔍 retrieval=0 (atteso 0)
+[8] hook ripristinati
+RESULT: PASS — dispatch reale → sink interno → tool.considered → 🔍 (single-fire)

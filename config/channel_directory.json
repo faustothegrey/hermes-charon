@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-08-15T22:59:31.256044",
+  "updated_at": "2026-08-16T23:00:45.851562",
   "platforms": {
     "telegram": [
       {
@@ -171,6 +171,72 @@
       {
         "id": "peer58_peer70_t5a_reversed",
         "name": "peer58_peer70_t5a_reversed",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "phase0-case-a",
+        "name": "phase0-case-a",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "phase0-case-a2",
+        "name": "phase0-case-a2",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "phase0-case-b",
+        "name": "phase0-case-b",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "phase0-cohort-a",
+        "name": "phase0-cohort-a",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "phase0-cohort-b",
+        "name": "phase0-cohort-b",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "shadow-check-1",
+        "name": "shadow-check-1",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "phase1-opinion",
+        "name": "phase1-opinion",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "phase1a-watchdog",
+        "name": "phase1a-watchdog",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "watchdog-p141-p70",
+        "name": "watchdog-p141-p70",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "v260-review",
+        "name": "v260-review",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "g0-review-sess",
+        "name": "g0-review-sess",
         "type": "dm",
         "thread_id": null
       }

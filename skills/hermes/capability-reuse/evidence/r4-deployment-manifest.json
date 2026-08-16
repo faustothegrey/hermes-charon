@@ -1,0 +1,41 @@
+{
+  "artifact": "capability-reuse-v2.6.0.zip",
+  "artifact_sha256": "external sidecar required; see capability-reuse-v2.6.0.zip.sha256",
+  "generated_at": "2026-08-16T12:40:00Z",
+  "version": "2.6.0",
+  "skill_version": "2.6.0",
+  "plugin_version": "2.6.0",
+  "protocol_VERSION": "2.6.0",
+  "event_schema_version": "1.3",
+  "review_schema_version": "1.0",
+  "preview_schema_version": "1.0",
+  "status": "v2.6.0-REBUILD-3 — remediation round 3 (reviewer 2026-08-16): provenance source EXACT allowlist (hook_context.platform/anything rejected; 3 new tests); conformance 15/15 rigenerato sull'esatto plugin tree con artifact_identity.plugin_tree_hash (validator algorithm); tutti i timestamp UTC reali (timezone.utc); claim 146/146 solo peer141 (report nodes=peer141); pre-seal gate G0 aggiunto al Phase 1a plan (P0-8/P0-10/cohort label/UTC). Suite 148/148 su peer141 (report packaged).",
+  "release_decision": "v2.6.0 REBUILD-3 — remediation round 3 completata. P0-1 exact provenance allowlist; P0-2 conformance identity (artifact hash nel report); P0-3 UTC reale ovunque; P1 claim supportato 146/146 (peer141); P1 pre-seal gate G0 nel plan (adapter source, request-unique trace, cohort label, UTC boundary). Open: P0-8 adapter source (surface separato), P0-10 request-unique trace (pre-seal). Formal Phase 0 empirical closure: NOT YET.",
+  "runtime_sync": {
+    "plugin": "~/.hermes/plugins/capability-reuse",
+    "skill": "~/.hermes/skills/hermes/capability-reuse"
+  },
+  "validation": {
+    "unit_test_report": "evidence/unit-test-report-v2.6.0.json",
+    "conformance_report": "evidence/conformance-report-v2.6.0.json",
+    "provenance_failclosed_tests": "tests/test_phase1a_provenance_failclosed.py",
+    "remediation_notes": "evidence/remediation-notes-v2.6.0-2026-08-16.md",
+    "phase1a_plan": "references/phase1a-operational-plan-2026-08-16.md",
+    "commands": [
+      "python3 -m compileall -q plugin scripts tests",
+      "python3 -m unittest discover -s tests -v",
+      "HOME=/tmp/capreuse-v260-home python3 scripts/conformance-suite.py --profile full-required",
+      "python3 scripts/validate-release-archive.py /home/fausto/.hermes/capability-reuse-v2.6.0.zip --version 2.6.0 --sha256-file /home/fausto/.hermes/capability-reuse-v2.6.0.zip.sha256"
+    ]
+  },
+  "core_patch_compat": {
+    "patchset": "observe-channel",
+    "patchset_version": "0.3.0",
+    "manifest": "~/.hermes/patches-core/patch-manifest.json",
+    "shipping_rule": "HARD RULE: patches never in skill sync/ZIP; validator rejects archives containing capability-reuse/patches/*; assets live in ~/.hermes/patches-core/ and are applied only via apply-core-patch.sh",
+    "requires": "observe-channel patchset >=0.3.0"
+  },
+  "protocol_version": "2.6.0",
+  "schema_version": "1.3",
+  "plugin_tree_hash": "90e9d21f1532cd8a395546f15344a05b2ea8b62d0d0899e5925663f85459a86f"
+}

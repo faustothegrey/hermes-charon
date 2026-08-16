@@ -32,7 +32,7 @@ from datetime import datetime, timezone
 from dataclasses import dataclass, field
 from typing import Optional
 
-VERSION = "2.5.0"
+VERSION = "2.6.0"
 
 # ── Constants ──
 DEFAULT_FALLBACK_TTL_SECONDS = 300  # 5 minutes
@@ -513,6 +513,9 @@ def _remember_retrieval(result) -> None:
         "retrieval_score": float(data.get("retrieval_score") or 0.0),
         "latency_ms": float(data.get("latency_ms") or 0.0),
         "intervened": bool(data.get("intervened", False)),
+        # v2.5.0 fix (e2e): candidates conservati per la bubble observe anche
+        # in shadow (capability top e score sono in candidates[0]).
+        "candidates": list(data.get("candidates") or []),
         # consume-on-observe: settato SOLO quando l'hook ha davvero ritornato
         # action=observe per questo envelope (single-fire bubble, v2.5.0).
         "observe_shown": False,
@@ -563,12 +566,32 @@ def consume_retrieval_observe(session_id: str = "", episode_id: str = "", turn_i
         return None
     key = _scope(session_id, episode_id, turn_id)
     envelope = _latest_retrieval_by_scope.get(key)
+    # v2.5.0 hardening (close-up review peer70): se la key esatta non matcha
+    # (es. episode_id mancante nei kwargs del pre_tool_call mentre l'envelope
+    # è stato memorizzato con episode reale), fallback alla key con episode
+    # vuoto — resta comunque match FORTE su session+turn (zero bubble stale).
+    if envelope is None and episode_id:
+        envelope = _latest_retrieval_by_scope.get(_scope(session_id, "", turn_id))
     if not envelope:
         return None
     if envelope.get("observe_shown"):
         return None
+    # v2.5.0 fix (e2e): in SHADOW mode il result ha capability_id vuoto ma i
+    # candidates sono popolati (candidates[0] = capability top con score).
+    # La bubble observe è un feedback diagnostico — deve funzionare in shadow
+    # E in active. Precedenza: capability_id/retrieval_score del result
+    # (active), fallback a candidates[0] (shadow).
     capability = envelope.get("capability_id", "")
     score = envelope.get("retrieval_score", 0.0)
+    if (not capability or not isinstance(score, (int, float)) or score <= 0.0):
+        candidates = envelope.get("candidates") or []
+        if candidates:
+            top = candidates[0]
+            capability = top.get("capability_id", "")
+            try:
+                score = float(top.get("score") or 0.0)
+            except (TypeError, ValueError):
+                score = 0.0
     if not capability or not isinstance(score, (int, float)) or score <= 0.0:
         # fail-open: feedback non costruibile -> nessun observe, envelope
         # NON consumato (un futuro retrieval valido sullo stesso scope puo'

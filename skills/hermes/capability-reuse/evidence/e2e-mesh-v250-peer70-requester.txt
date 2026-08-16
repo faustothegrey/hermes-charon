@@ -1,0 +1,62 @@
+E2E MESH v2.5.0 — capability-reuse usa il canale observe (bubble 🔍)
+====================================================================
+Data: 2026-08-15 · Nodi: peer141 (processor/esecutore, core 0.20.1,
+plugin 2.5.0) · peer70 (requester mesh) · Canale: HMP reale
+
+NATURA DELL'EVIDENCE (classificazione precisa, come da review):
+  1. REAL GATEWAY REQUEST: envelope HMP REALE da peer70 al gateway
+     peer141 (non simulato) — la richiesta attraversa il gateway, il
+     turno viene processato con i hook plugin 2.5.0 live, e il
+     pre_tool_call del processo gateway emette l'observe.
+  2. COMPONENT RUNTIME INTEGRATION: il tratto
+     resolve_pre_tool_block (reale) → feedback_sink → tool.considered
+     → _render_observed_bubble (reale) è dimostrato dal driver
+     observe-channel-skill-runtime-proof.py (pinned-runtime, output in
+     evidence/observe-channel-skill-runtime-proof-output.txt).
+  Nota: il dispatch completo agent/tool_executor.py da richiesta
+  gateway (agent reale → tool eseguito) NON è attraversato da questa
+  evidence; quel tratto resta il real-gateway smoke PENDING (scope
+  formale peer58<->peer106).
+
+1. REAL GATEWAY REQUEST (live, processo gateway PID 50708)
+   Envelope inviato da peer70 (from_peer=peer70 → peer141):
+     message_id hmp_6d7883c4c6b7493f
+     "check HMP health for peer58 and peer70, then run the terminal
+      command: echo v250-observe-mesh"
+   → accettato dal gateway, turno nella sessione HMP
+     20260814_185802_6c8eb52d (history=39, platform=hmp).
+
+2. HOOK OBSERVE LIVE (journal del processo gateway, righe [v250-diag]
+   da diagnostica temporanea — RIMOSSA dopo la verifica):
+     23:30:53 pre_tool_call session='20260814_185802_6c8eb52d'
+             turn='...:8ccae34a' tool='terminal' -> feedback=YES
+             (observe EMESSO: bubble 🔍)
+     23:30:59 stessa sessione/turn -> feedback=no (single-fire ✓)
+   → il plugin 2.5.0 ha ritornato {"action":"observe",
+     "feedback":{"kind":"retrieval","text":"hmp-healthcheck · score
+     0.68",...}} nel processo gateway reale, sul primo pre_tool_call
+     del turno (single-fire per envelope sul secondo).
+
+3. TELEMETRIA (events.jsonl, retrieval_event seq 5, 21:30:47Z UTC):
+   trace peer70 · prompt esatto · peer_list=['peer58','peer70']
+   candidate hmp-healthcheck@1.0.0 score 0.6818 · eligible=False
+   (shadow) · requester peer70 → processor peer141.
+
+4. COMPONENT RUNTIME INTEGRATION (driver pinned, stesso codice):
+   observe-channel-skill-runtime-proof.py RESULT PASS:
+     '🔍 hmp-healthcheck · score 0.68 · 4ms'
+   → resolve_pre_tool_block reale (hermes_cli.plugins) → feedback_sink
+     (replica 5 righe dispatch) → tool.considered → _render_observed_
+     bubble reale (gateway/run.py) → bubble 🔍, single-fire ok.
+
+FIX APPLICATO DURANTE L'E2E (shadow mode):
+  - consume_retrieval_observe: fallback a candidates[0] quando
+    capability_id del result è vuoto (shadow: should_intervene=False)
+    → bubble diagnostica funziona in shadow E active
+  - _remember_retrieval: conserva candidates nell'envelope
+  - Verificato: 117/117 unit (16 test v2.5.0 observe channel)
+
+STATO: diagnostica temporanea RIMOSSA · skill↔runtime IDENTICI ·
+peer70 allineato (16/16) · cohort v2.5.0_live su entrambi i nodi ·
+scope formale di valutazione: peer58<->peer106 (peer141/peer70 =
+integration evidence soltanto)

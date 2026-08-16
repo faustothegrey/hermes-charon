@@ -15,7 +15,7 @@ Pipeline (§4.1.2):
     → check confidence, margin, availability, trust
     → inject best match when all conditions pass
 """
-import re, time, difflib, logging, uuid
+import re, time, difflib, logging, uuid, os
 from typing import Optional, Any
 from dataclasses import dataclass, field
 
@@ -287,24 +287,44 @@ def _extract_requester(hook_context: dict | None) -> dict:
     }
 
 
-def _extract_traffic_type(hook_context: dict | None, user_message: str = "") -> str:
-    """v2.5.0 full traffic taxonomy (spec point 8).
+def _extract_collector(hook_context: dict | None) -> str:
+    """v2.4.18 P9: collector_peer_id — the peer that transports/collects the
+    telemetry for analysis. NEVER overload processing_peer_id with it: when
+    peer70 only transports/collects, it must appear as collector_peer_id, not
+    processing_peer_id.
 
-    Categories: organic_user, organic_peer, scheduled_protocol, registry_sync,
-    cron, retry, test, acceptance, calibration, unknown.
-    Registry-sync and test/acceptance/calibration traffic must be classifiable
-    so recurrence/precision analysis can exclude them (29 repeated sync
-    messages dominated the v2.4.16 dataset).
+    Resolution order: explicit hook_context collector_peer_id → env
+    CAPABILITY_REUSE_COLLECTOR_PEER_ID → "" (unknown, never invented).
     """
     ctx = hook_context or {}
-    explicit = ctx.get("traffic_type") or ctx.get("capability_reuse_traffic_type")
-    if explicit:
-        return str(explicit)
+    req = ctx.get("requester") if isinstance(ctx.get("requester"), dict) else {}
+    return str(
+        ctx.get("collector_peer_id")
+        or req.get("collector_peer_id")
+        or os.environ.get("CAPABILITY_REUSE_COLLECTOR_PEER_ID", "")
+        or ""
+    )
+
+
+def _extract_traffic_type(hook_context: dict | None, user_message: str = "") -> str:
+    """Full traffic taxonomy (spec point 8) — FAIL-CLOSED.
+
+    Categories: organic_user, organic_peer, scheduled_protocol, registry_sync,
+    cron, retry, test, acceptance, calibration, operator_solicited,
+    operator_seeded, unknown.
+
+    Reviewer P0-3 (2026-08-16): EXCLUSION MARKERS WIN over any organic
+    declaration. A conflicting body like `traffic_type=organic_peer` +
+    `operator_solicited=true` must classify as operator_solicited, never
+    organic. Order: explicit exclusion markers first, then declared
+    non-organic traffic_type, then organic only when no marker contradicts.
+    """
+    ctx = hook_context or {}
     platform = str(ctx.get("platform") or "").lower()
     channel = str(ctx.get("request_channel") or platform or "").lower()
     msg = (user_message or "").lower()
-    # v2.5.0: test/acceptance/calibration/retry/registry_sync/scheduled
-    # protocol must be distinguishable from organic traffic.
+
+    # 1) Exclusion markers ALWAYS win (fail-closed, P0-3).
     if ctx.get("is_calibration") or ctx.get("calibration") or msg.startswith("calibration"):
         return "calibration"
     if ctx.get("is_test") or ctx.get("test_mode") or channel == "test":
@@ -321,6 +341,27 @@ def _extract_traffic_type(hook_context: dict | None, user_message: str = "") -> 
         return "scheduled_protocol"
     if ctx.get("is_cron") or ctx.get("schedule_id") or channel == "cron":
         return "cron"
+    if ctx.get("operator_solicited") or ctx.get("is_solicited") or ctx.get("solicited"):
+        return "operator_solicited"
+    if ctx.get("operator_seeded") or ctx.get("is_seeded") or ctx.get("seeded"):
+        return "operator_seeded"
+
+    # 2) Explicit declared traffic_type (post-marker): only non-organic
+    #    classes are accepted verbatim; an organic declaration here is
+    #    accepted only if no exclusion marker was present (checked above).
+    explicit = str(ctx.get("traffic_type") or ctx.get("capability_reuse_traffic_type") or "").strip().lower()
+    if explicit:
+        if explicit in ("organic_peer", "organic_user", "organic_live"):
+            # Organic declaration only valid without conflicting markers,
+            # which we already excluded above. Channel/identity must support it.
+            if channel == "hmp" or ctx.get("source_peer_id") or ctx.get("requester_peer_id"):
+                return "organic_peer" if explicit != "organic_user" else "organic_user"
+            if channel == "telegram" or ctx.get("user_id") or ctx.get("sender_id"):
+                return "organic_user"
+            return "unknown"
+        return explicit
+
+    # 3) Inference from channel/identity (only after markers + explicit).
     if channel == "hmp" or ctx.get("source_peer_id") or ctx.get("requester_peer_id"):
         return "organic_peer"
     if channel == "telegram" or ctx.get("user_id") or ctx.get("sender_id") or ctx.get("parent_task_id"):
@@ -351,6 +392,13 @@ def _request_provenance(hook_context: dict | None) -> tuple[str | None, str, str
 
     The process environment fallback lives in event_store.normalize_provenance;
     this helper keeps formal request provenance scoped to the current hook call.
+
+    FAIL-CLOSED (reviewer P0-2, 2026-08-16): provenance must come from an
+    EXPLICIT declaration (capability_reuse_provenance / provenance stream).
+    Platform identity alone ("passed through the HMP gateway") NEVER implies
+    organic_live — a request produced deliberately for a validation case is
+    not organic just because it arrived via HMP. Missing explicit provenance
+    returns None (→ legacy_unclassified / not eligible).
     """
     if not hook_context:
         return None, "", ""
@@ -365,12 +413,8 @@ def _request_provenance(hook_context: dict | None) -> tuple[str | None, str, str
     elif prov is None and hook_context.get("provenance") is not None:
         prov = hook_context.get("provenance")
         source = "hook_context.provenance"
-    if prov is None:
-        platform = str(hook_context.get("platform") or "").lower()
-        if platform in {"hmp", "telegram", "api", "gateway", "local"}:
-            prov = "organic_live"
-            detail = detail or "platform_hook_context"
-            source = "hook_context.platform"
+    # P0-2: NO platform inference. If the caller did not declare provenance,
+    # the request is not organically classifiable → None (fail closed).
     return prov, detail, source
 
 def _coverage_reason(request_effect: str, capability_effect: str, query: str) -> tuple[bool, str]:
@@ -572,6 +616,7 @@ def retrieve(session_id: str = "",
         requester=_extract_requester(hook_context),
         validated_inputs=_extract_validated_inputs(user_message, top_cap),
         traffic_type=_extract_traffic_type(hook_context, user_message),
+        collector_peer_id=_extract_collector(hook_context),
         second_score=second_score,
         score_margin=margin,
         intervention_threshold=intervention_threshold,
@@ -584,7 +629,7 @@ def retrieve(session_id: str = "",
         dispatch="pending" if should_intervene else "none",
         # v2.5.0: explicit retrieval semantics + proof the real retriever ran.
         retriever_executed=True,
-        retriever_version="2.5.0",
+        retriever_version="2.6.0",
         registry_version=reg.get_registry_version(),
         retrieval_threshold=retrieval_threshold,
         candidate_count=len(candidates_info),

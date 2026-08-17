@@ -42,7 +42,6 @@ RETRY_DELAY = 120  # secondi tra tentativi (sovrascritto dal cron 2min)
 PEER_IP = {
     "peer70":  "192.168.178.70",
     "peer84":  "192.168.178.84",
-    "peer105": "192.168.178.105",
     "peer106": "192.168.178.106",
     "peer128": "192.168.178.112",
     "peer58":  "192.168.178.58",
@@ -52,7 +51,6 @@ PEER_IP = {
 PEER_LABEL = {
     "peer70":  "Charon (questo)",
     "peer84":  "N56VV",
-    "peer105": "Fedora30",
     "peer106": "Fedora30 ARM",
     "peer128": "MacBook",
     "peer58":  "HMP peer",

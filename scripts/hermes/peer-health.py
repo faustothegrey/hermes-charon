@@ -19,7 +19,6 @@ STATUS_FILE.parent.mkdir(parents=True, exist_ok=True)
 PEERS = {
     "peer70":  {"host": "127.0.0.1",        "port": 8642, "role": "coordinator", "desc": "RPi4 orchestratore 24/7"},
     "peer84":  {"host": "192.168.178.84",    "port": 8642, "role": "worker",      "desc": "N56VV heavy lifting"},
-    "peer105": {"host": "192.168.178.105",   "port": 8642, "role": "worker",      "desc": "RPi3B YouTube transcript"},
     "peer106": {"host": "192.168.178.106",   "port": 8642, "role": "worker",      "desc": "ARMv8 web research"},
     "peer128": {"host": "192.168.178.128",   "port": 8642, "role": "worker",      "desc": "MacBook Pro (offline)"},
 }

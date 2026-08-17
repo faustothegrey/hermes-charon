@@ -2,7 +2,6 @@
 """research-queue-autonomous.py — Pops items from the Research Queue and
 dispatches them to the appropriate peer specialist.
 
-peer105 → YouTube transcripts (max 3-4/day)
 peer106 → web research queries (max ~10/day)
 
 Runs at 07:00, 10:00, 20:00, 22:00, 00:00 daily.
@@ -19,11 +18,9 @@ STATUS_DIR = HOME / ".hermes/peer-network"
 STATUS_DIR.mkdir(parents=True, exist_ok=True)
 
 # API keys from env
-API_KEY_105 = __import__('os').environ.get("HERMES_PEER_105_KEY", "")
 API_KEY_106 = __import__('os').environ.get("HERMES_PEER_106_KEY", "")
 
 PEERS = {
-    "peer105": {"url": "http://192.168.178.105:8642", "key": API_KEY_105},
     "peer106": {"url": "http://192.168.178.106:8642", "key": API_KEY_106},
 }
 

@@ -107,7 +107,6 @@ def send_simple_request(host, port, api_key, message_text, timeout=60, model="de
 # ----- Main Logic -----
 config = load_config()
 peer84 = config["peer84"]
-peer105 = config["peer105"]
 peer106 = config["peer106"]
 
 print("=" * 60)
@@ -251,23 +250,23 @@ for i, item in enumerate(top2):
     item_url = url_match.group(1) if url_match else None
     
     if item_type == "youtube" or (item_url and ('youtube.com' in item_url or 'youtu.be' in item_url)):
-        # YouTube -> dispatch to peer105
+        # YouTube -> dispatch to peer106 (peer105 removed 2026-08-17)
         yt_url = item_url or item_text
-        print(f"    Type: YouTube -> dispatching to peer105 (RPi3B)")
-        health = check_health(peer105["host"], peer105["port"])
+        print(f"    Type: YouTube -> dispatching to peer106 (ARMv8)")
+        health = check_health(peer106["host"], peer106["port"])
         if health:
-            print(f"    peer105: ONLINE")
+            print(f"    peer106: ONLINE")
             msg = f"Please transcribe and digest the following YouTube video. Send me the full transcript summary, key points, and any important takeaways. Video: {yt_url}"
-            content, err = send_simple_request(peer105["host"], peer105["port"], peer105["api_key"], msg)
+            content, err = send_simple_request(peer106["host"], peer106["port"], peer106["api_key"], msg)
             if err:
-                print(f"    ERROR dispatching to peer105: {err}")
+                print(f"    ERROR dispatching to peer106: {err}")
             else:
-                print(f"    Response from peer105: {content[:200]}...")
+                print(f"    Response from peer106: {content[:200]}...")
                 print(f"    Full response: {content}")
-                dispatched.append({"item": item_text, "peer": "peer105", "result": content[:500]})
+                dispatched.append({"item": item_text, "peer": "peer106", "result": content[:500]})
         else:
-            print(f"    peer105: OFFLINE - cannot dispatch")
-            dispatched.append({"item": item_text, "peer": "peer105", "result": "OFFLINE"})
+            print(f"    peer106: OFFLINE - cannot dispatch")
+            dispatched.append({"item": item_text, "peer": "peer106", "result": "OFFLINE"})
     
     elif item_type == "web" or (item_lower.startswith('web ')):
         # Web research -> dispatch to peer106

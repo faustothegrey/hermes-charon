@@ -32,7 +32,7 @@ check_peer() {
 # Peer con HMP noto
 check_peer "peer128" "$PEER128_HOST" "$PEER128_PORT"
 # Altri peer noti sulla LAN (check soft — potrebbero non avere HMP plugin)
-for TRIAL in "peer84:192.168.178.84" "peer105:192.168.178.105" "peer106:192.168.178.106"; do
+for TRIAL in "peer84:192.168.178.84" "peer106:192.168.178.106"; do
   NAME=$(echo $TRIAL | cut -d: -f1)
   HOST=$(echo $TRIAL | cut -d: -f2)
   PING_OK=1

@@ -75,6 +75,7 @@ STDOUT:
 │ research-paper-writing  │ research             │ builtin │ builtin │ enabled │
 │ openhue                 │ smart-home           │ builtin │ builtin │ enabled │
 │ xurl                    │ social-media         │ builtin │ builtin │ enabled │
+│ code-dev-reviewer       │ software-development │ local   │ local   │ enabled │
 │ hermes-agent-skill-aut… │ software-development │ builtin │ builtin │ enabled │
 │ hermes-daily-exchange   │ software-development │ local   │ local   │ enabled │
 │ hermes-hmp              │ software-development │ local   │ local   │ enabled │
@@ -95,7 +96,7 @@ STDOUT:
 │ raspberry-pi            │ sysadmin             │ local   │ local   │ enabled │
 │ wireguard-vpn           │ sysadmin             │ local   │ local   │ enabled │
 └─────────────────────────┴──────────────────────┴─────────┴─────────┴─────────┘
-0 hub-installed, 68 builtin, 20 local — 88 enabled, 0 disabled
+0 hub-installed, 68 builtin, 21 local — 89 enabled, 0 disabled
 
 
 

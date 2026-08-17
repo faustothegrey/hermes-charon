@@ -11,7 +11,6 @@ EXCHANGE="$HOME/.hermes/exchange"
 # (peer_id ssh_user remote_home_dir)
 PEERS=(
   "peer84 fausto@192.168.178.84 /home/fausto"
-  "peer105 root@192.168.178.105 /root"
   "peer106 root@192.168.178.106 /root"
   "peer128 fausto@192.168.178.112 /Users/fausto"
   "peer136 fausto@192.168.178.136 /home/fausto"

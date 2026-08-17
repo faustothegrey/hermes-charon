@@ -54,7 +54,6 @@ check_peer_soft() {
 
 check_peer141
 check_peer_soft "peer84" "192.168.178.84" "18643"
-check_peer_soft "peer105" "192.168.178.105" "18643"
 check_peer_soft "peer106" "192.168.178.106" "18643"
 
 TS=$(date '+%H:%M')

@@ -133,15 +133,70 @@ apt-get install -y iptables
 Add `PersistentKeepalive = 25` to every peer on the **server** side if peers are behind NAT or may roam. Without it, peers on the same LAN also work but keepalive prevents timeout disconnections.
 
 ### Peer naming (IP assignments)
-Keep a consistent mapping: assign each peer a `/32` IP in the WG subnet and document it. Example:
+Keep a consistent mapping: assign each peer a `/32` IP in the WG subnet and document it. Example (rete Fausto, 2026-07):
 
-| WG IP  | Peer  | Hostname  |
-|--------|-------|-----------|
-| 10.0.0.1 | server | — |
-| 10.0.0.2 | peer70 | Charon |
-| 10.0.0.3 | peer105 | Fedora-30-a |
-| 10.0.0.4 | peer106 | Fedora-30-b |
-| ...     | ...   | ...       |
+| WG IP  | Peer  | Hostname  | Stato |
+|--------|-------|-----------|-------|
+| 10.0.0.1 | peer58 | Sidecar (server, 192.168.178.58) | ✅ |
+| 10.0.0.2 | peer70 | Charon (192.168.178.70) | ✅ |
+| 10.0.0.3 | peer105 | Fedora-30-a (kernel 5.0.9, NO WG) | ❌ kernel |
+| 10.0.0.4 | peer106 | Fedora-30-b | ✅ |
+| 10.0.0.5 | peer84 | Ubuntu | ⏳ offline |
+| 10.0.0.6 | peer128 | MacBook Pro (Mac) | ✅ |
+| 10.0.0.7 | peer136 | Trixie (Pi Agent) | ✅ |
+
+### Key rotation (peer regenerated its keys)
+
+When a peer rotates its keypair (common: user regenerates on their machine):
+
+```bash
+# Server side: swap old public key for new in wg0.conf, then reload
+ssh <user>@<server> "sudo sed -i 's|<OLD_PUB>|<NEW_PUB>|' /etc/wireguard/wg0.conf"
+ssh <user>@<server> "sudo wg-quick down wg0 && sudo wg-quick up wg0"   # or: systemctl restart wg-quick@wg0
+# Verify: sudo wg show  → peer's AllowedIPs unchanged, new pubkey listed
+```
+
+- The peer's WG IP (`AllowedIPs`) stays the same — only the key changes.
+- Old key must be REMOVED (sed replaces it), not appended — two [Peer] blocks with
+  same AllowedIPs breaks routing.
+- Common failure: user regenerates keys themselves and the server still has the old
+  pubkey → handshake never completes. Symptom: client `wg show` shows no `latest handshake`.
+
+### Remote access (WAN → FritzBox → server)
+
+For peers outside the LAN:
+
+1. **Open UDP 51820 on the FritzBox** toward the server (UPnP):
+   ```bash
+   upnpc -a <server-lan-ip> 51820 51820 UDP 0
+   # or manual: fritz.box → Internet → Permit Access → Port Forwarding
+   ```
+2. **DDNS**: the FritzBox (or provider) hostname goes in the client `Endpoint`
+   (not the LAN IP). Example in use: `settembre2.homepc.it`.
+3. Client config for the remote peer:
+   ```ini
+   [Interface]
+   PrivateKey = <client-private-key>
+   Address = 10.0.0.X/24
+   DNS = 192.168.178.1
+
+   [Peer]
+   PublicKey = <server-public-key>
+   AllowedIPs = 10.0.0.0/24, 192.168.178.0/24   # WG subnet + LAN subnet
+   Endpoint = <DDNS>:51820
+   PersistentKeepalive = 25
+   ```
+   `AllowedIPs` with BOTH subnets lets the remote peer reach LAN devices
+   (e.g. 192.168.178.1 FritzBox) through the tunnel.
+4. **Verify remotely**: `ping 10.0.0.1` (server) + `ping 192.168.178.1` (FritzBox)
+   → 0% loss = tunnel + NAT working. Server-side `wg show` confirms the peer's
+   `latest handshake`.
+
+**Coordination pattern (coordinator ↔ remote peer):** the coordinator often cannot
+run SSH/UPnP itself (security approval blocks, user not at console). Then:
+- hand the EXACT commands to the peer/user via HMP instead of retrying blocked commands
+- the peer applies server-side changes via its own SSH, confirms pings back
+- coordinator verifies via the peer's reported pings + `wg show` when approval is available
 
 ## Verification
 

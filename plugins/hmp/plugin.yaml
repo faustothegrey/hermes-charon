@@ -1,7 +1,7 @@
 name: hmp
 label: HMP
 kind: platform
-version: 0.1.4
+version: 0.1.5
 description: >
   Hermes Message Protocol gateway adapter. Runs an HMP HTTP listener inside
   the Hermes gateway process and dispatches inbound peer messages through the

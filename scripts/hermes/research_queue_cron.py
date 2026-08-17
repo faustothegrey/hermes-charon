@@ -46,7 +46,6 @@ def check_health(host, port):
 def main():
     config = load_config()
     peer84 = config["peer84"]
-    peer105 = config["peer105"]
     peer106 = config["peer106"]
 
     # ── Step 1: Ask N56VV to read the queue file ──
@@ -108,15 +107,16 @@ def main():
         
         if item_type == "youtube":
             print(f"\n🎬 Dispatching YouTube item: {description}")
-            # Check peer105 health first
-            if not check_health(peer105["host"], peer105["port"]):
-                print(f"❌ peer105 (YouTube specialist) is offline. Skipping.")
+            # YouTube -> peer106 (peer105 removed 2026-08-17)
+            # Check peer106 health first
+            if not check_health(peer106["host"], peer106["port"]):
+                print(f"❌ peer106 is offline. Skipping YouTube item.")
                 continue
             
             result = call_llm(
-                peer105["host"], peer105["port"], peer105["api_key"],
+                peer106["host"], peer106["port"], peer106["api_key"],
                 messages=[
-                    {"role": "system", "content": "You are a YouTube research specialist. Your job is to transcribe, summarize, and extract key insights from YouTube videos. For the given URL, fetch the transcript/subtitles (if available) and produce a structured digest: title, channel, duration (from description), key points/bullet summary, and any notable quotes or findings."},
+                    {"role": "system", "content": "You are a research specialist. Your job is to transcribe, summarize, and extract key insights from YouTube videos. For the given URL, fetch the transcript/subtitles (if available) and produce a structured digest: title, channel, duration (from description), key points/bullet summary, and any notable quotes or findings."},
                     {"role": "user", "content": f"Research this YouTube video and provide a detailed digest: {url_or_query}\n\nDescription: {description}"}
                 ],
                 max_tokens=4096

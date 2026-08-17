@@ -18,7 +18,6 @@ from pathlib import Path
 PEER_HMP_MAP = [
     ("peer70",  "127.0.0.1",    "Orchestratore (questo nodo)"),
     ("peer84",  "192.168.178.84",  "N56VV"),
-    ("peer105", "192.168.178.105", "Fedora30"),
     ("peer106", "192.168.178.106", "Fedora30 ARM"),
     ("peer128", "192.168.178.112", "MacBook"),
     ("peer58",  "192.168.178.58",  "HMP peer"),

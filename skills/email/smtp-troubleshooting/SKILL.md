@@ -90,6 +90,8 @@ problem. If it fails, the server rejects the credentials.
 | `535 Invalid User or Password [LIB_300]` | Credentials rejected OR client-side fault | See below — check the **client config before blaming the password**: wrong SMTP host for the account, wrong port/encryption, or a trailing newline in the password file |
 | `454 ... authentication failure : try again` | **Anti-bruteforce rate-limit** | Too many failed attempts → IP/account temporarily banned. Wait 20-30 min, then ONE clean attempt |
 | `421`/connection reset on 465 | Provider blocks implicit-TLS port | Use 587 + STARTTLS instead |
+| `535 5.7.139 Authentication unsuccessful, basic authentication is disabled` | **Microsoft/Outlook.com**: basic auth (username+password, INCLUDING app passwords) disabled at account/tenant level | Only OAuth2/XOAUTH2 works. App password does NOT help — it rides on basic auth. See `references/microsoft-outlook-basic-auth-blocked-2026-08-17.md` |
+| `AUTHENTICATIONFAILED` / `Invalid credentials` (Yahoo IMAP) | Password rejected OR app password needed (2FA active) | Generate app password at Yahoo Account Security if 2FA is on; raw-probe to confirm |
 
 ### Fast isolation: IMAP OK + SMTP 535 → credentials are FINE, fault is client config
 
@@ -156,6 +158,14 @@ webmail" proves account+password for webmail — NOT for SMTP. Possible:
   tiny `smtplib` script that works even when the CLI client doesn't.
 - `smtplib.SMTPServerDisconnected` right after connect can also be the
   anti-bruteforce ban in disguise — check rung 3 before blaming the code.
+- **himalaya CLI syntax quirks** (verified 2026-08-17): `-a/--account`
+  goes AFTER the subcommand (`himalaya envelope list -a libero ...`), not
+  before (`himalaya -a libero ...` fails with "unexpected argument").
+  Unread query is `"not flag seen"` (plain `"not seen"` fails parse).
+  `message read` marks `seen` by default — use `--preview` to read
+  without marking, and `himalaya flag add -a <acct> <ID> seen` to mark
+  read explicitly. Full detail + watchdog pattern:
+  `references/email-watchdog-and-himalaya-cli-2026-08-17.md`.
 
 ## Distinguish IP-ban vs account-ban
 
@@ -163,8 +173,70 @@ Test the same credentials from a DIFFERENT host (another peer on the
 LAN). Works there → the first IP is banned (temporary, cooldown). Fails
 too → account-level problem.
 
+## Provider auth landscape (2026-08)
+
+| Provider | IMAP | SMTP | Auth needed | Notes |
+|---|---|---|---|---|
+| Virgilio / Libero (IOL) | imap.libero.it:993 | smtp.libero.it:465 (TLS) o 587 (STARTTLS) | Plain password (OK) | Stesso backend; cert di smtp.libero.it vale anche per account virgilio.it. Libero folder \Sent si chiama `outbox` (alias himalaya: `folder.aliases.sent = "outbox"`) |
+| Gmail | imap.gmail.com:993 | smtp.gmail.com:587 | App password (2FA) o OAuth2 | — |
+| Outlook.com / Hotmail | outlook.office365.com:993 | smtp.office365.com:587 | **SOLO OAuth2/XOAUTH2** | Basic auth disabilitato (5.7.139) — app password inutile. `login not supported` / `AUTHENTICATE failed` anche con credenziali giuste |
+| Yahoo | imap.mail.yahoo.com:993 | smtp.mail.yahoo.com:465 | App password se 2FA | `AUTHENTICATIONFAILED` con password normale se 2FA attivo |
+| iCloud | imap.mail.me.com:993 | smtp.mail.me.com:587 | App password obbligatoria | — |
+
+⚠️ **Microsoft è il caso peggiore**: `535 5.7.139` = basic auth disabilitato A LIVELLO TENANT/ACCOUNT. L'app password usa comunque basic auth → rifiutata anch'essa. Non perdere tempo a provare password/app-password: è OAuth2 o niente.
+
+## Raw-socket probe per IMAP (complemento a Rung 3, che è SMTP-only)
+
+Quando himalaya fallisce con `cannot authenticate ... LOGIN mechanism` o
+`login not supported`, verificare col server direttamente per distinguere
+client vs provider (stesso principio della ladder, ma per IMAP):
+
+```python
+import socket, ssl, time, base64
+ctx = ssl.create_default_context()
+raw = socket.create_connection(("imap.example.com", 993), timeout=10)
+s = ctx.wrap_socket(raw, server_hostname="imap.example.com")
+s.settimeout(6)
+print("greeting:", s.recv(4096).decode(errors="replace").strip()[:100])
+auth = base64.b64encode(b"\x00user@example.com\x00PASSWORD").decode()
+s.sendall(f"a1 AUTHENTICATE PLAIN {auth}\r\n".encode())
+time.sleep(3)
+print("AUTH PLAIN:", s.recv(4096).decode(errors="replace").strip()[:200])
+s.sendall(b"a2 LOGOUT\r\n"); s.close()
+```
+
+Interpretazione:
+- `NO [AUTHENTICATIONFAILED]` = credenziali rifiutate (password/app-password errata o 2FA)
+- `NO AUTHENTICATE failed` senza codice = spesso basic auth disabilitato (Microsoft: confermare poi su SMTP con 5.7.139)
+
+Per SMTP con STARTTLS via Python (evita i bug della bash openssl ladder su 587):
+aprire la socket, leggere banner, `EHLO`, `STARTTLS`, riavvolgere con `ctx.wrap_socket`,
+`EHLO` di nuovo, poi `AUTH LOGIN` base64 (username, password). Il responso
+`535 5.7.139 ... basic authentication is disabled` è il killer di Microsoft.
+
+## Watchdog email "agente attivo" (leggere → agire → marcare letta)
+
+Per monitorare una casella IMAP e AGIRE sul contenuto (non solo notificare),
+usa il pattern cron: script raccoglitore + job LLM. Dettaglio completo con
+script e prompt in `references/email-watchdog-and-himalaya-cli-2026-08-17.md`.
+
+Punti chiave:
+- Script raccoglitore con `--preview` (NON marca seen) → stdout vuoto =
+  nessuna email → il job LLM risponde con un solo `—` (silenzioso).
+- Il job LLM legge, interpreta, esegue l'azione conseguente, poi marca
+  letta con `himalaya flag add -a <acct> <ID> seen`.
+- `--preview` è CRITICO: `message read` senza di esso marca seen prima che
+  l'agente veda l'email.
+
 ## References
 
 - `references/virgilio-iol-smtp.md` — Virgilio/Libero (IOL) concrete
   session detail: port behavior, cert, config diff, and the working
   `smtplib` fallback.
+- `references/microsoft-outlook-basic-auth-blocked-2026-08-17.md` — Hotmail
+  5.7.139 session: raw probes (IMAP LOGIN/AUTH PLAIN + SMTP STARTTLS), the
+  exact server responses, and the multi-account himalaya setup pattern.
+- `references/email-watchdog-and-himalaya-cli-2026-08-17.md` — working
+  Libero account config, himalaya CLI flag/query quirks (`-a` dopo il
+  subcomando, `not flag seen`, `--preview`, `flag add`), e il pattern
+  watchdog email "agente attivo" (script + cron LLM + marcatura letta).

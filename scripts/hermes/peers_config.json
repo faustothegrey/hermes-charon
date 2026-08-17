@@ -13,13 +13,6 @@
     "job_id": "46e2b1f4aea4",
     "label": "peer84 (N56VV)"
   },
-  "peer105": {
-    "host": "192.168.178.105",
-    "port": 8642,
-    "api_key": "29b06e40a65d7d9e1c4bdbd6dbab81f7585287336e612fa742e62222d95b8775",
-    "job_id": "86a2c4f0b1d3",
-    "label": "peer105 (RPi 3B, YouTube)"
-  },
   "peer106": {
     "host": "192.168.178.106",
     "port": 8642,

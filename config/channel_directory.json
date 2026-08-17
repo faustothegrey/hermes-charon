@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-08-16T23:00:45.851562",
+  "updated_at": "2026-08-17T22:57:22.609811",
   "platforms": {
     "telegram": [
       {
@@ -237,6 +237,48 @@
       {
         "id": "g0-review-sess",
         "name": "g0-review-sess",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "g0-fix-sess",
+        "name": "g0-fix-sess",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "peer128_peer70",
+        "name": "peer128_peer70",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "peer128_peer70_capreuse_lead",
+        "name": "peer128_peer70_capreuse_lead",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "peer128_peer70_capreuse_runtime_test",
+        "name": "peer128_peer70_capreuse_runtime_test",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "peer128_peer70_rebar_activation",
+        "name": "peer128_peer70_rebar_activation",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "peer128_rebar_g0_restart_20260817b",
+        "name": "peer128_rebar_g0_restart_20260817b",
+        "type": "dm",
+        "thread_id": null
+      },
+      {
+        "id": "hotmail-access-code-review-20260817",
+        "name": "hotmail-access-code-review-20260817",
         "type": "dm",
         "thread_id": null
       }

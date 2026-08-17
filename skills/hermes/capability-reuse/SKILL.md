@@ -429,6 +429,7 @@ Detailed v2.4.4 implementation + acceptance evidence: `references/v2.4.4-impleme
 - `references/review-blocker-remediation-2026-07-27.md` — Correlation/enforcement hardening, second-review blockers, and regression verification checklist.
 - `references/phase1b-peer128-burnin-2026-07-27.md` — Peer128-only active burn-in evidence after review-blocker remediation.
 - `references/phase1b-peer128-batch10-2026-07-27.md` — Ten-run peer128-only active canary aggregate evidence.
+- `references/observe-channel-0202-failclosed-2026-08-17.md` — 0.20.2 verification (observe-channel NOT upstream, no reviewed 0.20.2 variant) + FAIL-CLOSED patch-preparation pattern when baseline unobtainable.
 
 ## Distribution
 

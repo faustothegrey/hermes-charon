@@ -24,7 +24,6 @@ STATUS_FILE.parent.mkdir(parents=True, exist_ok=True)
 KNOWN_PEERS = [
     ("peer70",  "127.0.0.1",                         "questo Raspberry Pi (Debian 11 aarch64) — coordinatore"),
     ("peer84",  "192.168.178.84",                    "N56VV laptop (Ubuntu 22.04) — heavy workloads"),
-    ("peer105", "192.168.178.105",                   "RPi 3B (Fedora 30 aarch64) — YouTube transcript"),
     ("peer106", "192.168.178.106",                   "ARMv8 (Fedora 30) — web research"),
     ("peer60",  "192.168.178.60",                    "Raspberry Pi 3 (Raspbian 9)"),
     ("peer128", "Faustos-MacBook-Pro-Home-3.fritz.box", "Mac (macOS) — portatile"),

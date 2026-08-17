@@ -21,12 +21,6 @@ PEERS = {
         "role": "coordinatore",
         "desc": "RPi4 Debian 11 — orchestratore 24/7",
     },
-    "peer105": {
-        "url": "http://192.168.178.105:18643/hmp/send",
-        "timeout": 8,
-        "role": "worker",
-        "desc": "RPi3B Fedora 30 — YouTube/trascrizioni",
-    },
     "peer106": {
         "url": "http://192.168.178.106:18643/hmp/send",
         "timeout": 8,

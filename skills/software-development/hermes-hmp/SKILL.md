@@ -1,6 +1,6 @@
 ---
 name: hermes-hmp
-description: "HMP (Hermes Message Protocol) - protocollo peer-to-peer per la rete Hermes. Canale unico plugin :18643 (dual-plane :18644 ritirato 13/08). Pitfall task remoti lunghi e config plugins: references/peer-task-delegation-pitfalls-2026-08-15.md"
+description: "HMP (Hermes Message Protocol) - protocollo peer-to-peer per la rete Hermes. Canale unico plugin :18643 (dual-plane :18644 ritirato). G0/G2b plumbing: references/trace-id-core-plumbing-g0-2026-08-16.md, references/g2b-provenance-propagation-2026-08-17.md"
 type: custom
 version: 1.26.0
 ---
@@ -17,27 +17,21 @@ gli altri Hermes agent della rete. Usa HTTP+JSON su porta **18643**.
 
 Ops pitfalls: `references/hmp-peer-ops-pitfalls-2026-08-14.md`
 
+> ⚠️ **AUDIT PITFALL (17/08)**: `search_files` glob **non fa OR con `|`** (`"*.tar.gz|*.zip|*.patch"` → 0 risultati silenziosi, falso "inesistente"). Una pattern per chiamata o `find`/`ls`. Artefatti G0/G2b: `~/.hermes/g0-bundle/`. Bundle reviewer-ready: `references/reviewer-bundle-staging-2026-08-17.md` (patch per-version + sidecar sha256 + base commit + conflict guidance).
+
 > **Cross-peer version probe**: `references/peer-version-probe.md`. **Send
 > v0.1.4**: `/hmp/send` LOCALE = iniezione locale; invio REALE = POST al
 > gateway TARGET con `from_peer` nel body — `references/hmp-send-semantics-2026-08-16.md`
 
-> 🔗 **G0 trace_id end-to-end (16/08)**: request-unique UUID v4 dall'adapter
-> fino al retriever capability-reuse. Plumbing core (6 tocchi), pitfall agent
-> cache / NameError / test live con capability trusted —
-> `references/g0-trace-id-chain-plumbing-2026-08-16.md`
+> 🔗 **G0 trace_id e2e (16/08)**: UUID v4 adapter→retriever, 6 tocchi core, pitfall cache/NameError — `references/g0-trace-id-chain-plumbing-2026-08-16.md`
+> 📦 **Bundle reviewer-ready (17/08)**: audit per estensione (MAI glob `|`), sidecar SHA, manifest 1:1, adapter+core insieme, stile terse — `references/review-bundle-packaging-2026-08-17.md`
 
 ## ⚠️ DUAL-PLANE :18644 RITIRATO (2026-08-13)
-
-Pitfall del deploy/ritiro (core.py+adapter.py insieme, restart remoto via
-script, cron one-shot con timestamp futuro): `references/convergence-pitfalls-2026-08-14.md`
-
-Dual-plane (`:18644`, `hmp_dual_plane*.py`) **completamente ritirato** dalla rete
-(peer70/58/106/138/141, confermato da tutti i peer). Non riavviarlo, non ridistribuirlo.
-Tutta la comunicazione peer-to-peer passa dal **plugin HMP :18643** (unico canale, unico
-processo). Convergenza v0.1.4: `/hmp/send` accetta `session_id` (chat_id=session_id,
-altrimenti from_peer), alias `/send` per retrocompatibilità, consumer_loop emette
-event_store live-shadow con metadati (`organic_peer`, requester/processing_peer,
-provenance organic_live). Le sezioni dual-plane sotto sono **storiche**.
+`hmp_dual_plane*.py` **completamente ritirato** (peer70/58/106/138/141, tutti confermati).
+Canale unico: plugin HMP :18643 (unico processo). Convergenza v0.1.4: `/hmp/send` accetta
+`session_id`, alias `/send`, consumer_loop → event_store live-shadow (organic_peer,
+provenance organic_live). Pitfall ritiro: `references/convergence-pitfalls-2026-08-14.md`.
+Sezioni dual-plane sotto sono **storiche**.
 
 ## Protocol Versioning
 

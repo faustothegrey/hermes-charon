@@ -22,8 +22,8 @@ spec.loader.exec_module(mod)
 hmp_send_and_wait = mod.hmp_send_and_wait
 
 # ── Peer attivi ────────────────────────────────────────────────────────
-PEERS = [84, 105, 106, 128]
-PEER_NAMES = {84: "peer84 (Ubuntu)", 105: "peer105 (Fedora)", 106: "peer106 (Fedora)", 128: "peer128 (macOS)"}
+PEERS = [84, 106, 128]
+PEER_NAMES = {84: "peer84 (Ubuntu)", 106: "peer106 (Fedora)", 128: "peer128 (macOS)"}
 
 def brainstorm(theme: str, question: str, max_rounds: int = 3) -> Dict:
     """

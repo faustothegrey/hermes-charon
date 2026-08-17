@@ -31,19 +31,70 @@ from .core import (
 )
 
 # ── Capability Reuse event store integration (dual-plane parity) ──
-try:
-    _SKILL_DIR = Path.home() / ".hermes" / "skills" / "hermes" / "capability-reuse" / "plugin"
-    if _SKILL_DIR.exists() and str(_SKILL_DIR) not in sys.path:
-        sys.path.insert(0, str(_SKILL_DIR))
-    from event_store import (  # type: ignore
-        emit_retrieval,
-        emit_observation,
-        emit_surface_execution_start,
-        emit_surface_execution_complete,
-    )
-    HAS_EVENT_STORE = True
-except Exception:
-    HAS_EVENT_STORE = False
+# Resolution order (G2b/G0 review blocker fix, 2026-08-17):
+#   1. CANONICAL runtime plugin path first:  $HERMES_HOME/plugins/capability-reuse
+#      (profile-safe via get_hermes_home() when available). This is where the
+#      accepted v2.6.0 artifact lives; the legacy skills copy may be stale.
+#   2. LEGACY fallback ONLY if compatible:  $HERMES_HOME/skills/hermes/
+#      capability-reuse/plugin — used only when it exposes the full G0/G2b
+#      event-store surface (emit_retrieval, emit_observation,
+#      emit_surface_execution_start, emit_surface_execution_complete).
+#      A legacy copy at v2.2.0 (missing surface fns) is NOT used → the adapter
+#      degrades cleanly (HAS_EVENT_STORE=False) instead of crashing at runtime.
+
+def _hermes_home() -> Path:
+    try:
+        from hermes_constants import get_hermes_home  # type: ignore
+        return Path(get_hermes_home())
+    except Exception:
+        return Path.home() / ".hermes"
+
+
+_EVENT_STORE_REQUIRED = (
+    "emit_retrieval",
+    "emit_observation",
+    "emit_surface_execution_start",
+    "emit_surface_execution_complete",
+)
+
+
+def _try_load_event_store(candidate_dir: Path):
+    """Import event_store from candidate_dir if it exposes the full surface.
+
+    Returns the module, or None when the candidate is missing/incompatible.
+    sys.path is only mutated for a candidate that actually passes the surface
+    check, so a stale legacy copy cannot shadow the canonical one.
+    """
+    if not candidate_dir or not candidate_dir.exists():
+        return None
+    module_file = candidate_dir / "event_store.py"
+    if not module_file.exists():
+        return None
+    if str(candidate_dir) not in sys.path:
+        sys.path.insert(0, str(candidate_dir))
+    try:
+        import event_store  # type: ignore
+    except Exception:
+        return None
+    if all(hasattr(event_store, name) for name in _EVENT_STORE_REQUIRED):
+        return event_store
+    return None
+
+
+_HERMES_HOME = _hermes_home()
+_event_store_module = (
+    _try_load_event_store(_HERMES_HOME / "plugins" / "capability-reuse")
+    or _try_load_event_store(_HERMES_HOME / "skills" / "hermes" / "capability-reuse" / "plugin")
+)
+HAS_EVENT_STORE = _event_store_module is not None
+if HAS_EVENT_STORE:
+    emit_retrieval = _event_store_module.emit_retrieval
+    emit_observation = _event_store_module.emit_observation
+    emit_surface_execution_start = _event_store_module.emit_surface_execution_start
+    emit_surface_execution_complete = _event_store_module.emit_surface_execution_complete
+else:
+    emit_retrieval = emit_observation = None
+    emit_surface_execution_start = emit_surface_execution_complete = None
 
 
 DEFAULT_HOST = "127.0.0.1"
@@ -161,7 +212,7 @@ class HMPAdapter(BasePlatformAdapter):
                     "/hmp/poll/{message_id}",
                 ],
                 "max_text_length": MAX_MESSAGE_BYTES,
-                "version": "0.1.4",
+                "version": "0.1.5",
             }
         )
 
@@ -366,6 +417,7 @@ class HMPAdapter(BasePlatformAdapter):
             raw_message=raw,
             message_id=message_id,
             trace_id=trace_id,
+            capability_reuse_context=self._capability_context(raw),
         )
         # ── LIVE-SHADOW (dual-plane parity): emit retrieval chain ──
         surf_id = None
@@ -442,7 +494,7 @@ class HMPAdapter(BasePlatformAdapter):
                 )
                 emit_observation(
                     capability_id="hmp",
-                    capability_version="0.1.4",
+                    capability_version="0.1.5",
                     effect_class="read_only",
                 )
             except Exception:
@@ -466,6 +518,39 @@ class HMPAdapter(BasePlatformAdapter):
             if isinstance(body_collector, str) and body_collector.strip():
                 return body_collector.strip()
         return os.environ.get("CAPABILITY_REUSE_COLLECTOR_PEER_ID", "")
+
+    def _capability_context(self, raw: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Request-scoped capability-reuse metadata from the HMP body (G2b).
+
+        Carries the EXPLICIT provenance declaration + exclusion markers to the
+        real Capability Reuse retrieval (via MessageEvent → hook kwargs).
+        NEVER infers organic from platform identity: only declared values are
+        forwarded. Exclusion markers keep priority downstream (fail-closed).
+        """
+        if not isinstance(raw, dict):
+            return None
+        ctx: Dict[str, Any] = {}
+        prov = raw.get("provenance")
+        if isinstance(prov, str) and prov.strip():
+            ctx["capability_reuse_provenance"] = prov.strip()
+        elif isinstance(prov, dict):
+            stream = prov.get("stream") or prov.get("type") or prov.get("name")
+            if isinstance(stream, str) and stream.strip():
+                ctx["capability_reuse_provenance"] = stream.strip()
+        # Exclusion / automation markers — forwarded verbatim; downstream
+        # _extract_traffic_type gives them priority over any organic claim.
+        for key in (
+            "operator_solicited", "is_solicited", "solicited",
+            "operator_seeded", "is_seeded", "seeded",
+            "is_test", "test", "acceptance", "is_acceptance",
+            "calibration", "is_calibration",
+            "is_retry", "retry_of",
+            "scheduled", "is_scheduled", "cron", "is_cron",
+            "traffic_type", "capability_reuse_traffic_type",
+        ):
+            if key in raw and raw[key] is not None:
+                ctx[key] = raw[key]
+        return ctx or None
 
     async def _consumer_loop(self) -> None:
         while True:

@@ -461,7 +461,7 @@ La coda mantiene una mappa interna dei peer conosciuti, IP, e label descrittive:
 | peer106 | 192.168.178.106 | 18643 | Fedora30 ARM |
 | peer128 | 192.168.178.112 | 18643 | MacBook |
 | peer58 | 192.168.178.58 | 18643 | HMP peer |
-| peer136 | 192.168.178.136 | 18643 | Trixie |
+| peer136 | 192.168.178.136 | 18643 | Davon (Debian 13 trixie) — NOT Trixie; vedi pitfall conflitto porta |
 
 ### Health check vs HMP send endpoint
 
@@ -633,6 +633,60 @@ Il blocco sandbox vale anche per il gateway locale, con due gotcha in più
    dotenv a runtime (es. `CAPABILITY_REUSE_COLLECTOR_PEER_ID` in `~/.hermes/.env`)
    NON appaiono lì. Verificare comportamentalmente (health + smoke HMP), non
    via /proc/environ.
+
+## Pitfall: porta HMP occupata da un servizio custom (es. "Trixie" su Davon)
+
+Quando un peer HMP risponde con un health format NON-Hermes (es. `{"status":"ok","version":"1.0"}` invece di
+`{"node_id":"peerN","gateway_adapter":true}`), la porta 18643 è occupata da un **servizio custom** — non dal
+gateway Hermes. Scoperto su Davon (17-18/08): `hmp-server.py` ("Trixie Pi Agent", pi.dev) girava come
+`trixie-hmp.service` systemd **enabled** con un **watchdog cron** (`trixie-watchdog.sh` ogni 5 min) che lo
+riavviava se il health check falliva → kill manuale inutile, rispawn continuo.
+
+Diagnosi:
+```bash
+# Chi ascolta davvero sulla porta? (non il gateway Hermes → PID diverso dal suo)
+ss -tlnp | grep 18643          # users:((python3,pid=XXX)) → guarda il cmdline
+tr '\0' ' ' < /proc/XXX/cmdline # → /usr/bin/python3 /home/fausto/hmp-server.py
+# È un servizio systemd? Ha un watchdog?
+systemctl list-units --all | grep -i hmp
+crontab -l | grep -i hmp       # watchdog cron che lo riaccende
+```
+Fix (se il servizio custom NON è voluto): `sudo systemctl stop+disable <svc>`, rimuovere la riga dal crontab,
+POI riavviare il gateway Hermes per fargli riprendere la porta. Se invece il servizio custom È voluto, il peer
+non può essere un nodo Hermes HMP sulla stessa porta (o si cambia porta a uno dei due).
+
+Nota identità: il nome hostname del peer (es. `hostname` → "Diet") può differire dal NOME del peer (es. Davon)
+e dal nome di un servizio custom (es. Trixie). Non derivare il nome del peer dal solo hostname — chiedere a
+Fausto o verificare nel registry.
+
+⚠️ **GOTCHA node_id clonato (18/08, Davon)**: se la config di un peer è stata copiata/clonata da un altro nodo
+(es. installazione da immagine o SCP della config), `platforms.hmp.extra.node_id` può contenere l'identità del
+peer SORGENTE (Davon aveva `node_id: peer141`). Sintomo: due nodi rispondono allo stesso `node_id` nel health
+check → conflitto di identità nel mesh. Verifica SEMPRE `grep -n 'node_id' ~/.hermes/config.yaml` dopo aver
+aggiunto un nuovo peer, e correggi con `sed -i 's/node_id: peerX/node_id: peerY/'` + restart gateway. Prima di
+dare per scontato un health check sospetto, confronta `hostname` (SSH) con `node_id` (health) — se divergono,
+identità errata.
+
+## Cambio modello LLM su un peer remoto — senza riavvio
+
+Il core Hermes risolve il modello a RUNTIME per ogni turno (`_resolve_gateway_model()` in run.py): se il
+modello in config cambia, l'agente cached viene evictato e il turno successivo usa il nuovo modello. Quindi:
+
+1. SSH sul peer → edit `~/.hermes/config.yaml` sezione `model:` (`default`, `provider`, `base_url`).
+2. Backup prima: `cp config.yaml config.yaml.bak-$(date +%Y%m%d-%H%M%S)`.
+3. **Nessun riavvio necessario** per il solo cambio modello — verifica mandando un messaggio HMP e controllando
+   il modello nel log del turno (`grep 'conversation turn' ~/.hermes/logs/agent.log`).
+4. Serve riavvio solo se cambia il PROVIDER (inizializzazione client/credenziali) o se il modello resta
+   vecchio nei log (config per-sessione pinnata).
+
+⚠️ Se il peer non è raggiungibile come nodo HMP (porta occupata dal servizio custom di cui sopra), il cambio
+modello in config resta valido ma NON è verificabile via HMP — il messaggio va al servizio custom, non a Hermes.
+
+## Riferimenti mesh
+
+- `references/peer-fleet-ops-2026-08-18.md` — matrice SSH (user per peer), mappa versioni Hermes
+  (0.17.0 peer70 · 0.19.0 peer138/58 · 0.20.1 peer141 · 0.20.2 peer106/136), registrazione nuovo peer
+  nel registry, e il caso Davon (peer136).
 
 ## Pitfalls
 

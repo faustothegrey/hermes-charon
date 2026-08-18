@@ -22,7 +22,10 @@ The reviewer is `fausto.lelli@hotmail.com` (replying from Hotmail, lands in Libe
 
 ## Infrastructure (already configured)
 
-- `himalaya` CLI with accounts: `virgilio` (default), `libero`, `hotmail` (broken auth — do NOT use hotmail for sending), `yahoo` (broken auth). Provider quirks, folder aliases and auth failures: see `references/email-provider-quirks.md`.
+Provider matrix (Libero OK, Hotmail solo destinatario, Yahoo rotto; sintassi himalaya, flag order, --preview): `references/email-provider-matrix.md`
+
+- `himalaya` CLI with accounts: `virgilio` (default), `libero`, `hotmail` (broken auth — do NOT use hotmail for sending), `yahoo` (broken auth).
+- **Provider auth matrix + himalaya syntax pitfalls**: see `references/email-providers-and-himalaya-pitfalls.md` (Hotmail 5.7.139 = basic auth disabled, app passwords don't help; Libero sent alias = `outbox`; `--preview` reads without marking seen; `not flag seen` filter; `-a` flag goes AFTER the subcommand for `message send`).
 - Sending: `himalaya message send -a libero` (SMTP smtp.libero.it:465) or python script `~/.hermes/scripts/send_g0_bundle_email.py`.
 - Polling: cron `watchdog-libero-mail` (job id `4b3ec325bead`), every 10m, LLM-backed, script `~/.hermes/scripts/watchdog-libero-mail.sh`.
 - Mark as read: `himalaya flag add -a libero <ID> seen`.
@@ -95,10 +98,12 @@ Session detail (17/08 G0 discrepancy gate): `references/verdict-artifact-2026-08
 ## Pitfalls
 
 - `himalaya message read` (without `--preview`) marks emails as read — always use `--preview` in the collection script.
-- `himalaya -a <acct>` placement: flag MUST come AFTER the subcommand (`himalaya envelope list -a libero`, `himalaya message read -a libero <ID>`). `--account` (before subcommand) is REJECTED on this install: `error: unexpected argument '--account' found`.
+- `himalaya -a <acct>` placement: use `himalaya message send -a libero` (flag AFTER subcommand); `--account` also works on `envelope list`.
 - Libero sent-folder alias is `outbox` (folder marked \Sent); `Posta Inviata` name fails save-to-sent.
-- Hotmail/Yahoo accounts have broken basic auth (Microsoft 5.7.139 / Yahoo invalid credentials) — never use them for sending.
+- Hotmail/Yahoo accounts have broken basic auth (Microsoft 5.7.139 / Yahoo invalid credentials) — never use them for sending. Hotmail is receive-only via the reviewer; the loop is Libero→send, Hotmail→receive.
 - Bundle zip SHA: keep it in an EXTERNAL sidecar (`<name>.zip.sha256`), not inside the manifest (recursive/stale-prone).
+- Re-sending "the same email" to a different recipient: update BOTH the To field AND the SMTP server/credentials block (each account has its own `.pass` file + SMTP host) — a copy-paste from the Virgilio script to Libero without switching `smtp.libero.it` and `libero.pass` silently reuses the wrong sender.
+- Send-test verification: after `himalaya message send`, the copy lands in the account's sent folder — check it with `himalaya envelope list -a <acct>` (Libero shows it in `outbox`).
 
 ## Verification
 

@@ -10,6 +10,6 @@ Peer upgrade: canary scelto da Fausto (ago-2026: peer141 Stella; prima peer58), 
 §
 Registry sync: heartbeat-only changes (solo last_seen) = "OK" diretto, nessun tool call né JSON. Solo cambiamenti strutturali (nuovi peer, skill/plugin modificati) meritano risposta con compact JSON.
 §
-Fausto: stile architetturale concreto, comunicazione italo-inglese. Preferisce: step revertabili, soft mode (mai hard gate), testing prima del deploy, rollout graduale peer-by-peer, server-side processing, 1 chiamata HTTP per azione (resto harness), push model su polling. Odia burocrazia operativa — "stable-operation-first" non deve diventare overhead. Documenta via email (Virgilio→Gmail).
+Fausto: stile architetturale concreto, comunicazione italo-inglese. Preferisce: step revertabili, soft mode (mai hard gate), testing prima del deploy, rollout graduale peer-by-peer, server-side processing. Odia burocrazia operativa. Documenta via email (Virgilio→Gmail). Delega investigazioni ai peer, poi double-check.
 §
 Chiamami ALICE.

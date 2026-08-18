@@ -1,6 +1,6 @@
 ---
 name: hermes-hmp
-description: "HMP (Hermes Message Protocol) - protocollo peer-to-peer per la rete Hermes. Canale unico plugin :18643 (dual-plane :18644 ritirato). G0/G2b plumbing: references/trace-id-core-plumbing-g0-2026-08-16.md, references/g2b-provenance-propagation-2026-08-17.md"
+description: "HMP (Hermes Message Protocol) - protocollo peer-to-peer per la rete Hermes. Canale unico plugin :18643. G0/G2b plumbing: refs trace-id-core-plumbing-g0 (0.17), g2b-provenance-propagation (0.20.1), trace-id-core-plumbing-g0-g2b-0.20.2 (Davon)"
 type: custom
 version: 1.26.0
 ---
@@ -15,7 +15,7 @@ version: 1.26.0
 HMP (Hermes Message Protocol) è il protocollo peer-to-peer per comunicare con
 gli altri Hermes agent della rete. Usa HTTP+JSON su porta **18643**.
 
-Ops pitfalls: `references/hmp-peer-ops-pitfalls-2026-08-14.md`
+Ops: refs `hmp-peer-ops-pitfalls-2026-08-14.md`, `peer-lifecycle-ops-2026-08-18.md`
 
 > ⚠️ **AUDIT PITFALL (17/08)**: `search_files` glob **non fa OR con `|`** (`"*.tar.gz|*.zip|*.patch"` → 0 risultati silenziosi, falso "inesistente"). Una pattern per chiamata o `find`/`ls`. Artefatti G0/G2b: `~/.hermes/g0-bundle/`. Bundle reviewer-ready: `references/reviewer-bundle-staging-2026-08-17.md` (patch per-version + sidecar sha256 + base commit + conflict guidance).
 
@@ -1093,6 +1093,21 @@ RPi aarch64, Hermes 0.20.0):
    The registry can say `skills: []` while the peer actually has the
    skill installed (peer106/58 both showed 0 in registry but had the
    skill locally).
+
+3a. **Version numbers without timestamps are ambiguous** (lesson 18/08,
+   peer136 vs peer70): a peer can report the plugin version it READ at
+   copy time (e.g. 2.5.0 on 17/08) while the source has since upgraded
+   (2.6.0 on 18/08). Both statements were true — at different times.
+   Always pair a version claim with its timestamp:
+   - registry: `version_checked_at` per skill (manifests) + `updated_at`
+     (per peer / index)
+   - SSH: check mtime alongside the version:
+     ```bash
+     ssh <user>@<ip> "stat -c '%y %n' ~/.hermes/plugins/<plugin>/v244_metadata.py; grep PLUGIN_VERSION ~/.hermes/plugins/<plugin>/v244_metadata.py"
+     ```
+   - compare sha256 of the actual file, not md5 (md5 differs across
+     tools; peer136's md5 mismatch was misleading — sha256 agreed).
+   A version string with no `checked_at`/mtime is a claim, not a fact.
 
 4. **SSH user varies by peer** — root works on Fedora/DietPi peers
    (106, 138) but `fausto` on Ubuntu/RPi peers (58, 141). Try both;

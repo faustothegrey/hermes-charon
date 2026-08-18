@@ -93,6 +93,7 @@ with urllib.request.urlopen(req, timeout=20) as r:
 | `/health` 200, send accepted → completed in <10s | ✅ Peer sano, plugin + agent funzionano |
 | `/health` 200, send accepted → working (non diventa mai completed) | ⚠️ Plugin OK, agent bloccato. Gateway forse senza modello o in crash loop |
 | `/health` 200, send accepted → completed ma risposta vuota | ⚠️ Agent ha ricevuto ma non ha prodotto risposta (o ha risposto con testo vuoto) |
+| `/health` 200 ma **formato NON-Hermes** (es. `{"status":"ok","uptime":76,"version":"1.0"}` senza `service`/`node_id`) | ❌ **Servizio ESTRANEO occupa la porta 18643** (server custom, non il plugin HMP). Vedi caso peer136/Trixie sotto |
 | `/health` 200, send NO | ❌ Plugin in ascolto ma rifiuta il messaggio (auth, peer not allowed, empty_text) |
 | `/health` connection refused | ❌ Plugin non in esecuzione. Vecchio hmp.py standalone su :8643? |
 | No route to host | ❌ Peer irraggiungibile (rete, firewall, sleep) |
@@ -194,3 +195,29 @@ touch ~/.hermes/plugins/hmp/*.py
   ARP stale o routing table del momento).
 - **Lezione:** non fidarsi del primo errore di routing. Provare
   direttamente con health check prima di escludere un peer.
+
+### peer136/Davon — porta 18643 occupata da servizio systemd ESTRANEO (Trixie, 18/08)
+- **Sintomo:** `/health` risponde 200 ma con `{"status":"ok","uptime":76,"version":"1.0"}`
+  — niente `service`/`node_id`/`gateway_adapter`. E un messaggio HMP mandato
+  al peer risponde con testo tipo "pi.dev v0.80.10" (identità di un altro agente).
+- **Diagnosi a catena:**
+  1. `ss -tlnp | grep 18643` → il PID che ascolta è `/usr/bin/python3 /home/fausto/hmp-server.py`
+     (NON il processo `hermes ... gateway run`)
+  2. `ps -p <pid> -o ppid,cmd` → PPID=1 → servizio gestito da init/systemd
+  3. `systemctl list-units --all | grep -i hmp` → unit `trixie-hmp.service` ("Trixie Pi Agent")
+  4. `crontab -l` → watchdog `*/5 * * * * trixie-watchdog.sh` che riavvia il servizio
+     se `/health` fallisce → il kill manuale del processo NON basta, rispawna.
+- **Conseguenza sul gateway Hermes:** il gateway Hermes gira ma NON ha la porta
+  18643 (bind fallito) → `ss` non la mostra per `hermes`, "PORTA NON IN ASCOLTO"
+  dopo restart. Il cambio modello/config resta valido ma HMP non è di Hermes.
+- **Fix (rimozione permanente del servizio estraneo):**
+  ```bash
+  sudo systemctl stop trixie-hmp.service
+  sudo systemctl disable trixie-hmp.service
+  crontab -l | grep -v trixie-watchdog | crontab -
+  ```
+  Poi riavviare il gateway Hermes → riprende la porta 18643.
+- **Lezione:** un `/health` 200 con formato non-Hermes è un segnale forte di
+  conflitto di porta con un servizio estraneo, NON di un plugin sano. Verificare
+  SEMPRE `ss -tlnp` per associare il PID al processo giusto prima di dare la colpa
+  al plugin o alla config.

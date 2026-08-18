@@ -11,76 +11,31 @@ STDOUT:
     Name:      Nightly Hermes configuration backup (peer70)
     Schedule:  0 23 * * *
     Repeat:    ∞
-    Next run:  2026-08-18T23:00:00+02:00
+    Next run:  2026-08-19T23:00:00+02:00
     Deliver:   local
     Script:    hermes-config-backup-nightly.sh
     Mode:      no-agent (script stdout delivered directly)
-    Last run:  2026-08-16T23:01:25.030503+02:00  ok
+    Last run:  2026-08-17T23:00:38.106749+02:00  ok
 
   1813aa7164e5 [active]
     Name:      undervoltage-watchdog
     Schedule:  every 15m
     Repeat:    ∞
-    Next run:  2026-08-17T23:04:59.764137+02:00
+    Next run:  2026-08-18T23:07:18.184101+02:00
     Deliver:   origin
     Script:    undervoltage_watchdog.py
     Mode:      no-agent (script stdout delivered directly)
-    Last run:  2026-08-17T22:49:59.764137+02:00  ok
-
-  c9542280f63c [active]
-    Name:      g0-restart-local-gateway
-    Schedule:  once at 2026-08-16 20:30
-    Repeat:    0/1
-    Next run:  None
-    Deliver:   local
-    Script:    restart-local-gateway-g0.sh
-    Mode:      no-agent (script stdout delivered directly)
-
-  ceefaafc401e [active]
-    Name:      g0-restart-local-gateway-2
-    Schedule:  once at 2026-08-16 20:45
-    Repeat:    0/1
-    Next run:  None
-    Deliver:   local
-    Script:    restart-local-gateway-g0.sh
-    Mode:      no-agent (script stdout delivered directly)
-
-  95c6dd3019b3 [active]
-    Name:      g0-restart-local-gateway-3
-    Schedule:  once at 2026-08-16 21:05
-    Repeat:    0/1
-    Next run:  None
-    Deliver:   local
-    Script:    restart-local-gateway-g0.sh
-    Mode:      no-agent (script stdout delivered directly)
-
-  d9b36aabcb1a [active]
-    Name:      g0-restart-local-gateway-4
-    Schedule:  once at 2026-08-16 21:55
-    Repeat:    0/1
-    Next run:  None
-    Deliver:   local
-    Script:    restart-local-gateway-g0.sh
-    Mode:      no-agent (script stdout delivered directly)
-
-  4ab01af41866 [active]
-    Name:      g0-restart-local-gateway-5
-    Schedule:  once at 2026-08-17 00:10
-    Repeat:    0/1
-    Next run:  None
-    Deliver:   local
-    Script:    restart-local-gateway-g0.sh
-    Mode:      no-agent (script stdout delivered directly)
+    Last run:  2026-08-18T22:52:18.184101+02:00  ok
 
   4b3ec325bead [active]
     Name:      watchdog-libero-mail
     Schedule:  every 10m
     Repeat:    ∞
-    Next run:  2026-08-17T23:01:59.568615+02:00
+    Next run:  2026-08-18T23:04:18.304026+02:00
     Deliver:   origin
     Skills:    code-dev-reviewer
     Script:    watchdog-libero-mail.sh
-    Last run:  2026-08-17T22:51:59.568615+02:00  ok
+    Last run:  2026-08-18T22:54:18.304026+02:00  ok
 
 
 

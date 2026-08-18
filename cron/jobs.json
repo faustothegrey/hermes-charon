@@ -442,15 +442,15 @@
       "schedule_display": "0 23 * * *",
       "repeat": {
         "times": null,
-        "completed": 19
+        "completed": 20
       },
       "enabled": true,
       "state": "scheduled",
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-07-18T13:19:11.119503+02:00",
-      "next_run_at": "2026-08-18T23:00:00+02:00",
-      "last_run_at": "2026-08-16T23:01:25.030503+02:00",
+      "next_run_at": "2026-08-19T23:00:00+02:00",
+      "last_run_at": "2026-08-17T23:00:38.106749+02:00",
       "last_status": "ok",
       "last_error": null,
       "last_delivery_error": null,
@@ -1016,15 +1016,15 @@
       "schedule_display": "every 15m",
       "repeat": {
         "times": null,
-        "completed": 589
+        "completed": 685
       },
       "enabled": true,
       "state": "scheduled",
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-08-01T16:23:51.007484+02:00",
-      "next_run_at": "2026-08-17T23:04:59.764137+02:00",
-      "last_run_at": "2026-08-17T22:49:59.764137+02:00",
+      "next_run_at": "2026-08-18T23:07:18.184101+02:00",
+      "last_run_at": "2026-08-18T22:52:18.184101+02:00",
       "last_status": "ok",
       "last_error": null,
       "last_delivery_error": null,
@@ -1039,251 +1039,6 @@
       "enabled_toolsets": null,
       "workdir": null,
       "fire_claim": null
-    },
-    {
-      "id": "c9542280f63c",
-      "name": "g0-restart-local-gateway",
-      "prompt": "Restart gateway locale Charon per deploy G0 core",
-      "skills": [],
-      "skill": null,
-      "model": null,
-      "provider": null,
-      "provider_snapshot": null,
-      "model_snapshot": null,
-      "base_url": null,
-      "script": "restart-local-gateway-g0.sh",
-      "no_agent": true,
-      "context_from": null,
-      "schedule": {
-        "kind": "once",
-        "run_at": "2026-08-16T20:30:00+02:00",
-        "display": "once at 2026-08-16 20:30"
-      },
-      "schedule_display": "once at 2026-08-16 20:30",
-      "repeat": {
-        "times": 1,
-        "completed": 0
-      },
-      "enabled": true,
-      "state": "scheduled",
-      "paused_at": null,
-      "paused_reason": null,
-      "created_at": "2026-08-16T22:26:14.640820+02:00",
-      "next_run_at": null,
-      "last_run_at": null,
-      "last_status": null,
-      "last_error": null,
-      "last_delivery_error": null,
-      "deliver": "local",
-      "origin": {
-        "platform": "telegram",
-        "chat_id": "8508115936",
-        "chat_name": "Fausto Lelli",
-        "thread_id": null,
-        "user_id": "8508115936"
-      },
-      "enabled_toolsets": null,
-      "workdir": null,
-      "fire_claim": {
-        "at": "2026-08-16T22:37:28.738810+02:00",
-        "by": "Charon:284373"
-      }
-    },
-    {
-      "id": "ceefaafc401e",
-      "name": "g0-restart-local-gateway-2",
-      "prompt": "Restart gateway locale Charon (fix trace_id order)",
-      "skills": [],
-      "skill": null,
-      "model": null,
-      "provider": null,
-      "provider_snapshot": null,
-      "model_snapshot": null,
-      "base_url": null,
-      "script": "restart-local-gateway-g0.sh",
-      "no_agent": true,
-      "context_from": null,
-      "schedule": {
-        "kind": "once",
-        "run_at": "2026-08-16T20:45:00+02:00",
-        "display": "once at 2026-08-16 20:45"
-      },
-      "schedule_display": "once at 2026-08-16 20:45",
-      "repeat": {
-        "times": 1,
-        "completed": 0
-      },
-      "enabled": true,
-      "state": "scheduled",
-      "paused_at": null,
-      "paused_reason": null,
-      "created_at": "2026-08-16T22:39:49.974535+02:00",
-      "next_run_at": null,
-      "last_run_at": null,
-      "last_status": null,
-      "last_error": null,
-      "last_delivery_error": null,
-      "deliver": "local",
-      "origin": {
-        "platform": "telegram",
-        "chat_id": "8508115936",
-        "chat_name": "Fausto Lelli",
-        "thread_id": null,
-        "user_id": "8508115936"
-      },
-      "enabled_toolsets": null,
-      "workdir": null,
-      "fire_claim": {
-        "at": "2026-08-16T22:39:56.980139+02:00",
-        "by": "Charon:285202"
-      }
-    },
-    {
-      "id": "95c6dd3019b3",
-      "name": "g0-restart-local-gateway-3",
-      "prompt": "Restart gateway Charon (fix pending-drain trace_id)",
-      "skills": [],
-      "skill": null,
-      "model": null,
-      "provider": null,
-      "provider_snapshot": null,
-      "model_snapshot": null,
-      "base_url": null,
-      "script": "restart-local-gateway-g0.sh",
-      "no_agent": true,
-      "context_from": null,
-      "schedule": {
-        "kind": "once",
-        "run_at": "2026-08-16T21:05:00+02:00",
-        "display": "once at 2026-08-16 21:05"
-      },
-      "schedule_display": "once at 2026-08-16 21:05",
-      "repeat": {
-        "times": 1,
-        "completed": 0
-      },
-      "enabled": true,
-      "state": "scheduled",
-      "paused_at": null,
-      "paused_reason": null,
-      "created_at": "2026-08-16T23:01:01.654882+02:00",
-      "next_run_at": null,
-      "last_run_at": null,
-      "last_status": null,
-      "last_error": null,
-      "last_delivery_error": null,
-      "deliver": "local",
-      "origin": {
-        "platform": "telegram",
-        "chat_id": "8508115936",
-        "chat_name": "Fausto Lelli",
-        "thread_id": null,
-        "user_id": "8508115936"
-      },
-      "enabled_toolsets": null,
-      "workdir": null,
-      "fire_claim": {
-        "at": "2026-08-16T23:01:13.298974+02:00",
-        "by": "Charon:285335"
-      }
-    },
-    {
-      "id": "d9b36aabcb1a",
-      "name": "g0-restart-local-gateway-4",
-      "prompt": "Restart gateway Charon (carica collector env)",
-      "skills": [],
-      "skill": null,
-      "model": null,
-      "provider": null,
-      "provider_snapshot": null,
-      "model_snapshot": null,
-      "base_url": null,
-      "script": "restart-local-gateway-g0.sh",
-      "no_agent": true,
-      "context_from": null,
-      "schedule": {
-        "kind": "once",
-        "run_at": "2026-08-16T21:55:00+02:00",
-        "display": "once at 2026-08-16 21:55"
-      },
-      "schedule_display": "once at 2026-08-16 21:55",
-      "repeat": {
-        "times": 1,
-        "completed": 0
-      },
-      "enabled": true,
-      "state": "scheduled",
-      "paused_at": null,
-      "paused_reason": null,
-      "created_at": "2026-08-16T23:48:28.029321+02:00",
-      "next_run_at": null,
-      "last_run_at": null,
-      "last_status": null,
-      "last_error": null,
-      "last_delivery_error": null,
-      "deliver": "local",
-      "origin": {
-        "platform": "telegram",
-        "chat_id": "8508115936",
-        "chat_name": "Fausto Lelli",
-        "thread_id": null,
-        "user_id": "8508115936"
-      },
-      "enabled_toolsets": null,
-      "workdir": null,
-      "fire_claim": {
-        "at": "2026-08-16T23:48:36.752944+02:00",
-        "by": "Charon:287239"
-      }
-    },
-    {
-      "id": "4ab01af41866",
-      "name": "g0-restart-local-gateway-5",
-      "prompt": "Restart gateway Charon (G2b provenance plumbing)",
-      "skills": [],
-      "skill": null,
-      "model": null,
-      "provider": null,
-      "provider_snapshot": null,
-      "model_snapshot": null,
-      "base_url": null,
-      "script": "restart-local-gateway-g0.sh",
-      "no_agent": true,
-      "context_from": null,
-      "schedule": {
-        "kind": "once",
-        "run_at": "2026-08-17T00:10:00+02:00",
-        "display": "once at 2026-08-17 00:10"
-      },
-      "schedule_display": "once at 2026-08-17 00:10",
-      "repeat": {
-        "times": 1,
-        "completed": 0
-      },
-      "enabled": true,
-      "state": "scheduled",
-      "paused_at": null,
-      "paused_reason": null,
-      "created_at": "2026-08-17T00:15:44.535366+02:00",
-      "next_run_at": null,
-      "last_run_at": null,
-      "last_status": null,
-      "last_error": null,
-      "last_delivery_error": null,
-      "deliver": "local",
-      "origin": {
-        "platform": "telegram",
-        "chat_id": "8508115936",
-        "chat_name": "Fausto Lelli",
-        "thread_id": null,
-        "user_id": "8508115936"
-      },
-      "enabled_toolsets": null,
-      "workdir": null,
-      "fire_claim": {
-        "at": "2026-08-17T00:15:53.496016+02:00",
-        "by": "Charon:290765"
-      }
     },
     {
       "id": "4b3ec325bead",
@@ -1309,15 +1064,15 @@
       "schedule_display": "every 10m",
       "repeat": {
         "times": null,
-        "completed": 48
+        "completed": 191
       },
       "enabled": true,
       "state": "scheduled",
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-08-17T14:50:46.906954+02:00",
-      "next_run_at": "2026-08-17T23:01:59.568615+02:00",
-      "last_run_at": "2026-08-17T22:51:59.568615+02:00",
+      "next_run_at": "2026-08-18T23:04:18.304026+02:00",
+      "last_run_at": "2026-08-18T22:54:18.304026+02:00",
       "last_status": "ok",
       "last_error": null,
       "last_delivery_error": null,
@@ -1337,5 +1092,5 @@
       "fire_claim": null
     }
   ],
-  "updated_at": "2026-08-17T23:00:00.067079+02:00"
+  "updated_at": "2026-08-18T23:00:18.553083+02:00"
 }

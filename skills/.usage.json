@@ -186,12 +186,12 @@
     "created_at": "2026-08-17T13:03:19.029695+00:00",
     "created_by": null,
     "last_patched_at": "2026-08-18T07:35:17.964903+00:00",
-    "last_used_at": "2026-08-17T20:46:24.494853+00:00",
+    "last_used_at": "2026-08-19T20:18:31.573499+00:00",
     "last_viewed_at": "2026-08-17T20:46:24.449277+00:00",
     "patch_count": 13,
     "pinned": false,
     "state": "active",
-    "use_count": 2,
+    "use_count": 3,
     "view_count": 2
   },
   "codebase-inspection": {
@@ -242,7 +242,7 @@
     "last_viewed_at": "2026-07-18T09:46:16.017272+00:00",
     "patch_count": 0,
     "pinned": false,
-    "state": "active",
+    "state": "stale",
     "use_count": 2,
     "view_count": 2
   },
@@ -437,7 +437,7 @@
     "last_viewed_at": "2026-07-18T10:59:31.433899+00:00",
     "patch_count": 0,
     "pinned": false,
-    "state": "active",
+    "state": "stale",
     "use_count": 2,
     "view_count": 2
   },
@@ -489,7 +489,7 @@
     "last_viewed_at": "2026-08-16T06:07:11.029059+00:00",
     "patch_count": 0,
     "pinned": false,
-    "state": "stale",
+    "state": "active",
     "use_count": 2,
     "view_count": 2
   },
@@ -515,7 +515,7 @@
     "last_viewed_at": "2026-07-18T14:47:35.888518+00:00",
     "patch_count": 18,
     "pinned": false,
-    "state": "active",
+    "state": "stale",
     "use_count": 9,
     "view_count": 9
   },
@@ -523,14 +523,14 @@
     "archived_at": null,
     "created_at": "2026-07-16T11:15:27.790167+00:00",
     "created_by": null,
-    "last_patched_at": "2026-08-18T10:03:56.966057+00:00",
-    "last_used_at": "2026-08-18T10:04:08.576632+00:00",
-    "last_viewed_at": "2026-08-18T10:04:08.544872+00:00",
-    "patch_count": 345,
+    "last_patched_at": "2026-08-19T05:31:21.636442+00:00",
+    "last_used_at": "2026-08-19T05:30:43.330647+00:00",
+    "last_viewed_at": "2026-08-19T05:30:43.281325+00:00",
+    "patch_count": 346,
     "pinned": false,
     "state": "active",
-    "use_count": 238,
-    "view_count": 238
+    "use_count": 239,
+    "view_count": 239
   },
   "hermes-memory-management": {
     "archived_at": null,

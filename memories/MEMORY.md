@@ -16,7 +16,7 @@ peer141 (192.168.178.141, Stella, 0.20.1): hmp 0.1.4, SSH fausto; health peer70 
 §
 HMP :18643 canale v0.1.4; health GET /health 200.
 §
-Policy (Fausto): peer70 orchestratore+publisher autoritativo (GO/NO-GO fasi), max stabilità, no patch core sperimentali; peer141 impl+QA (evidenze); 17/08 peer128 lead dev capability-reuse (direzione, gate, release); sync mirato + riavvio manuale.
+Policy (Fausto): peer70 orchestratore+coordinatore (GO/NO-GO fasi), max stabilità, no patch core sperimentali; peer128 lead dev capability-reuse (direzione, gate, release) — peer70 NON sviluppa cap-reuse; peer141 impl+QA (evidenze); sync mirato + riavvio manuale.
 §
 Studio topology (prereg FROZEN): UNDERPOWERED; ripresa fix tier. Vault: topology-study-prereg-v1.1.md.
 §

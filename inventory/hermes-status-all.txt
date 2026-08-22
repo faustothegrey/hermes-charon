@@ -39,7 +39,7 @@ STDOUT:
   Nous Portal   ✓ logged in
     Portal URL: https://portal.nousresearch.com
     Inference:  https://inference-api.nousresearch.com/v1
-    Access exp: 2026-08-21 23:52:46 CEST
+    Access exp: 2026-08-22 23:59:02 CEST
     Key exp: "<REDACTED>"
     Refresh:    yes
   OpenAI Codex  ✗ not logged in (run: hermes model)

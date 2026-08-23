@@ -576,6 +576,27 @@ GitHub's file size limit of 100.00 MB` e il nightly resta `last_status: error`.
 **Controllo rapido** se il bundle è gonfio prima del push: `ls -la secrets/*.enc`
 (un bundle sano è ~10KB, non centinaia di MB).
 
+## Full clone for OS upgrade / migration
+
+The nightly config backup is NOT a full clone (it excludes source tree + local patches,
+systemd units, crontab, SSH keys, iptables, fstab, runtime data). For an OS upgrade or
+hardware migration, use the layered A–D strategy and the 9 peer-validated pitfalls
+(git diff misses untracked files, state.db via `sqlite3 .backup` never hot-cp, id_rsa =
+single decrypt point of failure, venv not portable across OS bumps, iptables lockout
+order, linger, mandatory restore rehearsal):
+`references/full-clone-os-upgrade.md`
+
+**Verify a snapshot is really restorable — existence ≠ restorable.** An archive can be
+checksum-clean yet carry a stale-generation patch that will NOT reproduce the running
+agent (patches-core may hold a historical patch while the current dirty diff is a
+different file set). Always ship the freshly-regenerated `git diff HEAD` + `git status
+--porcelain` + base hashes in `source-patches/`, and run the verification battery:
+`tar -tzf` + `gzip -t`, byte-compare identity files with CORRECT path mapping
+(`agent-core/X` → `~/.hermes/X`), expect auth.json to differ only by OAuth refresh, then
+`git apply --check` + `git apply` + `md5sum` against the live dirty files (all must
+MATCH). Full recipe: `references/full-clone-os-upgrade.md` → "Verifying a snapshot
+actually restores you".
+
 ## See also
 
 - `references/peer128-backup-setup.md` — Full working implementation with exact directory structure, encryption commands, and Git workflow from peer128 (macOS)

@@ -1,13 +1,13 @@
 ---
 name: fritzbox
-description: Access and manage an AVM FRITZ!Box router via its undocumented web API (data.lua) and the fritzbox.js library
+description: Access and manage an AVM FRITZ!Box router via its undocumented web API (data.lua), the fritzbox.js library, and its built-in SMB/NAS storage (FRITZ.NAS)
 category: sysadmin
-version: 1.1.0
+version: 1.2.0
 author: Hermes Agent
 license: MIT
 metadata:
   hermes:
-    tags: [fritzbox, avm, router, network, dsl, wlan, telephony]
+    tags: [fritzbox, avm, router, network, dsl, wlan, telephony, smb, nas]
     related_skills: [network-orchestrator, lan-peer-monitor]
 ---
 
@@ -291,6 +291,12 @@ FritzBox stats are integrated into both NetBoard dashboards:
 | Web (browser) | `netboard-web.service` port 8191 | On-demand via `/api/fritzbox` | DSL, IP, provider, WiFi bands, devices |
 
 Both services restart at boot. See `lan-peer-monitor` skill for NetBoard architecture.
+
+## SMB / NAS Access (FRITZ.NAS)
+
+The FritzBox also serves its USB/storage as an SMB share — share name `FRITZ.NAS` — using the same router credentials (fausto / ccll4372), not a separate NAS login. Port signature: 445+139 open, 80 (web UI) + 49000 (TR-064) → it's the router's NAS, not a standalone box (Synology would expose 5000/5001). Anonymous listing is refused.
+
+Reliable path is the `smbclient` CLI; the `python3-smbc` wrapper fails auth even with correct credentials. Full recipes, the port signature, and mounting notes: `references/smb-nas-access.md`. To mount a FRITZ.NAS folder locally as a persistent RW CIFS automount (credentials file + fstab `nofail,x-systemd.automount` + verification steps), see the "Mounting (client side)" section of that reference.
 
 ## Pitfalls
 

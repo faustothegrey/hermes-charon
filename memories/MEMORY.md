@@ -20,7 +20,7 @@ peer128 .112 = macOS portatile, launchd kickstart -k, SSH fausto.
 §
 BUG HMP (18/08 peer136): msg delivering orfano se gateway riavvia a metà turno; sessione bloccata; workaround re-invio; fix da analizzare. Dettagli: vault session-facts.
 §
-peer58 HMP 0.1.3 online.
+peer58 .58 HMP 0.1.3 online.
 §
 Skill essenziali (TUTTE PINNED 18/08, ortogonali): memory-vault-hybrid, hermes-hmp, code-dev-reviewer, skill-registry-protocol, mesh-citizenship.
 §

@@ -12,8 +12,10 @@ Built-in toolsets (cli):
   ✗ disabled  video  🎬 Video Analysis
   ✓ enabled  image_gen  🎨 Image Generation
   ✗ disabled  video_gen  🎬 Video Generation
+  ✓ enabled  bfl  🎬 BFL FLUX 3 Video
   ✗ disabled  x_search  🐦 X (Twitter) Search
   ✓ enabled  tts  🔊 Text-to-Speech
+  ✗ disabled  stt  🎙️ Speech-to-Text
   ✓ enabled  skills  📚 Skills
   ✓ enabled  todo  📋 Task Planning
   ✓ enabled  memory  💾 Memory
@@ -26,6 +28,9 @@ Built-in toolsets (cli):
   ✗ disabled  spotify  🎵 Spotify
   ✗ disabled  yuanbao  🤖 Yuanbao
   ✓ enabled  computer_use  🖱️  Computer Use (macOS/Windows/Linux)
+
+Plugin toolsets (cli):
+  ✗ disabled  a2a  🔌 A2A
 
 
 STDERR:

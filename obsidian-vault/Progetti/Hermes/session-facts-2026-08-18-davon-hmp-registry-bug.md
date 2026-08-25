@@ -74,3 +74,10 @@
 - Uptime 7d, load 0.6, disk 26%.
 - Memoria hot consolidata (2,164/2,200, poi compattata a 2,042 — 92%) con skill memory-vault-hybrid.
 - Watchdog cron in pausa dal 02/08: peer70-watchdog, HMP bloccati, dsi-error, session-70pct — da decidere se riattivare.
+
+## 9. Rimozione review loop email (20/08)
+
+- **Rimosso** cron `watchdog-libero-mail` (job 4b3ec325bead, ogni 10m) + script `watchdog-libero-mail.sh` + `send_g0_bundle_email.py` + `libero-watchdog-processed.txt`.
+- Motivo: la mail non è più usata per il loop di sviluppo della skill capability-reuse.
+- Skill `code-dev-reviewer`: rimossa dal set essenziale (ma la skill resta installata se servirà in futuro).
+- Memoria aggiornata: set essenziale = memory-vault-hybrid, hermes-hmp, skill-registry-protocol, mesh-citizenship.

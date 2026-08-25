@@ -11,31 +11,21 @@ STDOUT:
     Name:      Nightly Hermes configuration backup (peer70)
     Schedule:  0 23 * * *
     Repeat:    ∞
-    Next run:  2026-08-25T23:00:00+02:00
+    Next run:  2026-08-26T23:00:00+02:00
     Deliver:   local
     Script:    hermes-config-backup-nightly.sh
     Mode:      no-agent (script stdout delivered directly)
-    Last run:  2026-08-23T23:01:22.680014+02:00  ok
+    Last run:  2026-08-24T23:00:56.373237+02:00  ok
 
   1813aa7164e5 [active]
     Name:      undervoltage-watchdog
     Schedule:  every 15m
     Repeat:    ∞
-    Next run:  2026-08-24T23:09:14.602262+02:00
+    Next run:  2026-08-25T23:12:50.640354+02:00
     Deliver:   origin
     Script:    undervoltage_watchdog.py
     Mode:      no-agent (script stdout delivered directly)
-    Last run:  2026-08-24T22:54:14.602262+02:00  ok
-
-  4b3ec325bead [active]
-    Name:      watchdog-libero-mail
-    Schedule:  every 10m
-    Repeat:    ∞
-    Next run:  2026-08-24T23:04:14.479037+02:00
-    Deliver:   origin
-    Skills:    code-dev-reviewer
-    Script:    watchdog-libero-mail.sh
-    Last run:  2026-08-24T22:54:14.479037+02:00  ok
+    Last run:  2026-08-25T22:57:50.640354+02:00  ok
 
 
 

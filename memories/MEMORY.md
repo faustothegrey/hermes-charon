@@ -22,7 +22,7 @@ BUG HMP (18/08 peer136): msg delivering orfano se gateway riavvia a metà turno;
 §
 peer58 .58 HMP 0.1.3 online.
 §
-Skill essenziali (TUTTE PINNED 18/08, ortogonali): memory-vault-hybrid, hermes-hmp, code-dev-reviewer, skill-registry-protocol, mesh-citizenship.
+Skill essenziali (TUTTE PINNED, ortogonali): memory-vault-hybrid, hermes-hmp, skill-registry-protocol, mesh-citizenship.
 §
 peer128 (lead dev cap-reuse): NON notificare/consegnare nulla senza richiesta esplicita di Fausto (18/08).
 §
